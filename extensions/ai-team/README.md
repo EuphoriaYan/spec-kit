@@ -102,7 +102,9 @@ enforcement semantics, and
 ## User Journeys
 
 Use [docs/user-journeys.md](docs/user-journeys.md) for the complete
-step-by-step journeys. The short version:
+step-by-step journeys. See
+[docs/compact-planning.md](docs/compact-planning.md) for the planned low-risk
+Plan/Tasks extension and its mandatory fallback rules. The short version:
 
 | Journey | Work item | Main path |
 |---|---|---|
@@ -113,6 +115,28 @@ step-by-step journeys. The short version:
 | failed review/check/incident | PR, check, incident, or repeated AI mistake | retrospect -> update command, gate, knowledge, memory, graph, or test evidence |
 | memory consolidation | work slug, bug slug, PR, incident, release id, or manual lesson | sanitize -> choose local/department/enterprise tier -> sync/index -> promote to skill, knowledge, test, gate, or playbook |
 | release archive | release id, tag range, release issue, or work slugs | release-scoped memory consolidation -> bugfix lessons -> feature decisions -> migration playbook -> support memory/knowledge update |
+
+### Standard And Compact Planning
+
+The standard path remains the default and the only bundled implementation:
+
+```text
+Spec -> Plan -> Plan Review -> Tasks -> Tasks Review -> Implement
+```
+
+A planned compact extension will allow one user action and one combined review
+for clear, low-risk, single-module work. It will still generate Plan decisions
+before Tasks in isolated role contexts. `plan.md` remains the canonical combined
+artifact; any `tasks.md` needed by Spec Kit core is a generated compatibility
+projection, not a second editable source.
+
+Compact mode must never be selected only because a change sounds small or
+touches few files. Public contracts, database migration, security/privacy,
+cross-module work, dependency changes, uncertain design, new-project
+architecture, or non-trivial release/rollback needs require the standard path.
+AI may recommend compact mode; an accountable human selects it after impact
+analysis. Until the extension is implemented, continue using the standard
+workflow and its separate gates.
 
 ### Chat Aliases
 

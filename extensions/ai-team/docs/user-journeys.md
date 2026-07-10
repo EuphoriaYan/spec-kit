@@ -77,6 +77,10 @@ remember command details:
 | `ai-team-memory consolidate path` | `scope=<work-item|bugfix|feature|incident|release>` plus `target_tier=<local|department|enterprise>` |
 | `ai-team-release archive path` | `release_id=<version>` plus tag range, release issue, or work slugs |
 
+`ai-team-sdd compact path` is a planned alias, not a currently bundled workflow.
+See [compact-planning.md](compact-planning.md). Do not claim it is available in
+an installed project until the compact workflow and projection checks exist.
+
 Recommended user prompts:
 
 ```text
@@ -306,6 +310,28 @@ Stop for human reconciliation when context files disagree, the work item changed
 while paused, source changed and impact evidence is stale, or the recorded next
 command would skip a required human gate. Also stop when hard confinement is
 required but the recorded enforcement mode is only `policy-only`.
+
+## Planned Journey: Compact Plan And Tasks
+
+Use this future extension only for clear, low-risk work whose impact analysis
+shows a local or single-module change. The user starts one planning action, but
+the workflow still isolates the architect context from the developer context:
+
+```text
+impact evidence -> human compact selection
+-> Implementation Plan -> isolated handoff -> Execution Tasks
+-> combined review -> implementation permission review -> implement
+```
+
+The combined artifact must preserve separate Plan and Execution Tasks sections.
+If Spec Kit core needs `tasks.md`, it is generated from the canonical task
+section and is not edited independently.
+
+Fall back to the standard journey when the change affects public contracts,
+database state, security/privacy, dependencies, multiple modules, deployment or
+rollback behavior, or when any technical choice remains unresolved. New
+projects use the standard journey unless their architecture baseline and
+runnable spine have already been approved.
 
 ## Journey 6: Failure Evolution
 

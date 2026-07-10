@@ -503,6 +503,18 @@ def test_ai_team_permission_envelope_document_exists():
     assert "do not sandbox shell commands" in text
 
 
+def test_ai_team_compact_planning_document_is_explicitly_planned():
+    compact_doc = EXTENSION_ROOT / "docs" / "compact-planning.md"
+
+    assert compact_doc.exists()
+    text = compact_doc.read_text(encoding="utf-8")
+    assert "Status: planned extension" in text
+    assert "AI may recommend compact planning" in text
+    assert "compatibility projection" in text
+    assert "Mandatory Fallback" in text
+    assert "Zero-to-one projects use the standard path by default" in text
+
+
 def test_ai_team_work_field_spec_document_exists():
     field_doc = EXTENSION_ROOT / "docs" / "work-field-spec.md"
 
