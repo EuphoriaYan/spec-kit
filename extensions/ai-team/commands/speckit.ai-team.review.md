@@ -19,13 +19,14 @@ Check in this order:
 
 1. Repository route: code changes in coding repo; internal enhancement issues,
    handoff RFCs, private drafts, and raw demand in enhancement-internal.
-2. Work item: bug fix links a coding issue or bug slug; public feature links a
+2. Work item: bug fix links a primary coding issue; public feature links a
    coding issue; confidential feature links an allowed handoff requirement or
-   public-safe summary.
-3. Change package: `change-package.yml` points to the actual work item, spec,
-   plan, tasks, handoffs, code graph, evidence, Permission Envelope, and PR.
+   public-safe summary. Additional issues must represent different symptoms of
+   the same root-cause change and each must map to verification evidence.
+3. Native artifacts: `spec.md`, `plan.md`, `tasks.md`, bug reports, workflow
+   state, and the Evidence Board agree on the work item and delivered behavior.
 4. Work context: `.specify/ai-team/work/<work_slug>/context-pack.md` and
-   `work-context.yml` match the indexed artifacts and evidence.
+   `work-context.yml` point to the active native artifacts and evidence.
 5. Permissions: effective reads, writes, commands, dependencies, and network
    actions stayed inside `permission-envelope.yml`; its enforcement mode and
    gaps are reported honestly.
@@ -34,10 +35,12 @@ Check in this order:
    used.
 7. Boundary: touched files stay inside approved modules and do not edit another
    module's internals to avoid an interface request.
-8. Architecture: dependency direction, state ownership, and public contracts
-   are preserved.
-9. Compatibility: SPI/API, config, wire schema, metrics, examples,
-   dependencies, release notes, and migrations are handled.
+8. Architecture: compare the planned Code Graph or source-structure delta with
+   the as-built result; dependency direction, state ownership, and public
+   contracts are preserved or deviations are approved.
+9. Compatibility: default to forward-compatible, behavior-preserving change.
+   Pause for owner review when contract diff, config defaults, wire/data shape,
+   examples, golden files, or snapshots show an incompatible behavior change.
 10. Tests: self-tests match changed behavior.
 11. Evidence: work context, code graph, changed nodes, commands, skipped checks,
    uncovered paths, and residual risks are recorded.
@@ -63,7 +66,6 @@ Evidence checked:
 - public-safe summary:
 - modules:
 - work context:
-- change package:
 - permission envelope:
 - enforcement mode and gaps:
 - code graph or fallback:

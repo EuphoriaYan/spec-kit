@@ -98,7 +98,7 @@ Stop when:
 - private data may leave its approved repository or service boundary;
 - hard runtime confinement is required but only `policy-only` is available;
 - an AI tool requests broader access without a named human approval;
-- the envelope and Change Package identify different work units.
+- the envelope and Work Context Package identify different work units.
 
 ## Tool Adapters
 

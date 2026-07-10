@@ -37,6 +37,7 @@ exchange the approved specification, impact evidence, and the compact artifact.
 # Compact Implementation Plan
 
 ## Scope And Assumptions
+## Expected Architecture Impact
 ## Technical Decisions
 ## Compatibility And Risks
 ## Verification Strategy
@@ -53,18 +54,14 @@ compatibility projection of `plan.md#execution-tasks`. That projection must be
 marked generated, must not be edited independently, and must be regenerated
 when it differs from the canonical section.
 
-The Change Package should record:
+The workflow input and run state record `planning_mode=compact` and the human
+gate decision. `plan.md` remains the durable reviewed artifact; no additional
+change manifest is required. The future projection metadata should be generated
+with `tasks.md`, for example:
 
 ```yaml
-planning_mode: compact
-artifacts:
-  plan:
-    path: specs/<work_slug>/plan.md
-    authority: architecture-and-execution
-  tasks:
-    path: specs/<work_slug>/tasks.md
-    authority: generated-projection
-    source: specs/<work_slug>/plan.md#execution-tasks
+generated_from: specs/<work_slug>/plan.md#execution-tasks
+source_hash: <sha256>
 ```
 
 ## Eligibility
@@ -107,9 +104,10 @@ phase. Do not keep patching the compact task list around a changed design.
 ## Planned Runtime Contract
 
 The future implementation should provide an explicit workflow alias such as
-`ai-team-sdd compact path`, not silently infer the shortcut. It should record:
+`ai-team-sdd compact path`, not silently infer the shortcut. The workflow
+engine should record:
 
-- human selector and selection reason;
+- `planning_mode=compact` as a user-selected input and the human gate result;
 - eligibility evidence and source snapshot;
 - combined review result;
 - canonical artifact and generated projection hash;

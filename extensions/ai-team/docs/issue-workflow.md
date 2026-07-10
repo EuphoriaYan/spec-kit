@@ -35,6 +35,14 @@ Every AI Team issue should have exactly one state label:
 Do not use issue title, branch name, or local file path as the stable identity.
 Use the issue URL plus the work slug rules in [work-field-spec.md](work-field-spec.md).
 
+## Several Issues In One Change
+
+A PR may close several coding issues only when they describe different
+symptoms of one root-cause change. Keep one primary issue, list the others as
+`also_resolves_issue_urls`, and map every issue to separate reproduction and
+verification evidence. Use separate work units when root cause, approved
+scope, rollback, or release risk differs.
+
 ## Handoff URLs
 
 When coding work implements a feature from `enhancement_internal`, the coding

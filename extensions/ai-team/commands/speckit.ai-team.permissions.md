@@ -27,7 +27,6 @@ Resolve:
 
 Load:
 
-- `.specify/ai-team/work/<work_slug>/change-package.yml`;
 - `.specify/ai-team/work/<work_slug>/work-context.yml`;
 - existing `permission-envelope.yml`;
 - repository and AI integration rules.
@@ -44,8 +43,7 @@ Load:
    - otherwise use `policy-only` and list the enforcement gaps.
 5. Write or update
    `.specify/ai-team/work/<work_slug>/permission-envelope.yml`.
-6. Update the Permission Envelope entry in `change-package.yml` and the summary
-   in `context-pack.md`.
+6. Update the permission summary in `work-context.yml` and `context-pack.md`.
 7. Return the envelope diff and required human approvals. Do not begin the next
    protected phase.
 
@@ -72,7 +70,7 @@ AI Team Permission Check:
 
 Stop and recommend `block` when:
 
-- the Change Package is missing or identifies another work unit;
+- the Work Context Package is missing or identifies another work unit;
 - paths are absolute, ambiguous, or broader than the approved module without a
   human decision;
 - implementation requests writes before plan/task review;

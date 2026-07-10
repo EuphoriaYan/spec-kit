@@ -1,6 +1,7 @@
 import json
 import importlib.util
 import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -14,6 +15,7 @@ EXTENSION_ROOT = REPO_ROOT / "extensions" / "ai-team"
 WORKFLOW_PATH = REPO_ROOT / "workflows" / "ai-team-sdd" / "workflow.yml"
 BUGFIX_WORKFLOW_PATH = REPO_ROOT / "workflows" / "ai-team-bugfix" / "workflow.yml"
 MEMORY_ADAPTER_PATH = EXTENSION_ROOT / "scripts" / "memory_adapter.py"
+WORK_ITEM_GATE = EXTENSION_ROOT / "scripts" / "check-work-item.py"
 
 
 def _load_memory_adapter():
@@ -94,6 +96,25 @@ def _run_ai_team_workflow_to_context_gate(
     assert state.step_results["review-context"]["status"] == "paused"
     assert "route" not in state.step_results
     return state
+
+
+def _run_work_item_gate(tmp_path: Path, inputs: dict, run_id: str = "test-run"):
+    run_dir = tmp_path / ".specify" / "workflows" / "runs" / run_id
+    run_dir.mkdir(parents=True)
+    (run_dir / "inputs.json").write_text(json.dumps(inputs), encoding="utf-8")
+    return subprocess.run(
+        [
+            sys.executable,
+            str(WORK_ITEM_GATE),
+            "--run-id",
+            run_id,
+            "--project-root",
+            str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
 
 
 def test_ai_team_extension_manifest_and_catalog_are_in_sync():
@@ -215,7 +236,7 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
         "archived-work.yml",
         "privacy-review.md",
     }
-    assert config["work_context"]["change_package_file"] == "change-package.yml"
+    assert "change_package_file" not in config["work_context"]
     assert (
         config["work_context"]["permission_envelope_file"]
         == "permission-envelope.yml"
@@ -229,6 +250,8 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["permissions"]["require_envelope"] is True
     assert config["permissions"]["require_analysis_review"] is True
     assert config["permissions"]["require_implementation_review"] is True
+    assert config["gates"]["require_work_item_anchor"] is True
+    assert config["gates"]["allow_same_root_cause_issue_grouping"] is True
     assert "root" not in config["code_graph"]
     assert set(config["code_graph"]["normalized_outputs"]) == {
         "nodes.jsonl",
@@ -385,6 +408,52 @@ def test_memory_adapter_rejects_private_mem0_sync(tmp_path, monkeypatch):
         )
 
 
+def test_work_item_gate_accepts_same_repository_issue_group(tmp_path):
+    result = _run_work_item_gate(
+        tmp_path,
+        {
+            "work_type": "bug",
+            "coding_issue_url": "https://example.com/org/project/issues/123",
+            "also_resolves_issue_urls": (
+                "https://example.com/org/project/issues/456,"
+                "https://example.com/org/project/issues/789"
+            ),
+        },
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout)["also_resolves_count"] == 2
+
+
+@pytest.mark.parametrize(
+    ("inputs", "error"),
+    [
+        ({"work_type": "bug"}, "primary coding_issue_url"),
+        (
+            {
+                "work_type": "feature",
+                "coding_issue_url": "https://example.com/org/project/issues/1",
+                "handoff_requirement_url": "https://internal.example.com/req/1",
+            },
+            "exactly one primary anchor",
+        ),
+        (
+            {
+                "work_type": "bug",
+                "coding_issue_url": "https://example.com/org/project/issues/1",
+                "also_resolves_issue_urls": "https://example.com/org/other/issues/2",
+            },
+            "primary coding repository",
+        ),
+    ],
+)
+def test_work_item_gate_rejects_inconsistent_anchors(tmp_path, inputs, error):
+    result = _run_work_item_gate(tmp_path, inputs)
+
+    assert result.returncode == 2
+    assert error in result.stderr
+
+
 def test_ai_team_support_model_document_exists():
     support_doc = EXTENSION_ROOT / "docs" / "skill-knowledge-memory.md"
 
@@ -469,7 +538,7 @@ def test_ai_team_work_context_document_exists():
     assert "Work Context Package" in text
     assert ".specify/ai-team/work/<work_slug>/" in text
     assert "work-context.yml" in text
-    assert "change-package.yml" in text
+    assert "change-package.yml" not in text
     assert "permission-envelope.yml" in text
     assert ".specify/workflows/runs/<run-id>/state.json" in text
     assert "specify workflow resume <run-id>" in text
@@ -480,15 +549,12 @@ def test_ai_team_work_context_document_exists():
     assert "speckit.ai-team.release-archive" in text
 
 
-def test_ai_team_change_package_document_exists():
-    package_doc = EXTENSION_ROOT / "docs" / "change-package.md"
-
-    assert package_doc.exists()
-    text = package_doc.read_text(encoding="utf-8")
-    assert "change-package.yml" in text
-    assert "Authority Rules" in text
-    assert "or duplicate them" in text
-    assert "must not silently promote" in text
+def test_ai_team_reuses_native_sdd_artifacts_without_change_manifest():
+    assert not (EXTENSION_ROOT / "docs" / "change-package.md").exists()
+    readme = (EXTENSION_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "`spec.md` owns behavior" in readme
+    assert "workflow state owns gate decisions" in readme
+    assert "change-package.yml" not in readme
 
 
 def test_ai_team_permission_envelope_document_exists():
@@ -511,6 +577,7 @@ def test_ai_team_compact_planning_document_is_explicitly_planned():
     assert "Status: planned extension" in text
     assert "AI may recommend compact planning" in text
     assert "compatibility projection" in text
+    assert "workflow input and run state record `planning_mode=compact`" in text
     assert "Mandatory Fallback" in text
     assert "Zero-to-one projects use the standard path by default" in text
 
@@ -524,6 +591,8 @@ def test_ai_team_work_field_spec_document_exists():
     assert "003-user-auth" in text
     assert "bug_slug" in text
     assert "coding_issue_url" in text
+    assert "also_resolves_issue_urls" in text
+    assert "different symptoms of the same root cause" in text
     assert "handoff_requirement_url" in text
     assert "published_requirement_url" in text
     assert "issue.type_label" in text
@@ -598,6 +667,7 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     assert steps[0]["type"] == "if"
     assert steps[0]["then"][0]["type"] == "init"
     assert "work_slug" in data["inputs"]
+    assert "also_resolves_issue_urls" in data["inputs"]
     assert "handoff_requirement_url" in data["inputs"]
     assert "published_requirement_url" in data["inputs"]
     assert "resume_from" in data["inputs"]
@@ -607,6 +677,7 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     step_ids = _collect_step_ids(steps)
     assert "route" not in step_ids
     assert "review-context" in step_ids
+    assert "validate-work-item" in step_ids
     assert "context-open" in step_ids
     assert "codegraph" in step_ids
     assert "permission-analysis" in step_ids
@@ -686,6 +757,7 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     )
     assert "mode=implementation" in permission_implementation_step["input"]["args"]
     assert step_ids.index("permission-analysis") < step_ids.index("codegraph")
+    assert step_ids.index("validate-work-item") < step_ids.index("context-open")
     assert step_ids.index("permission-implementation") < step_ids.index("implement")
     assert step_ids.index("review-permissions") < step_ids.index("implement")
     converge_step = next(step for step in steps if step["id"] == "converge")
@@ -697,8 +769,11 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     assert "work_slug" in bugfix["inputs"]
     assert "bug_slug" not in bugfix["inputs"]
     assert "coding_issue_url" in bugfix["inputs"]
+    assert bugfix["inputs"]["coding_issue_url"]["required"] is True
+    assert "also_resolves_issue_urls" in bugfix["inputs"]
     bugfix_step_ids = [step["id"] for step in bugfix["steps"]]
     assert "review-context" in bugfix_step_ids
+    assert "validate-work-item" in bugfix_step_ids
     assert "permission-analysis" in bugfix_step_ids
     assert "route" not in bugfix_step_ids
     assert "review-impact" in bugfix_step_ids
@@ -713,6 +788,9 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     assert "evidence" not in bugfix_step_ids
     assert bugfix_step_ids.index("permission-analysis") < bugfix_step_ids.index(
         "codegraph"
+    )
+    assert bugfix_step_ids.index("validate-work-item") < bugfix_step_ids.index(
+        "context-open"
     )
     assert bugfix_step_ids.index(
         "permission-implementation"
@@ -730,6 +808,7 @@ def test_ai_team_bugfix_workflow_pauses_at_context_gate(tmp_path):
             "request": "Fix upload timeout reported by support",
             "work_slug": "bug-project-alpha-123",
             "coding_issue_url": "https://example.com/org/project/issues/123",
+            "also_resolves_issue_urls": "https://example.com/org/project/issues/456",
         },
         run_id,
         workflow_path=BUGFIX_WORKFLOW_PATH,
@@ -743,6 +822,7 @@ def test_ai_team_bugfix_workflow_pauses_at_context_gate(tmp_path):
     assert "work_slug=bug-project-alpha-123" in context_args
     assert "bug_slug=bug-project-alpha-123" in context_args
     assert "coding_issue_url=https://example.com/org/project/issues/123" in context_args
+    assert "also_resolves_issue_urls=https://example.com/org/project/issues/456" in context_args
     assert "mode=analysis" in permission_args
     assert "work_slug=bug-project-alpha-123" in permission_args
 

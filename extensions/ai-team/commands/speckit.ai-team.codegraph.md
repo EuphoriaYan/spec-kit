@@ -24,7 +24,6 @@ record a fallback source-structure slice. It does not approve design changes.
 Read when present:
 
 - `.specify/ai-team/work/<work_slug>/work-context.yml`;
-- `.specify/ai-team/work/<work_slug>/change-package.yml`;
 - `.specify/ai-team/work/<work_slug>/permission-envelope.yml`;
 - `.specify/ai-team/work/<work_slug>/context-pack.md`;
 - `.specify/extensions/ai-team/ai-team-config.yml`;
@@ -89,7 +88,7 @@ contains, imports, calls, implements, extends, reads_config, tests, depends_on
 
 ## Workflow
 
-1. Load the active Change Package and Work Context Package or create them with
+1. Load the active Work Context Package or create it with
    `speckit.ai-team.context` if needed.
 2. Require an analysis-mode Permission Envelope. Verify that its repository,
    read paths, commands, network access, approval state, and enforcement mode
@@ -101,8 +100,8 @@ contains, imports, calls, implements, extends, reads_config, tests, depends_on
    service result.
 6. Normalize output to `nodes.jsonl`, `edges.jsonl`, `summary.md`, and
    `adapter-report.md`.
-7. Update `change-package.yml` and `work-context.yml` with the code graph
-   artifact path, source snapshot, status, and next command.
+7. Update `work-context.yml` with the code graph artifact path, source
+   snapshot, status, and next command.
 8. Hand the graph artifact to `speckit.ai-team.impact`, `speckit.plan`,
    `speckit.ai-team.plan-check`, `speckit.analyze`, or `speckit.converge`
    (composite checks and evidence run inside converge when preset

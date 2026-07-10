@@ -28,9 +28,6 @@ and adds enterprise collaboration constraints:
 - external Skill, Knowledge, and Memory support layers around the project.
 - durable Work Context Packages so interrupted work can resume from a work item
   instead of hidden chat context.
-- one Change Package index per work unit so issue, spec, plan, tasks, handoffs,
-  code graph, evidence, permissions, and PR can be located without duplicating
-  their content;
 - task-scoped Permission Envelopes that distinguish policy-only constraints
   from verified agent-native or wrapper enforcement;
 - replaceable code graph adapters for source-grounded impact analysis.
@@ -70,7 +67,6 @@ type/state labels.
 Every AI Team work unit should have a durable Work Context Package:
 
 ```text
-.specify/ai-team/work/<work_slug>/change-package.yml
 .specify/ai-team/work/<work_slug>/context-pack.md
 .specify/ai-team/work/<work_slug>/work-context.yml
 .specify/ai-team/work/<work_slug>/permission-envelope.yml
@@ -92,8 +88,10 @@ speckit.ai-team.context work_slug=<work_slug> resume=true
 ```
 
 Use [docs/work-context-package.md](docs/work-context-package.md) for the
-storage format, phase model, and resume protocol. Use
-[docs/change-package.md](docs/change-package.md) for the artifact index,
+storage format, phase model, and resume protocol. Native Spec Kit artifacts
+remain authoritative: `spec.md` owns behavior, `plan.md` owns the technical
+approach, `tasks.md` owns execution, workflow state owns gate decisions, and
+the Evidence Board owns verification. Use
 [docs/permission-envelope.md](docs/permission-envelope.md) for access and
 enforcement semantics, and
 [docs/work-field-spec.md](docs/work-field-spec.md) for canonical `work_slug`,
@@ -174,8 +172,8 @@ Focus on bugfix lessons and reusable design patterns.
 
 ### Existing Project Bug Fix
 
-Bug fixes should use the dedicated `ai-team-bugfix` workflow. Bug work should
-link a coding repository issue when possible and must provide a stable
+Bug fixes should use the dedicated `ai-team-bugfix` workflow. Bug work must
+link a primary coding repository issue and provide a stable
 `work_slug` (equal to `bug_slug`). The reporter may describe only
 symptoms; the AI agent uses source evidence and code graph impact to find the
 likely module. The actual bug lifecycle uses the bundled bug extension:
@@ -188,6 +186,11 @@ AI Team adds work context, route review, code graph impact, architecture impact
 review, assessment review, fix-scope review, and composite checks/Evidence Board
 (via preset inside `speckit.bug.test`), plus PR description and review support
 around that bug lifecycle.
+
+One PR may also resolve other coding issues when they are different symptoms
+of the same root cause. Pass them through `also_resolves_issue_urls` and map
+each issue to separate reproduction and verification evidence. Split the work
+when root cause, approved scope, rollback, or release risk differs.
 
 ### Existing Project New Feature
 
@@ -275,7 +278,7 @@ resumable path that reuses Spec Kit's native SDD commands:
 
 ```text
 optional Spec Kit init bootstrap -> workspace contract -> request routing
--> work context and Change Package -> analysis permission check -> context gate
+-> work context -> analysis permission check -> context gate
 -> code graph -> impact
 -> speckit.specify -> review-spec gate -> AI Team handoff -> speckit.plan
 -> speckit.ai-team.plan-check -> review-plan gate
@@ -309,7 +312,7 @@ The bundled `ai-team-bugfix` workflow gives bug work a deterministic path:
 
 ```text
 optional Spec Kit init bootstrap -> workspace contract -> work context package
--> Change Package -> analysis permission check -> context gate -> code graph
+-> analysis permission check -> context gate -> code graph
 -> impact -> impact gate -> bug assessment -> assessment gate
 -> implementation permission check -> permission gate -> bug fix -> fix gate
 -> speckit.bug.test (composite checks + evidence via preset)
@@ -333,10 +336,12 @@ model and [docs/release-archive.md](docs/release-archive.md) for the
 release-scoped artifact contract.
 
 `ai-team-sdd` accepts `work_slug`, `work_type`, `coding_issue_url`,
+`also_resolves_issue_urls`,
 `handoff_requirement_url`, backward-compatible `published_requirement_url`, and
 `resume_from` so a user can restart feature or new-project work from the
-middle. `ai-team-bugfix` accepts `work_slug`, `coding_issue_url`, and
-`resume_from` so a user can restart after context review, impact review, bug
+middle. `ai-team-bugfix` accepts `work_slug`, required `coding_issue_url`,
+optional `also_resolves_issue_urls`, and `resume_from` so a user can restart
+after context review, impact review, bug
 assessment, fix review, testing, evidence, PR, or final review.
 
 ## Skill, Knowledge, Memory Support

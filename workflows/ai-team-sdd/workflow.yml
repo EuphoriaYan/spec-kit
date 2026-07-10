@@ -40,6 +40,9 @@ inputs:
   coding_issue_url:
     type: string
     default: ""
+  also_resolves_issue_urls:
+    type: string
+    default: ""
   published_requirement_url:
     type: string
     default: ""
@@ -70,11 +73,15 @@ steps:
     input:
       args: "{{ inputs.request }}"
 
+  - id: validate-work-item
+    type: shell
+    run: "python .specify/extensions/ai-team/scripts/check-work-item.py --run-id {{ context.run_id }}"
+
   - id: context-open
     command: speckit.ai-team.context
     integration: "{{ inputs.integration }}"
     input:
-      args: "{{ inputs.request }} work_slug={{ inputs.work_slug }} work_type={{ inputs.work_type }} coding_issue_url={{ inputs.coding_issue_url }} handoff_requirement_url={{ inputs.handoff_requirement_url }} published_requirement_url={{ inputs.published_requirement_url }} resume_from={{ inputs.resume_from }} workflow_run_id={{ context.run_id }}"
+      args: "{{ inputs.request }} work_slug={{ inputs.work_slug }} work_type={{ inputs.work_type }} coding_issue_url={{ inputs.coding_issue_url }} also_resolves_issue_urls={{ inputs.also_resolves_issue_urls }} handoff_requirement_url={{ inputs.handoff_requirement_url }} published_requirement_url={{ inputs.published_requirement_url }} resume_from={{ inputs.resume_from }} workflow_run_id={{ context.run_id }}"
 
   - id: permission-analysis
     command: speckit.ai-team.permissions
@@ -84,7 +91,7 @@ steps:
 
   - id: review-context
     type: gate
-    message: "Review the Change Package, analysis Permission Envelope, work item, and resume point before continuing."
+    message: "Review the work item, linked same-root-cause issues, analysis Permission Envelope, and resume point before continuing."
     options: [approve, revise, reject]
     on_reject: abort
 
@@ -106,7 +113,7 @@ steps:
     command: speckit.specify
     integration: "{{ inputs.integration }}"
     input:
-      args: "{{ inputs.request }} work_slug={{ inputs.work_slug }} work_type={{ inputs.work_type }} coding_issue_url={{ inputs.coding_issue_url }} handoff_requirement_url={{ inputs.handoff_requirement_url }} published_requirement_url={{ inputs.published_requirement_url }} workflow_run_id={{ context.run_id }}"
+      args: "{{ inputs.request }} work_slug={{ inputs.work_slug }} work_type={{ inputs.work_type }} coding_issue_url={{ inputs.coding_issue_url }} also_resolves_issue_urls={{ inputs.also_resolves_issue_urls }} handoff_requirement_url={{ inputs.handoff_requirement_url }} published_requirement_url={{ inputs.published_requirement_url }} workflow_run_id={{ context.run_id }}"
 
   - id: review-spec
     type: gate
@@ -208,4 +215,4 @@ steps:
     command: speckit.converge
     integration: "{{ inputs.integration }}"
     input:
-      args: "{{ inputs.request }} work_slug={{ inputs.work_slug }} work_type={{ inputs.work_type }} coding_issue_url={{ inputs.coding_issue_url }} handoff_requirement_url={{ inputs.handoff_requirement_url }} published_requirement_url={{ inputs.published_requirement_url }} resume_from={{ inputs.resume_from }} workflow_run_id={{ context.run_id }}"
+      args: "{{ inputs.request }} work_slug={{ inputs.work_slug }} work_type={{ inputs.work_type }} coding_issue_url={{ inputs.coding_issue_url }} also_resolves_issue_urls={{ inputs.also_resolves_issue_urls }} handoff_requirement_url={{ inputs.handoff_requirement_url }} published_requirement_url={{ inputs.published_requirement_url }} resume_from={{ inputs.resume_from }} workflow_run_id={{ context.run_id }}"

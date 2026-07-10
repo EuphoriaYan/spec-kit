@@ -14,7 +14,6 @@ Store work context in the coding repository:
 
 ```text
 .specify/ai-team/work/<work_slug>/
-|-- change-package.yml
 |-- work-context.yml
 |-- context-pack.md
 |-- permission-envelope.yml
@@ -32,16 +31,15 @@ and cross-session recovery.
 
 The files have separate responsibilities:
 
-- `change-package.yml` is the stable index of work item, artifacts, authority,
-  visibility, owners, and PR;
-- `work-context.yml` is volatile workflow state: phase, last command, and next
-  command;
+- `work-context.yml` is the compact cross-session index: work item, native
+  artifact locations, phase, last command, and next command;
 - `context-pack.md` is the human-readable resume summary;
 - `permission-envelope.yml` records task-scoped access and its real enforcement
   mode.
 
-See [change-package.md](change-package.md) and
-[permission-envelope.md](permission-envelope.md) for the contracts.
+See [permission-envelope.md](permission-envelope.md) for the access contract.
+Do not create a second artifact ledger: `spec.md`, `plan.md`, `tasks.md`, bug
+reports, workflow state, and the Evidence Board remain authoritative.
 
 ## Work Identity
 
@@ -61,6 +59,12 @@ Feature work must use a stable work item. Public feature work can use a coding
 repository issue. Confidential enterprise work can use a sanitized handoff
 requirement URL where visibility allows it, or a public-safe summary plus
 private trace in approved channels.
+
+One work unit may resolve several coding issues when they describe different
+symptoms of the same root cause. Record one primary issue and an
+`also_resolves_issue_urls` list. Use separate work units when root cause,
+change boundary, rollback, or release risk differs, and map every linked issue
+to its own reproduction and verification evidence.
 
 ## Phase Model
 
@@ -100,9 +104,9 @@ implementation; there is no `plan-check.md`, `plan-gate.md`, or preset task-gate
 2. If a paused workflow run is recorded, inspect it with
    `specify workflow status <run-id>` and resume it with
    `specify workflow resume <run-id>` when appropriate.
-3. If there is no usable workflow run, load `change-package.yml` first, then
-   `work-context.yml`, `context-pack.md`, the permission envelope, and only the
-   indexed artifacts required by the current phase.
+3. If there is no usable workflow run, load `work-context.yml`,
+   `context-pack.md`, the permission envelope, and only the native artifacts
+   required by the current phase.
 4. Compare the recorded source snapshot and work item or bug state to current
    repository state.
 5. Run the `next_command` from `work-context.yml` only when the stop conditions
@@ -153,9 +157,9 @@ migration playbook.
 
 ## Change And Permission Control
 
-Each work unit uses one Change Package index. It does not create another copy
-of the specification and does not automatically change team governance,
-architecture rules, or enterprise guidance.
+Work context points to the standard SDD and bug artifacts instead of copying
+their content or status into a parallel manifest. It does not automatically
+change team governance, architecture rules, or enterprise guidance.
 
 Before code graph or source analysis, create an analysis Permission Envelope.
 Before implementation, revise it to the smallest approved write paths and

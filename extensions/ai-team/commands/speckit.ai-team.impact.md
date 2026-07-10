@@ -21,8 +21,7 @@ reviewers. This command does not approve architecture changes.
 ## Workflow
 
 1. Locate the coding repository and active requirement or bug work item from
-   `.specify/ai-team/work/<work_slug>/change-package.yml` and
-   `work-context.yml` when present.
+   `work-context.yml` and the native feature or bug directory when present.
 2. Verify the analysis-mode `permission-envelope.yml` covers the source and
    code graph reads, commands, and network access needed for impact analysis.
 3. Run or load `speckit.ai-team.codegraph` output for the task. If the graph is
@@ -46,8 +45,8 @@ reviewers. This command does not approve architecture changes.
 7. Estimate change radius and likely changed files or classes.
 8. Write or return the impact note for plan check, implementation, checks, PR,
    or review.
-9. Update the Change Package and Work Context Package with the impact artifact
-   path, source snapshot, current phase, and recommended next command.
+9. Update the Work Context Package with the impact artifact path, source
+   snapshot, current phase, and recommended next command.
 
 ## Fallback Rule
 

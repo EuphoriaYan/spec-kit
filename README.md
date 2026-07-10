@@ -69,7 +69,7 @@ The exact path depends on the user journey:
 
 | Journey | When to use | Required anchor |
 |---|---|---|
-| existing project bug fix | current behavior is broken, flaky, regressed, or throws errors | coding issue URL or bug slug |
+| existing project bug fix | current behavior is broken, flaky, regressed, or throws errors | primary coding issue URL; work slug identifies local artifacts |
 | existing project new feature | adding public behavior to an existing repository | coding issue URL for public work, or internal handoff requirement URL for confidential enterprise traceability |
 | new project from zero | creating a new repository, service, product, or application | public project issue/charter, or handoff requirement URL for confidential enterprise work |
 | resume from middle | work stopped after approval, gate, failed check, tool switch, or lost chat | workflow run ID or Work Context Package work slug |
@@ -126,7 +126,8 @@ Examples:
 specify workflow run ai-team-bugfix \
   --input request="Fix the upload timeout reported by customer support" \
   --input work_slug=bug-project-alpha-123 \
-  --input coding_issue_url="https://example.com/org/project/issues/123"
+  --input coding_issue_url="https://example.com/org/project/issues/123" \
+  --input also_resolves_issue_urls="https://example.com/org/project/issues/456"
 
 # Existing project public feature
 specify workflow run ai-team-sdd \

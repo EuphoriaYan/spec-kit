@@ -112,7 +112,8 @@ Use this journey when existing behavior is broken, flaky, regressed, or throws
 errors.
 
 The preferred path is the dedicated `ai-team-bugfix` workflow. The work item is
-a coding repository issue, issue URL, or bug slug. Coding bug issues use
+a coding repository issue URL; `work_slug` identifies the local bug artifacts.
+Coding bug issues use
 `type/bug`; enhancement-internal must not be used for bug fixes. The reporter
 does not need to understand code internals. The AI agent and maintainer derive
 the likely source impact from the codebase.
@@ -124,13 +125,19 @@ specify workflow run ai-team-bugfix \
   --input coding_issue_url="https://example.com/org/project/issues/123"
 ```
 
+When issue 456 is another symptom of the same root cause, add
+`--input also_resolves_issue_urls="https://example.com/org/project/issues/456"`.
+Use separate PRs when root cause, approved scope, rollback, or release risk
+differs.
+
 Flow:
 
-1. `speckit.ai-team.context` creates or loads the Change Package and Work
-   Context Package from workflow inputs (`work_slug`, `coding_issue_url`).
+1. `speckit.ai-team.context` creates or loads the Work Context Package from
+   workflow inputs (`work_slug`, primary `coding_issue_url`, and optional
+   `also_resolves_issue_urls`).
 2. `speckit.ai-team.permissions mode=analysis` records the smallest required
    read, command, and network boundary. `review-context` confirms the bug work
-   item, package index, permission boundary, and resume point.
+   item, linked issues, permission boundary, and resume point.
 3. `speckit.ai-team.codegraph` runs inside that analysis boundary when the
    likely fix touches more than a
    trivial local file.
@@ -150,8 +157,9 @@ Flow:
    ```
 
 8. `speckit.bug.test` verifies the fix and runs composite checks plus Evidence Board
-   (via preset) before PR preparation.
-9. Submit with `speckit.ai-team.pr`, linking the coding issue.
+   (via preset) before PR preparation. Each linked issue maps to its own
+   reproduction and verification evidence.
+9. Submit with `speckit.ai-team.pr`, linking every resolved coding issue.
 10. Review with `speckit.ai-team.review`.
 
 Stop for human decision when expected behavior is actually a new product
@@ -175,8 +183,8 @@ specify workflow run ai-team-sdd \
 
 Flow:
 
-1. `speckit.ai-team.context` records the coding issue URL, Change Package, and
-   current phase from workflow inputs.
+1. `speckit.ai-team.context` records the coding issue URL and current phase from
+   workflow inputs.
 2. `speckit.ai-team.permissions mode=analysis` declares the source and tool
    access needed for planning. `review-context` confirms that boundary before
    code graph and SDD steps.
@@ -298,9 +306,10 @@ The task ID can be:
 - `.specify/bugs/<slug>`;
 - explicit `work_slug=<value>` recorded earlier.
 
-On resume, load `change-package.yml` first, then `work-context.yml`,
-`context-pack.md`, and `permission-envelope.yml`. Compare the recorded source
-snapshot, work item, artifact authorities, permission boundary, code graph
+On resume, load `work-context.yml`, `context-pack.md`, and
+`permission-envelope.yml`, then resolve Spec, Plan, Tasks, or bug reports from
+their native locations. Compare the recorded source snapshot, work item,
+permission boundary, code graph
 artifact, and current repository state. If source or work item changed, rerun
 `speckit.ai-team.permissions mode=analysis`, `speckit.ai-team.codegraph`, and
 `speckit.ai-team.impact`. Never assume an earlier permission approval still

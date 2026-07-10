@@ -31,7 +31,6 @@ Store work context under the coding repository:
 
 ```text
 .specify/ai-team/work/<work_slug>/
-|-- change-package.yml
 |-- work-context.yml
 |-- context-pack.md
 |-- permission-envelope.yml
@@ -76,13 +75,13 @@ insertion for chat-first tools.
 ```text
 Work Context Package:
 - work slug:
-- change package path:
 - permission envelope path:
 - permission enforcement mode:
 - work type: bug fix / feature / new project / template change / unclear
 - work item:
 - work item type:
 - coding issue URL:
+- also resolves coding issue URLs:
 - bug slug:
 - handoff requirement URL:
 - published requirement URL, deprecated alias:
@@ -109,10 +108,10 @@ Work Context Package:
 ```yaml
 work_slug:
 work_type:
-change_package: .specify/ai-team/work/<work_slug>/change-package.yml
 permission_envelope: .specify/ai-team/work/<work_slug>/permission-envelope.yml
 work_item:
   coding_issue_url:
+  also_resolves_issue_urls: []
   handoff_requirement_url:
   published_requirement_url:
   bug_slug:
@@ -142,16 +141,18 @@ updated_at:
 1. Locate `.specify/extensions/ai-team/ai-team-config.yml` and integration
    metadata when present.
 2. Resolve `work_slug`, `work_type`, `coding_issue_url`,
+   `also_resolves_issue_urls`,
    `handoff_requirement_url`, deprecated `published_requirement_url`,
    `bug_slug`, and `workflow_run_id` from arguments and existing work context.
-3. Create or reconstruct `change-package.yml` as the single artifact index.
-   Do not copy requirement, plan, or evidence content into it.
-4. If `resume=true`, load the Change Package first, then `work-context.yml`,
-   `context-pack.md`, and `permission-envelope.yml`; otherwise create the first
-   three and leave permissions blocked until explicitly assessed.
-5. Reconcile indexed paths with current source, current work item, bug report,
-   and active feature files. Mark missing artifacts as `missing`; do not invent
-   paths.
+3. If `resume=true`, load `work-context.yml`, `context-pack.md`, and
+   `permission-envelope.yml`; otherwise create the first two and leave
+   permissions blocked until explicitly assessed.
+4. Resolve native artifacts from the active feature directory or bug slug.
+   Record missing artifacts as missing; do not invent paths.
+5. Treat `coding_issue_url` as the primary coding issue. Accept
+   `also_resolves_issue_urls` only when the linked issues describe different
+   symptoms of the same root-cause change. Keep all linked issues the same work
+   type and require separate evidence mapping for each one.
 6. Update `phase`, `last_completed_command`, `next_command`, and artifact
    locations when arguments include newer phase evidence.
 7. Return the resume summary, permission status, and next command.
@@ -164,7 +165,6 @@ AI Team Context:
 - work type:
 - work item:
 - context path:
-- change package:
 - permission envelope:
 - permission enforcement mode:
 - workflow run id:
@@ -186,12 +186,13 @@ Stop and ask when:
   requirement URL, or explicit work slug;
 - a feature tries to resume without a coding issue, handoff requirement, or
   approved work slug;
+- additional issue URLs are present without a primary coding issue, use another
+  work type, or do not share one root-cause change;
 - the context pack contains private enhancement content in a public coding
   repository;
 - `work-context.yml` and `context-pack.md` disagree about work type, work item, or
   phase;
-- the Change Package points at another work unit or contains private demand in
-  a public coding repository;
+- the work context points at another work unit;
 - the next command requires access outside the current Permission Envelope;
 - current source or work item changed since the recorded source snapshot and
   the impact radius is unknown.
