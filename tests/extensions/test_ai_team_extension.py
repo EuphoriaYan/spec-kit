@@ -117,6 +117,8 @@ def test_ai_team_extension_command_files_exist():
         "speckit.ai-team.pr",
         "speckit.ai-team.review",
         "speckit.ai-team.retrospect",
+        "speckit.ai-team.memory-consolidate",
+        "speckit.ai-team.release-archive",
         "speckit.ai-team.support",
     }
 
@@ -145,6 +147,35 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["work_context"]["root"] == ".specify/ai-team/work"
     assert config["work_context"]["context_pack_file"] == "context-pack.md"
     assert config["work_context"]["work_context_file"] == "work-context.yml"
+    assert config["memory"]["service"]["default_backend"] == "mem0-compatible"
+    assert config["memory"]["service"]["allow_file_only"] is True
+    assert config["memory"]["service"]["store_raw_transcripts_by_default"] is False
+    assert config["memory"]["tiers"]["local"]["upload"] is False
+    assert config["memory"]["tiers"]["local"]["docs"] is False
+    assert config["memory"]["tiers"]["local"]["git_policy"] == "ignore-or-local-only"
+    assert config["memory"]["tiers"]["department"]["upload"] is True
+    assert config["memory"]["tiers"]["department"]["docs"] is False
+    assert (
+        config["memory"]["tiers"]["department"]["git_policy"]
+        == "internal-only-or-service-sync"
+    )
+    assert config["memory"]["tiers"]["enterprise"]["upload"] is True
+    assert config["memory"]["tiers"]["enterprise"]["docs"] is True
+    assert config["memory"]["tiers"]["enterprise"]["git_policy"] == "commit-after-review"
+    assert config["release_archive"]["root"] == ".specify/ai-team/releases"
+    assert config["release_archive"]["default_privacy"] == "public-safe"
+    assert config["release_archive"]["default_target_tier"] == "enterprise"
+    assert config["release_archive"]["delete_raw_evidence_by_default"] is False
+    assert set(config["release_archive"]["required_outputs"]) == {
+        "release-summary.md",
+        "shipped-work-index.md",
+        "bugfix-lessons.md",
+        "feature-decisions.md",
+        "migration-playbook.md",
+        "evidence-rollup.md",
+        "archived-work.yml",
+        "privacy-review.md",
+    }
     assert "root" not in config["code_graph"]
     assert set(config["code_graph"]["normalized_outputs"]) == {
         "nodes.jsonl",
@@ -205,8 +236,44 @@ def test_ai_team_support_model_document_exists():
     assert "Memory Layer" in text
     assert "Decision Memory" in text
     assert "Attempt Memory" in text
+    assert "Memory Consolidation Flow" in text
+    assert "local memory" in text
+    assert "department memory" in text
+    assert "enterprise memory" in text
+    assert "mem0-style memory" in text
+    assert "speckit.ai-team.memory-consolidate" in text
+    assert "release-summary.md" in text
+    assert "bugfix-lessons.md" in text
     assert "Third-party sources to review" in text
     assert "Precedence" in text
+
+
+def test_ai_team_memory_tiers_document_exists():
+    memory_doc = EXTENSION_ROOT / "docs" / "memory-tiers.md"
+
+    assert memory_doc.exists()
+    text = memory_doc.read_text(encoding="utf-8")
+    assert "AI Team Memory Tiers" in text
+    assert "local memory" in text
+    assert "department memory" in text
+    assert "enterprise memory" in text
+    assert "mem0-style memory" in text
+    assert "speckit.ai-team.memory-consolidate" in text
+    assert "speckit.ai-team.release-archive" in text
+
+
+def test_ai_team_release_archive_document_exists():
+    release_doc = EXTENSION_ROOT / "docs" / "release-archive.md"
+
+    assert release_doc.exists()
+    text = release_doc.read_text(encoding="utf-8")
+    assert "Release Archive and Knowledge Consolidation" in text
+    assert "bugfix-lessons.md" in text
+    assert "migration-playbook.md" in text
+    assert "speckit.ai-team.memory-consolidate" in text
+    assert "speckit.ai-team.release-archive" in text
+    assert "not a mandatory pre-release gate" in text
+    assert "public-safe" in text
 
 
 def test_ai_team_repository_boundary_document_exists():
@@ -247,6 +314,9 @@ def test_ai_team_work_context_document_exists():
     assert "specify workflow resume <run-id>" in text
     assert "handoff requirement URL" in text
     assert "coding issue URL" in text
+    assert "`archived`" in text
+    assert "speckit.ai-team.memory-consolidate" in text
+    assert "speckit.ai-team.release-archive" in text
 
 
 def test_ai_team_work_field_spec_document_exists():
@@ -309,6 +379,10 @@ def test_ai_team_user_journeys_document_exists():
     assert "ai-team-bugfix path" in text
     assert "ai-team-sdd new-project path" in text
     assert "ai-team-sdd resume path" in text
+    assert "ai-team-memory consolidate path" in text
+    assert "ai-team-release archive path" in text
+    assert "Memory Consolidation" in text
+    assert "Release Archive and Knowledge Consolidation" in text
 
 
 def test_ai_team_workflow_is_bundled_and_uses_init_step():
