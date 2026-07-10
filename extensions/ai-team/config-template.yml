@@ -23,8 +23,10 @@ agent_tools:
 work_context:
   # Durable work context survives interrupted sessions and tool switches.
   root: .specify/ai-team/work
+  change_package_file: change-package.yml
   context_pack_file: context-pack.md
   work_context_file: work-context.yml
+  permission_envelope_file: permission-envelope.yml
   allow_reconstruct_from_handoff_requirement_url: true
   allow_reconstruct_from_bug_slug: true
 
@@ -103,6 +105,30 @@ release_archive:
     - support/knowledge-map.md
     - docs/ai-team/memory/decisions
     - migration-playbook.md
+permissions:
+  # Spec Kit workflow gates are not a runtime sandbox. Keep policy-only until
+  # a tool-native or wrapper adapter is configured and verified.
+  default_enforcement_mode: policy-only
+  supported_enforcement_modes:
+    - policy-only
+    - agent-native
+    - wrapper-enforced
+  require_envelope: true
+  require_analysis_review: true
+  require_implementation_review: true
+  deny_unspecified_write_paths: true
+  deny_unspecified_network: true
+  require_human_approval_for:
+    - expand-write-paths
+    - public-contract-change
+    - cross-module-change
+    - dependency-install
+    - external-network-write
+  always_deny_without_explicit_exception:
+    - credential-read
+    - private-demand-export
+    - destructive-history-rewrite
+    - write-git-internals
 
 issue_workflow:
   type_labels:

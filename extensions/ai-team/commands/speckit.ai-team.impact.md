@@ -21,18 +21,21 @@ reviewers. This command does not approve architecture changes.
 ## Workflow
 
 1. Locate the coding repository and active requirement or bug work item from
-   `.specify/ai-team/work/<work_slug>/work-context.yml` when present.
-2. Run or load `speckit.ai-team.codegraph` output for the task. If the graph is
+   `.specify/ai-team/work/<work_slug>/change-package.yml` and
+   `work-context.yml` when present.
+2. Verify the analysis-mode `permission-envelope.yml` covers the source and
+   code graph reads, commands, and network access needed for impact analysis.
+3. Run or load `speckit.ai-team.codegraph` output for the task. If the graph is
    missing, create a source-structure fallback and record confidence.
-3. Load the smallest source/code graph slice that includes:
+4. Load the smallest source/code graph slice that includes:
    - likely owner module;
    - public interfaces and abstract base classes;
    - callers and callees;
    - tests;
    - dependency direction;
    - adjacent modules.
-4. Identify reuse candidates before proposing new abstractions.
-5. Identify high-risk nodes:
+5. Identify reuse candidates before proposing new abstractions.
+6. Identify high-risk nodes:
    - SPI/API;
    - config;
    - wire/event schema;
@@ -40,11 +43,11 @@ reviewers. This command does not approve architecture changes.
    - database or middleware dependency;
    - examples;
    - generated code.
-6. Estimate change radius and likely changed files or classes.
-7. Write or return the impact note for plan check, implementation, checks, PR,
+7. Estimate change radius and likely changed files or classes.
+8. Write or return the impact note for plan check, implementation, checks, PR,
    or review.
-8. Update the Work Context Package with the impact artifact path, source
-   snapshot, current phase, and recommended next command.
+9. Update the Change Package and Work Context Package with the impact artifact
+   path, source snapshot, current phase, and recommended next command.
 
 ## Fallback Rule
 
@@ -81,6 +84,10 @@ Code graph impact:
 Stop and ask when:
 
 - the owner module cannot be identified;
+- the analysis Permission Envelope is missing, stale, or does not authorize the
+  required source/code graph access;
+- hard runtime confinement is required but no verified `agent-native` or
+  `wrapper-enforced` adapter is active;
 - required code graph or equivalent structure evidence is missing;
 - the change crosses module boundaries without owner review;
 - the request depends on another component's private database, middleware, or

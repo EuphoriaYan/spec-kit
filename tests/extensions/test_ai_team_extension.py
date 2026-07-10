@@ -90,6 +90,7 @@ def _run_ai_team_workflow_to_context_gate(
 
     assert state.status == RunStatus.PAUSED
     assert state.step_results["context-open"]["status"] == "completed"
+    assert state.step_results["permission-analysis"]["status"] == "completed"
     assert state.step_results["review-context"]["status"] == "paused"
     assert "route" not in state.step_results
     return state
@@ -140,6 +141,7 @@ def test_ai_team_extension_command_files_exist():
         "speckit.ai-team.workspace",
         "speckit.ai-team.start",
         "speckit.ai-team.context",
+        "speckit.ai-team.permissions",
         "speckit.ai-team.requirement",
         "speckit.ai-team.codegraph",
         "speckit.ai-team.impact",
@@ -213,6 +215,20 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
         "archived-work.yml",
         "privacy-review.md",
     }
+    assert config["work_context"]["change_package_file"] == "change-package.yml"
+    assert (
+        config["work_context"]["permission_envelope_file"]
+        == "permission-envelope.yml"
+    )
+    assert config["permissions"]["default_enforcement_mode"] == "policy-only"
+    assert set(config["permissions"]["supported_enforcement_modes"]) == {
+        "policy-only",
+        "agent-native",
+        "wrapper-enforced",
+    }
+    assert config["permissions"]["require_envelope"] is True
+    assert config["permissions"]["require_analysis_review"] is True
+    assert config["permissions"]["require_implementation_review"] is True
     assert "root" not in config["code_graph"]
     assert set(config["code_graph"]["normalized_outputs"]) == {
         "nodes.jsonl",
@@ -453,6 +469,8 @@ def test_ai_team_work_context_document_exists():
     assert "Work Context Package" in text
     assert ".specify/ai-team/work/<work_slug>/" in text
     assert "work-context.yml" in text
+    assert "change-package.yml" in text
+    assert "permission-envelope.yml" in text
     assert ".specify/workflows/runs/<run-id>/state.json" in text
     assert "specify workflow resume <run-id>" in text
     assert "handoff requirement URL" in text
@@ -460,6 +478,29 @@ def test_ai_team_work_context_document_exists():
     assert "`archived`" in text
     assert "speckit.ai-team.memory-consolidate" in text
     assert "speckit.ai-team.release-archive" in text
+
+
+def test_ai_team_change_package_document_exists():
+    package_doc = EXTENSION_ROOT / "docs" / "change-package.md"
+
+    assert package_doc.exists()
+    text = package_doc.read_text(encoding="utf-8")
+    assert "change-package.yml" in text
+    assert "Authority Rules" in text
+    assert "or duplicate them" in text
+    assert "must not silently promote" in text
+
+
+def test_ai_team_permission_envelope_document_exists():
+    permission_doc = EXTENSION_ROOT / "docs" / "permission-envelope.md"
+
+    assert permission_doc.exists()
+    text = permission_doc.read_text(encoding="utf-8")
+    assert "permission-envelope.yml" in text
+    assert "policy-only" in text
+    assert "agent-native" in text
+    assert "wrapper-enforced" in text
+    assert "do not sandbox shell commands" in text
 
 
 def test_ai_team_work_field_spec_document_exists():
@@ -556,6 +597,7 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     assert "review-context" in step_ids
     assert "context-open" in step_ids
     assert "codegraph" in step_ids
+    assert "permission-analysis" in step_ids
     assert "specify" in step_ids
     assert "review-spec" in step_ids
     assert "plan-cycle" in step_ids
@@ -568,6 +610,8 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     assert "analyze" in step_ids
     assert "task-gate" not in step_ids
     assert "review-tasks" in step_ids
+    assert "permission-implementation" in step_ids
+    assert "review-permissions" in step_ids
     assert "implement" in step_ids
     assert "converge" in step_ids
     assert "checks" not in step_ids
@@ -604,6 +648,11 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     assert "{{ inputs.request }}" in tasks_initial["input"]["args"]
     context_step = next(step for step in steps if step["id"] == "context-open")
     assert context_step["command"] == "speckit.ai-team.context"
+    permission_analysis_step = next(
+        step for step in steps if step["id"] == "permission-analysis"
+    )
+    assert permission_analysis_step["command"] == "speckit.ai-team.permissions"
+    assert "mode=analysis" in permission_analysis_step["input"]["args"]
     codegraph_step = next(step for step in steps if step["id"] == "codegraph")
     assert codegraph_step["command"] == "speckit.ai-team.codegraph"
     plan_check_step = next(
@@ -616,6 +665,17 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
         step for step in task_cycle["steps"] if step["id"] == "analyze"
     )
     assert analyze_step["command"] == "speckit.analyze"
+    permission_implementation_step = next(
+        step for step in steps if step["id"] == "permission-implementation"
+    )
+    assert (
+        permission_implementation_step["command"]
+        == "speckit.ai-team.permissions"
+    )
+    assert "mode=implementation" in permission_implementation_step["input"]["args"]
+    assert step_ids.index("permission-analysis") < step_ids.index("codegraph")
+    assert step_ids.index("permission-implementation") < step_ids.index("implement")
+    assert step_ids.index("review-permissions") < step_ids.index("implement")
     converge_step = next(step for step in steps if step["id"] == "converge")
     assert converge_step["command"] == "speckit.converge"
 
@@ -627,15 +687,27 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     assert "coding_issue_url" in bugfix["inputs"]
     bugfix_step_ids = [step["id"] for step in bugfix["steps"]]
     assert "review-context" in bugfix_step_ids
+    assert "permission-analysis" in bugfix_step_ids
     assert "route" not in bugfix_step_ids
     assert "review-impact" in bugfix_step_ids
     assert "bug-assess" in bugfix_step_ids
     assert "review-assessment" in bugfix_step_ids
+    assert "permission-implementation" in bugfix_step_ids
+    assert "review-permissions" in bugfix_step_ids
     assert "bug-fix" in bugfix_step_ids
     assert "review-fix" in bugfix_step_ids
     assert "bug-test" in bugfix_step_ids
     assert "checks" not in bugfix_step_ids
     assert "evidence" not in bugfix_step_ids
+    assert bugfix_step_ids.index("permission-analysis") < bugfix_step_ids.index(
+        "codegraph"
+    )
+    assert bugfix_step_ids.index(
+        "permission-implementation"
+    ) < bugfix_step_ids.index("bug-fix")
+    assert bugfix_step_ids.index("review-permissions") < bugfix_step_ids.index(
+        "bug-fix"
+    )
 
 
 def test_ai_team_bugfix_workflow_pauses_at_context_gate(tmp_path):
@@ -652,12 +724,15 @@ def test_ai_team_bugfix_workflow_pauses_at_context_gate(tmp_path):
     )
 
     context_args = state.step_results["context-open"]["input"]["args"]
+    permission_args = state.step_results["permission-analysis"]["input"]["args"]
 
     assert f"workflow_run_id={run_id}" in context_args
     assert "work_type=bug" in context_args
     assert "work_slug=bug-project-alpha-123" in context_args
     assert "bug_slug=bug-project-alpha-123" in context_args
     assert "coding_issue_url=https://example.com/org/project/issues/123" in context_args
+    assert "mode=analysis" in permission_args
+    assert "work_slug=bug-project-alpha-123" in permission_args
 
 
 @pytest.mark.parametrize(
@@ -728,10 +803,12 @@ def test_ai_team_workflow_passes_journey_inputs_to_context(
     state = _run_ai_team_workflow_to_context_gate(tmp_path, inputs, run_id)
 
     context_args = state.step_results["context-open"]["input"]["args"]
+    permission_args = state.step_results["permission-analysis"]["input"]["args"]
 
     assert f"workflow_run_id={run_id}" in context_args
     for fragment in expected_fragments:
         assert fragment in context_args
+    assert "mode=analysis" in permission_args
 
     bootstrap_result = state.step_results["bootstrap-if-requested"]["output"][
         "condition_result"

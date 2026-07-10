@@ -122,17 +122,22 @@ specify workflow run ai-team-bugfix \
 
 Flow:
 
-1. `speckit.ai-team.context` creates or loads the Work Context Package from
-   workflow inputs (`work_slug`, `coding_issue_url`).
-2. `review-context` confirms the bug work item and Work Context Package before
-   source impact analysis.
-3. `speckit.ai-team.codegraph` runs when the likely fix touches more than a
+1. `speckit.ai-team.context` creates or loads the Change Package and Work
+   Context Package from workflow inputs (`work_slug`, `coding_issue_url`).
+2. `speckit.ai-team.permissions mode=analysis` records the smallest required
+   read, command, and network boundary. `review-context` confirms the bug work
+   item, package index, permission boundary, and resume point.
+3. `speckit.ai-team.codegraph` runs inside that analysis boundary when the
+   likely fix touches more than a
    trivial local file.
 4. `speckit.ai-team.impact` identifies owner module, nearby callers/callees,
    tests, reuse candidates, public contract risks, and stop conditions.
 5. `review-impact` decides whether architecture-level, public-contract, or
    cross-module changes are allowed for this bug fix.
-6. Run the bug extension for the actual bug workflow, with human gates between
+6. Run bug assessment, then derive an implementation Permission Envelope from
+   the approved remediation. A human reviews write paths, commands, network
+   access, and the effective enforcement mode before source edits.
+7. Run the bug extension for the actual bug workflow, with human gates between
    assessment, fix, and verification:
 
    ```text
@@ -140,10 +145,10 @@ Flow:
    -> speckit.bug.fix -> review-fix -> speckit.bug.test
    ```
 
-7. `speckit.bug.test` verifies the fix and runs composite checks plus Evidence Board
+8. `speckit.bug.test` verifies the fix and runs composite checks plus Evidence Board
    (via preset) before PR preparation.
-8. Submit with `speckit.ai-team.pr`, linking the coding issue.
-9. Review with `speckit.ai-team.review`.
+9. Submit with `speckit.ai-team.pr`, linking the coding issue.
+10. Review with `speckit.ai-team.review`.
 
 Stop for human decision when expected behavior is actually a new product
 behavior, source impact cannot be stated, or the fix needs public SPI/API,
@@ -166,11 +171,13 @@ specify workflow run ai-team-sdd \
 
 Flow:
 
-1. `speckit.ai-team.context` records the coding issue URL and current phase from
-   workflow inputs.
-2. `review-context` confirms the Work Context Package and work item before code
-   graph and SDD steps.
-3. `speckit.ai-team.codegraph` builds or attaches the source graph slice.
+1. `speckit.ai-team.context` records the coding issue URL, Change Package, and
+   current phase from workflow inputs.
+2. `speckit.ai-team.permissions mode=analysis` declares the source and tool
+   access needed for planning. `review-context` confirms that boundary before
+   code graph and SDD steps.
+3. `speckit.ai-team.codegraph` builds or attaches the source graph slice inside
+   the approved analysis boundary.
 4. `speckit.ai-team.impact` constrains likely modules, public contracts, tests,
    and reuse candidates.
 5. `speckit.specify` writes the feature spec from the public issue.
@@ -184,9 +191,12 @@ Flow:
 10. `speckit.tasks` generates implementation tasks.
 11. `speckit.analyze` runs the native cross-artifact consistency check before the
     `review-tasks` gate.
-12. `speckit.implement` changes code; `speckit.converge` checks remaining work
+12. `speckit.ai-team.permissions mode=implementation` derives intended write
+    paths, commands, network access, and approval requirements from the approved
+    plan and tasks. A human reviews the envelope before source edits.
+13. `speckit.implement` changes code; `speckit.converge` checks remaining work
     and runs composite checks plus Evidence Board (via preset).
-13. `speckit.ai-team.pr` and `speckit.ai-team.review` close the evidence loop.
+14. `speckit.ai-team.pr` and `speckit.ai-team.review` close the evidence loop.
 
 Stop when the feature lacks an accountable public work item, crosses approved
 scope, or needs private customer context that should move to an internal
@@ -249,7 +259,9 @@ via preset: `speckit.converge` (checks + evidence). Native `speckit.analyze` is 
 `speckit.ai-team.plan-check` (chat report) is stricter for new projects: it must
 establish the project skeleton, architecture spine, dependency strategy, runnable
 thin slice, self-test strategy, and evidence strategy before broad feature
-construction.
+construction. The implementation Permission Envelope should initially allow
+only that skeleton and thin slice; broad repository writes require a revised
+plan and another human permission review.
 
 Stop for human decision when the project has no charter, work item, or
 accountable owner; the plan starts with broad feature construction before a
@@ -282,13 +294,18 @@ The task ID can be:
 - `.specify/bugs/<slug>`;
 - explicit `work_slug=<value>` recorded earlier.
 
-On resume, compare the recorded source snapshot, work item, code graph artifact,
-and current repository state. If source or work item changed, rerun
-`speckit.ai-team.codegraph` and `speckit.ai-team.impact`.
+On resume, load `change-package.yml` first, then `work-context.yml`,
+`context-pack.md`, and `permission-envelope.yml`. Compare the recorded source
+snapshot, work item, artifact authorities, permission boundary, code graph
+artifact, and current repository state. If source or work item changed, rerun
+`speckit.ai-team.permissions mode=analysis`, `speckit.ai-team.codegraph`, and
+`speckit.ai-team.impact`. Never assume an earlier permission approval still
+covers a changed plan or source snapshot.
 
 Stop for human reconciliation when context files disagree, the work item changed
 while paused, source changed and impact evidence is stale, or the recorded next
-command would skip a required human gate.
+command would skip a required human gate. Also stop when hard confinement is
+required but the recorded enforcement mode is only `policy-only`.
 
 ## Journey 6: Failure Evolution
 

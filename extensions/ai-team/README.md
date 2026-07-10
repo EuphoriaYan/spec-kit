@@ -28,6 +28,11 @@ and adds enterprise collaboration constraints:
 - external Skill, Knowledge, and Memory support layers around the project.
 - durable Work Context Packages so interrupted work can resume from a work item
   instead of hidden chat context.
+- one Change Package index per work unit so issue, spec, plan, tasks, handoffs,
+  code graph, evidence, permissions, and PR can be located without duplicating
+  their content;
+- task-scoped Permission Envelopes that distinguish policy-only constraints
+  from verified agent-native or wrapper enforcement;
 - replaceable code graph adapters for source-grounded impact analysis.
 
 ## Role Model
@@ -65,8 +70,10 @@ type/state labels.
 Every AI Team work unit should have a durable Work Context Package:
 
 ```text
+.specify/ai-team/work/<work_slug>/change-package.yml
 .specify/ai-team/work/<work_slug>/context-pack.md
 .specify/ai-team/work/<work_slug>/work-context.yml
+.specify/ai-team/work/<work_slug>/permission-envelope.yml
 .specify/ai-team/work/<work_slug>/handoffs/
 .specify/ai-team/work/<work_slug>/codegraph/
 .specify/ai-team/work/<work_slug>/evidence/
@@ -86,6 +93,9 @@ speckit.ai-team.context work_slug=<work_slug> resume=true
 
 Use [docs/work-context-package.md](docs/work-context-package.md) for the
 storage format, phase model, and resume protocol. Use
+[docs/change-package.md](docs/change-package.md) for the artifact index,
+[docs/permission-envelope.md](docs/permission-envelope.md) for access and
+enforcement semantics, and
 [docs/work-field-spec.md](docs/work-field-spec.md) for canonical `work_slug`,
 `bug_slug`, `coding_issue_url`, and `handoff_requirement_url` rules.
 
@@ -220,6 +230,7 @@ New project work needs a stricter build-from-zero plan:
 | `speckit.ai-team.workspace` | create or update repository role and privacy boundary config |
 | `speckit.ai-team.start` | chat-first routing to bug, feature, or template workflow (not a bundled workflow step) |
 | `speckit.ai-team.context` | open, update, or reconstruct a durable Work Context Package |
+| `speckit.ai-team.permissions` | create or verify a task-scoped Permission Envelope without claiming an unverified sandbox |
 | `speckit.ai-team.requirement` | create or refine internal enhancement context and sanitized handoff requirements |
 | `speckit.ai-team.codegraph` | generate or attach the code graph slice used for impact and gates |
 | `speckit.ai-team.impact` | inspect code graph or source-structure impact before code edits |
@@ -240,11 +251,13 @@ resumable path that reuses Spec Kit's native SDD commands:
 
 ```text
 optional Spec Kit init bootstrap -> workspace contract -> request routing
--> work context package -> context gate -> code graph -> impact
+-> work context and Change Package -> analysis permission check -> context gate
+-> code graph -> impact
 -> speckit.specify -> review-spec gate -> AI Team handoff -> speckit.plan
 -> speckit.ai-team.plan-check -> review-plan gate
 -> speckit.tasks -> speckit.analyze (native cross-artifact report)
--> review-tasks gate -> speckit.implement -> speckit.converge (native + checks + evidence via preset)
+-> review-tasks gate -> implementation permission check -> permission gate
+-> speckit.implement -> speckit.converge (native + checks + evidence via preset)
 ```
 
 ### Plan check, preset, and workflow gates
@@ -272,9 +285,16 @@ The bundled `ai-team-bugfix` workflow gives bug work a deterministic path:
 
 ```text
 optional Spec Kit init bootstrap -> workspace contract -> work context package
--> work context package -> context gate -> code graph -> impact -> impact gate
--> bug assessment -> assessment gate -> bug fix -> fix gate -> speckit.bug.test (composite checks + evidence via preset)
+-> Change Package -> analysis permission check -> context gate -> code graph
+-> impact -> impact gate -> bug assessment -> assessment gate
+-> implementation permission check -> permission gate -> bug fix -> fix gate
+-> speckit.bug.test (composite checks + evidence via preset)
 ```
+
+Permission gates do not create a sandbox. The envelope defaults to
+`policy-only`; use `agent-native` or `wrapper-enforced` only when the concrete
+adapter and verification evidence are recorded. A task that requires hard
+confinement must stop when only policy controls are available.
 
 Workspace creation uses Spec Kit's own `init` step. AI Team does not copy
 template repositories into product repositories.

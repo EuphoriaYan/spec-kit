@@ -30,6 +30,9 @@ provides:
     - name: speckit.ai-team.context
       file: commands/speckit.ai-team.context.md
       description: "Open, update, or reconstruct the durable Work Context Package so interrupted AI Team SDD work can resume."
+    - name: speckit.ai-team.permissions
+      file: commands/speckit.ai-team.permissions.md
+      description: "Create or verify the task-scoped Permission Envelope and report its real enforcement level."
     - name: speckit.ai-team.requirement
       file: commands/speckit.ai-team.requirement.md
       description: "Create or refine internal enhancement context and sanitized handoff requirements for confidential feature work."
@@ -98,3 +101,4 @@ tags:
   - knowledge
   - evidence
   - code-graph
+  - permissions

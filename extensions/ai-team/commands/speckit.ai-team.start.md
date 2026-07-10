@@ -32,8 +32,9 @@ Read when present:
   operator are allowed to read it;
 - code graph or source-structure evidence when code, classes, SPI/API, or
   modules are named;
-- `.specify/ai-team/work/<work_slug>/work-context.yml` and `context-pack.md` when the
-  request is resuming existing work.
+- `.specify/ai-team/work/<work_slug>/change-package.yml`, `work-context.yml`,
+  `context-pack.md`, and `permission-envelope.yml` when the request is resuming
+  existing work.
 
 ## Routing
 
@@ -119,7 +120,10 @@ Work Context Package:
 - last completed command:
 - source snapshot or code graph version:
 - context path:
+- change package file:
 - work context file:
+- permission envelope file:
+- permission enforcement mode:
 - likely modules:
 - reusable components:
 - required commands:

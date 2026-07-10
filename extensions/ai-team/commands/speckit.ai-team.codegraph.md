@@ -24,6 +24,8 @@ record a fallback source-structure slice. It does not approve design changes.
 Read when present:
 
 - `.specify/ai-team/work/<work_slug>/work-context.yml`;
+- `.specify/ai-team/work/<work_slug>/change-package.yml`;
+- `.specify/ai-team/work/<work_slug>/permission-envelope.yml`;
 - `.specify/ai-team/work/<work_slug>/context-pack.md`;
 - `.specify/extensions/ai-team/ai-team-config.yml`;
 - coding issue or handoff requirement URL for feature work;
@@ -87,17 +89,21 @@ contains, imports, calls, implements, extends, reads_config, tests, depends_on
 
 ## Workflow
 
-1. Load the active Work Context Package or create one with
+1. Load the active Change Package and Work Context Package or create them with
    `speckit.ai-team.context` if needed.
-2. Determine whether the work is bug fix, feature, or template work.
-3. Select the smallest source slice that can answer the work unit.
-4. Run the configured code graph adapter or attach an existing code graph
+2. Require an analysis-mode Permission Envelope. Verify that its repository,
+   read paths, commands, network access, approval state, and enforcement mode
+   cover the proposed graph operation. Do not treat a workflow gate as a
+   runtime sandbox.
+3. Determine whether the work is bug fix, feature, or template work.
+4. Select the smallest source slice that can answer the work unit.
+5. Run the configured code graph adapter or attach an existing code graph
    service result.
-5. Normalize output to `nodes.jsonl`, `edges.jsonl`, `summary.md`, and
+6. Normalize output to `nodes.jsonl`, `edges.jsonl`, `summary.md`, and
    `adapter-report.md`.
-6. Update `.specify/ai-team/work/<work_slug>/work-context.yml` with the code graph
-   artifact path and next command.
-7. Hand the graph artifact to `speckit.ai-team.impact`, `speckit.plan`,
+7. Update `change-package.yml` and `work-context.yml` with the code graph
+   artifact path, source snapshot, status, and next command.
+8. Hand the graph artifact to `speckit.ai-team.impact`, `speckit.plan`,
    `speckit.ai-team.plan-check`, `speckit.analyze`, or `speckit.converge`
    (composite checks and evidence run inside converge when preset
    `ai-team-handoff-spec` is installed).
@@ -107,6 +113,10 @@ contains, imports, calls, implements, extends, reads_config, tests, depends_on
 Stop and ask when:
 
 - no work slug or work item can be resolved;
+- the analysis Permission Envelope is missing, stale, not approved when
+  approval is required, or does not cover the requested access;
+- hard runtime confinement is required but the effective enforcement mode is
+  only `policy-only`;
 - the work changes SPI/API, class add/delete, dependency direction, or
   cross-module semantics and no code graph or owner-approved fallback exists;
 - adapter output would include private requirement context in a coding

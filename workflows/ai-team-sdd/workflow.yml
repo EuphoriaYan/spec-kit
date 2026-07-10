@@ -76,9 +76,15 @@ steps:
     input:
       args: "{{ inputs.request }} work_slug={{ inputs.work_slug }} work_type={{ inputs.work_type }} coding_issue_url={{ inputs.coding_issue_url }} handoff_requirement_url={{ inputs.handoff_requirement_url }} published_requirement_url={{ inputs.published_requirement_url }} resume_from={{ inputs.resume_from }} workflow_run_id={{ context.run_id }}"
 
+  - id: permission-analysis
+    command: speckit.ai-team.permissions
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.request }} work_slug={{ inputs.work_slug }} mode=analysis work_type={{ inputs.work_type }} coding_issue_url={{ inputs.coding_issue_url }} handoff_requirement_url={{ inputs.handoff_requirement_url }} workflow_run_id={{ context.run_id }}"
+
   - id: review-context
     type: gate
-    message: "Review the Work Context Package, work item, and resume point before continuing."
+    message: "Review the Change Package, analysis Permission Envelope, work item, and resume point before continuing."
     options: [approve, revise, reject]
     on_reject: abort
 
@@ -179,6 +185,18 @@ steps:
         message: "Review the native analyze report before implementation. Revise re-runs tasks and analyze."
         options: [approve, revise, reject]
         on_reject: abort
+
+  - id: permission-implementation
+    command: speckit.ai-team.permissions
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.request }} work_slug={{ inputs.work_slug }} mode=implementation work_type={{ inputs.work_type }} coding_issue_url={{ inputs.coding_issue_url }} handoff_requirement_url={{ inputs.handoff_requirement_url }} workflow_run_id={{ context.run_id }}"
+
+  - id: review-permissions
+    type: gate
+    message: "Review implementation write paths, commands, network access, enforcement mode, and gaps. Approve, revise, or reject before source edits."
+    options: [approve, revise, reject]
+    on_reject: abort
 
   - id: implement
     command: speckit.implement

@@ -14,8 +14,10 @@ Store work context in the coding repository:
 
 ```text
 .specify/ai-team/work/<work_slug>/
+|-- change-package.yml
 |-- work-context.yml
 |-- context-pack.md
+|-- permission-envelope.yml
 |-- handoffs/
 |-- codegraph/
 |-- evidence/
@@ -27,6 +29,19 @@ remain under `.specify/bugs/<bug_slug>/` when `work_type=bug`.
 Use `.specify/workflows/runs/<run-id>/state.json` for Spec Kit's workflow
 engine state. Use `.specify/ai-team/work/<work_slug>/` for AI Team work identity
 and cross-session recovery.
+
+The files have separate responsibilities:
+
+- `change-package.yml` is the stable index of work item, artifacts, authority,
+  visibility, owners, and PR;
+- `work-context.yml` is volatile workflow state: phase, last command, and next
+  command;
+- `context-pack.md` is the human-readable resume summary;
+- `permission-envelope.yml` records task-scoped access and its real enforcement
+  mode.
+
+See [change-package.md](change-package.md) and
+[permission-envelope.md](permission-envelope.md) for the contracts.
 
 ## Work Identity
 
@@ -85,12 +100,13 @@ implementation; there is no `plan-check.md`, `plan-gate.md`, or preset task-gate
 2. If a paused workflow run is recorded, inspect it with
    `specify workflow status <run-id>` and resume it with
    `specify workflow resume <run-id>` when appropriate.
-3. If there is no usable workflow run, load `work-context.yml`, `context-pack.md`,
-   current feature artifacts, bug artifacts, and code graph artifacts.
+3. If there is no usable workflow run, load `change-package.yml` first, then
+   `work-context.yml`, `context-pack.md`, the permission envelope, and only the
+   indexed artifacts required by the current phase.
 4. Compare the recorded source snapshot and work item or bug state to current
    repository state.
-5. Run the `next_command` from `work-context.yml` only when the stop conditions are
-   clear.
+5. Run the `next_command` from `work-context.yml` only when the stop conditions
+   are clear and the Permission Envelope allows the required operation.
 
 If the source, work item, or context pack changed while the work was paused,
 run `speckit.ai-team.codegraph` and `speckit.ai-team.impact` again before
@@ -134,3 +150,15 @@ Archiving does not mean deleting evidence. Default behavior is to keep raw
 evidence available under the repository's retention policy while future AI
 tasks load the smaller memory card, release summary, bugfix lessons, and
 migration playbook.
+
+## Change And Permission Control
+
+Each work unit uses one Change Package index. It does not create another copy
+of the specification and does not automatically change team governance,
+architecture rules, or enterprise guidance.
+
+Before code graph or source analysis, create an analysis Permission Envelope.
+Before implementation, revise it to the smallest approved write paths and
+commands. Record `policy-only` unless native or wrapper enforcement is actually
+configured and verified. If hard confinement is required and only policy
+controls exist, stop rather than claiming the task is sandboxed.

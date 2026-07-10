@@ -67,9 +67,15 @@ steps:
     input:
       args: "{{ inputs.request }} work_slug={{ inputs.work_slug }} work_type=bug coding_issue_url={{ inputs.coding_issue_url }} bug_slug={{ inputs.work_slug }} resume_from={{ inputs.resume_from }} workflow_run_id={{ context.run_id }}"
 
+  - id: permission-analysis
+    command: speckit.ai-team.permissions
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.request }} work_slug={{ inputs.work_slug }} mode=analysis work_type=bug coding_issue_url={{ inputs.coding_issue_url }} bug_slug={{ inputs.work_slug }} workflow_run_id={{ context.run_id }}"
+
   - id: review-context
     type: gate
-    message: "Review the bug work item, work_slug, and Work Context Package before source impact analysis."
+    message: "Review the bug work item, Change Package, analysis Permission Envelope, and resume point before source impact analysis."
     options: [approve, revise, reject]
     on_reject: abort
 
@@ -102,6 +108,18 @@ steps:
   - id: review-assessment
     type: gate
     message: "Review the bug assessment, root-cause hypothesis, and proposed remediation before source edits."
+    options: [approve, revise, reject]
+    on_reject: abort
+
+  - id: permission-implementation
+    command: speckit.ai-team.permissions
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.request }} work_slug={{ inputs.work_slug }} mode=implementation work_type=bug coding_issue_url={{ inputs.coding_issue_url }} bug_slug={{ inputs.work_slug }} workflow_run_id={{ context.run_id }}"
+
+  - id: review-permissions
+    type: gate
+    message: "Review bug-fix write paths, commands, network access, enforcement mode, and gaps before source edits."
     options: [approve, revise, reject]
     on_reject: abort
 
