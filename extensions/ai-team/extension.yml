@@ -26,7 +26,7 @@ provides:
       description: "Create or update the AI Team workspace contract for coding repository and internal enhancement boundaries."
     - name: speckit.ai-team.start
       file: commands/speckit.ai-team.start.md
-      description: "Route a plain-language request to the correct AI Team bug, requirement, or template workflow and create a Work Context Package."
+      description: "Route a plain-language request, including explicit Compact planning, and launch the correct AI Team workflow without requiring CLI knowledge."
     - name: speckit.ai-team.context
       file: commands/speckit.ai-team.context.md
       description: "Open, update, or reconstruct the durable Work Context Package so interrupted AI Team SDD work can resume."

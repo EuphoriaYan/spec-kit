@@ -71,15 +71,16 @@ remember command details:
 | Chat alias | Workflow input |
 |---|---|
 | `ai-team-sdd feature path` | `work_type=feature` |
-| `ai-team-bugfix path` | `work_slug=bug-<repo-slug>-<issue-number>` and optional `coding_issue_url` |
+| `ai-team-sdd compact path` | `work_type=feature`, `planning_mode=compact` |
+| `ai-team-bugfix path` | `work_slug=bug-<repo-slug>-<issue-number>` and required `coding_issue_url` |
 | `ai-team-sdd new-project path` | `work_type=new-project` |
 | `ai-team-sdd resume path` | `work_slug=<work_slug>` and `resume_from=<phase>` |
 | `ai-team-memory consolidate path` | `scope=<work-item|bugfix|feature|incident|release>` plus `target_tier=<local|department|enterprise>` |
 | `ai-team-release archive path` | `release_id=<version>` plus tag range, release issue, or work slugs |
 
-`ai-team-sdd compact path` is a planned alias, not a currently bundled workflow.
-See [compact-planning.md](compact-planning.md). Do not claim it is available in
-an installed project until the compact workflow and projection checks exist.
+`ai-team-sdd compact path` is a real branch of the bundled `ai-team-sdd`
+workflow. The user can select it in ordinary language; the AI tool launches the
+workflow and supplies the input.
 
 Recommended user prompts:
 
@@ -89,6 +90,9 @@ https://example.com/org/project/issues/456
 
 Use the ai-team-sdd feature path for this internal handoff requirement:
 https://example.com/enhancements/rfcs/REQ-2026-015
+
+请用 AI Team Compact 模式实现搜索结果导出，需求单是：
+https://example.com/org/project/issues/456
 
 Use the ai-team-bugfix path with work_slug=bug-project-alpha-123 for this coding issue:
 https://example.com/org/project/issues/123
@@ -320,9 +324,9 @@ while paused, source changed and impact evidence is stale, or the recorded next
 command would skip a required human gate. Also stop when hard confinement is
 required but the recorded enforcement mode is only `policy-only`.
 
-## Planned Journey: Compact Plan And Tasks
+## Journey 6: Compact Plan And Tasks
 
-Use this future extension only for clear, low-risk work whose impact analysis
+Use this mode only for clear, low-risk work whose impact analysis
 shows a local or single-module change. The user starts one planning action, but
 the workflow still isolates the architect context from the developer context:
 
@@ -332,17 +336,16 @@ impact evidence -> human compact selection
 -> combined review -> implementation permission review -> implement
 ```
 
-The combined artifact must preserve separate Plan and Execution Tasks sections.
-If Spec Kit core needs `tasks.md`, it is generated from the canonical task
-section and is not edited independently.
+The workflow preserves native `plan.md` and `tasks.md`, isolates the architect
+and developer contexts with a handoff, and combines their human review into one
+gate.
 
 Fall back to the standard journey when the change affects public contracts,
 database state, security/privacy, dependencies, multiple modules, deployment or
 rollback behavior, or when any technical choice remains unresolved. New
-projects use the standard journey unless their architecture baseline and
-runnable spine have already been approved.
+projects use the Standard journey.
 
-## Journey 6: Failure Evolution
+## Journey 7: Failure Evolution
 
 Use this journey when a PR fails review, CI fails, a test escapes, or the AI
 agent repeats a mistake.

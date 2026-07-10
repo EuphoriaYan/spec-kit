@@ -1235,7 +1235,7 @@ const enhancedDecks = [
           { title: "范围要小", body: "不包含顺手重构、无关清理和另起一套实现。" },
           { title: "停下条件要明确", body: "遇到公共边界时把决定交回给人。" }
         ])}
-        <div class="note">后续课程会介绍规划中的 Compact 模式：低风险小改动可以一次生成 Plan 与 Tasks，但仍要分清“技术决定”和“执行步骤”，并由人确认是否适用。</div>`
+        <div class="note">后续课程会介绍已经提供的 Compact 模式：低风险小改动可以用一句话启动 Plan 与 Tasks 的联合审核，但仍要分清“技术决定”和“执行步骤”，并由人确认是否适用。</div>`
       },
       {
         eyebrow: "Human Gate",
@@ -1482,10 +1482,10 @@ const enhancedDecks = [
       {
         eyebrow: "Planning Modes",
         title: "小改动可以少一道流程，但不能少掉思考",
-        lead: "团队正在规划 Compact 扩展模式。它不是让 AI 直接编码，而是把 Plan 和 Tasks 放进一次操作和一次联合审核中。",
+        lead: "团队已经提供 Compact 扩展模式。使用者只需在聊天中明确说出 Compact，AI 就会启动对应流程；它不是让 AI 直接编码，而是把 Plan 和 Tasks 放进一次操作和一次联合审核中。",
         html: comparison([
           ["标准流程", "Plan 单独审核，再生成 Tasks 并审核", "新特性、跨模块、公共接口、数据库、安全权限、发布风险"],
-          ["Compact 模式（待实现）", "一次启动；架构和开发仍隔离上下文；最后联合审核", "需求清楚、单模块、路径唯一、失败成本低、容易回滚"]
+          ["Compact 模式（已支持）", "一句话启动；架构和开发仍隔离上下文；最后联合审核", "需求清楚、单模块、路径唯一、失败成本低、容易回滚"]
         ], ["选择", "怎么运行", "适用情况"]) +
         `<code class="example">例子：给已有 UserValidator 补充空邮箱校验。
 

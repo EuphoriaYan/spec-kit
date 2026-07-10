@@ -21,7 +21,8 @@ do not use a handoff URL in `spec.md` as the requirement body.
 ## Goal
 
 Confirm the architect-owned plan is safe to turn into developer tasks. The human
-`review-plan` workflow gate uses this report to approve, revise, or reject.
+`review-plan` gate uses this report in Standard mode; the combined
+`review-compact-plan-tasks` gate uses it with native analyze in Compact mode.
 
 ## Steps
 
@@ -78,6 +79,7 @@ radius, and required revisions (no separate check markdown file).
 - **Feature**:
 - **Task ID**:
 - **Work type**:
+- **Planning mode**: standard / compact
 - **Plan status**: pass / revise / blocked
 - **Change radius**: local / module / cross-module / architecture / not applicable
 - **Work item boundary**:
@@ -124,4 +126,7 @@ Recommend **blocked** or **revise** (do not claim pass) when:
 - the plan requires hard runtime confinement but only `policy-only`
   enforcement is available.
 
-Wait for the human `review-plan` gate before task generation when status is not pass.
+In Standard mode, wait for the human `review-plan` gate before task generation
+when status is not pass. In Compact mode, continue only to generate draft tasks
+for the combined review; do not begin implementation before
+`review-compact-plan-tasks` approves both artifacts.

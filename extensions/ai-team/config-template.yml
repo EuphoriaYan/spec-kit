@@ -104,6 +104,15 @@ release_archive:
     - support/knowledge-map.md
     - docs/ai-team/memory/decisions
     - migration-playbook.md
+planning:
+  default_mode: standard
+  supported_modes:
+    - standard
+    - compact
+  compact_requires_explicit_user_selection: true
+  compact_requires_post_impact_human_gate: true
+  compact_for_new_project: false
+
 permissions:
   # Spec Kit workflow gates are not a runtime sandbox. Keep policy-only until
   # a tool-native or wrapper adapter is configured and verified.

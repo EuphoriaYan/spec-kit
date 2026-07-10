@@ -78,6 +78,7 @@ Work Context Package:
 - permission envelope path:
 - permission enforcement mode:
 - work type: bug fix / feature / new project / template change / unclear
+- planning mode: standard / compact
 - work item:
 - work item type:
 - coding issue URL:
@@ -108,6 +109,7 @@ Work Context Package:
 ```yaml
 work_slug:
 work_type:
+planning_mode: standard
 permission_envelope: .specify/ai-team/work/<work_slug>/permission-envelope.yml
 work_item:
   coding_issue_url:
@@ -140,7 +142,7 @@ updated_at:
 
 1. Locate `.specify/extensions/ai-team/ai-team-config.yml` and integration
    metadata when present.
-2. Resolve `work_slug`, `work_type`, `coding_issue_url`,
+2. Resolve `work_slug`, `work_type`, `planning_mode`, `coding_issue_url`,
    `also_resolves_issue_urls`,
    `handoff_requirement_url`, deprecated `published_requirement_url`,
    `bug_slug`, and `workflow_run_id` from arguments and existing work context.
@@ -163,6 +165,7 @@ updated_at:
 AI Team Context:
 - work slug:
 - work type:
+- planning mode:
 - work item:
 - context path:
 - permission envelope:

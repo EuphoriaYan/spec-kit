@@ -1,7 +1,6 @@
-# Compact Plan And Tasks Extension
+# Compact Plan And Tasks Mode
 
-Status: planned extension. The bundled workflows still use separate Plan and
-Tasks phases until this contract is implemented and tested.
+Status: bundled in `ai-team-sdd` through `planning_mode=compact`.
 
 ## Purpose
 
@@ -27,14 +26,16 @@ work item -> context and impact analysis -> human selects compact mode
 ```
 
 The architect and developer phases must not share hidden chat context. They
-exchange the approved specification, impact evidence, and the compact artifact.
+exchange the approved specification, impact evidence, `plan.md`, and an
+explicit plan-to-tasks handoff.
 
 ## Artifact Contract
 
-`plan.md` is the canonical reviewed artifact:
+Compact mode keeps native Spec Kit artifacts so core commands and resume remain
+compatible:
 
 ```markdown
-# Compact Implementation Plan
+# plan.md
 
 ## Scope And Assumptions
 ## Expected Architecture Impact
@@ -42,27 +43,16 @@ exchange the approved specification, impact evidence, and the compact artifact.
 ## Compatibility And Risks
 ## Verification Strategy
 
-# Execution Tasks
+# tasks.md
 
 - [ ] T001 ...
 - [ ] T002 ...
 ```
 
-Spec Kit core currently requires `tasks.md` for `speckit.implement` and
-`speckit.converge`. A future compact workflow may generate `tasks.md` as a
-compatibility projection of `plan.md#execution-tasks`. That projection must be
-marked generated, must not be edited independently, and must be regenerated
-when it differs from the canonical section.
-
-The workflow input and run state record `planning_mode=compact` and the human
-gate decision. `plan.md` remains the durable reviewed artifact; no additional
-change manifest is required. The future projection metadata should be generated
-with `tasks.md`, for example:
-
-```yaml
-generated_from: specs/<work_slug>/plan.md#execution-tasks
-source_hash: <sha256>
-```
+`plan.md` owns technical decisions and `tasks.md` owns execution. Compact mode
+combines the user action and human review, not the meanings of these files.
+The workflow input and run state record `planning_mode=compact`, the eligibility
+gate, and the combined review result. No additional change manifest is required.
 
 ## Eligibility
 
@@ -93,26 +83,24 @@ any eligibility condition is false or uncertain. In particular, do not select
 compact mode solely because the request says "simple CRUD", "one config item",
 "small project", or "only two files".
 
-Zero-to-one projects use the standard path by default. A small project may use
-compact planning only after its product boundary, architecture skeleton,
-dependency policy, ownership, and runnable spine already exist.
+Zero-to-one projects use the Standard path. Compact mode is for changes to an
+existing architecture whose boundary and runnable spine already exist.
 
 If implementation discovers wider impact, stop, set the compact assessment to
 invalidated, preserve completed evidence, and resume from the standard Plan
 phase. Do not keep patching the compact task list around a changed design.
 
-## Planned Runtime Contract
+## Runtime And Chat Entry
 
-The future implementation should provide an explicit workflow alias such as
-`ai-team-sdd compact path`, not silently infer the shortcut. The workflow
-engine should record:
+Users do not need to know the workflow parameter. An explicit sentence such as
+the following invokes `speckit.ai-team.start`, which launches `ai-team-sdd` with
+`planning_mode=compact`:
 
-- `planning_mode=compact` as a user-selected input and the human gate result;
-- eligibility evidence and source snapshot;
-- combined review result;
-- canonical artifact and generated projection hash;
-- fallback reason when compact mode is invalidated.
+```text
+请用 AI Team Compact 模式实现搜索结果导出，需求单是：<issue URL>
+```
 
-Until that workflow exists, users should continue to run the standard AI Team
-SDD workflow and may generate Plan and Tasks close together, but must keep the
-separate artifacts and review gates.
+The workflow records the user-selected mode, pauses after impact analysis for
+the Compact eligibility decision, runs Plan and Tasks in isolated contexts,
+and presents one combined Plan/Tasks review. Reject the eligibility gate and
+restart in Standard mode when Compact is invalid.

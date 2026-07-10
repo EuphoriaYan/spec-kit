@@ -58,7 +58,28 @@ def _collect_step_ids(steps: list) -> list[str]:
             nested = step.get(key)
             if isinstance(nested, list):
                 ids.extend(_collect_step_ids(nested))
+        for nested in step.get("cases", {}).values():
+            ids.extend(_collect_step_ids(nested))
     return ids
+
+
+def _find_step(steps: list, step_id: str) -> dict:
+    for step in steps:
+        if step.get("id") == step_id:
+            return step
+        for key in ("then", "else", "steps"):
+            nested = step.get(key)
+            if isinstance(nested, list):
+                try:
+                    return _find_step(nested, step_id)
+                except LookupError:
+                    pass
+        for nested in step.get("cases", {}).values():
+            try:
+                return _find_step(nested, step_id)
+            except LookupError:
+                pass
+    raise LookupError(step_id)
 
 
 def _run_ai_team_workflow_to_context_gate(
@@ -184,6 +205,18 @@ def test_ai_team_extension_command_files_exist():
         assert command_file.read_text(encoding="utf-8").startswith("---\n")
 
 
+def test_ai_team_start_launches_compact_from_plain_language():
+    text = (
+        EXTENSION_ROOT / "commands" / "speckit.ai-team.start.md"
+    ).read_text(encoding="utf-8")
+
+    assert "请用 AI Team Compact 模式" in text
+    assert "planning_mode=compact" in text
+    assert "Do not merely print the command" in text
+    assert "Without an explicit Compact request" in text
+    assert "New projects always start in Standard mode" in text
+
+
 def test_ai_team_config_template_defines_repository_and_role_contracts():
     config = yaml.safe_load(
         (EXTENSION_ROOT / "config-template.yml").read_text(encoding="utf-8")
@@ -252,6 +285,11 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["permissions"]["require_implementation_review"] is True
     assert config["gates"]["require_work_item_anchor"] is True
     assert config["gates"]["allow_same_root_cause_issue_grouping"] is True
+    assert config["planning"]["default_mode"] == "standard"
+    assert config["planning"]["supported_modes"] == ["standard", "compact"]
+    assert config["planning"]["compact_requires_explicit_user_selection"] is True
+    assert config["planning"]["compact_requires_post_impact_human_gate"] is True
+    assert config["planning"]["compact_for_new_project"] is False
     assert "root" not in config["code_graph"]
     assert set(config["code_graph"]["normalized_outputs"]) == {
         "nodes.jsonl",
@@ -445,6 +483,14 @@ def test_work_item_gate_accepts_same_repository_issue_group(tmp_path):
             },
             "primary coding repository",
         ),
+        (
+            {
+                "work_type": "new-project",
+                "planning_mode": "compact",
+                "handoff_requirement_url": "https://internal.example.com/req/2",
+            },
+            "requires standard planning mode",
+        ),
     ],
 )
 def test_work_item_gate_rejects_inconsistent_anchors(tmp_path, inputs, error):
@@ -569,17 +615,17 @@ def test_ai_team_permission_envelope_document_exists():
     assert "do not sandbox shell commands" in text
 
 
-def test_ai_team_compact_planning_document_is_explicitly_planned():
+def test_ai_team_compact_planning_document_matches_bundled_runtime():
     compact_doc = EXTENSION_ROOT / "docs" / "compact-planning.md"
 
     assert compact_doc.exists()
     text = compact_doc.read_text(encoding="utf-8")
-    assert "Status: planned extension" in text
+    assert "Status: bundled" in text
     assert "AI may recommend compact planning" in text
-    assert "compatibility projection" in text
-    assert "workflow input and run state record `planning_mode=compact`" in text
+    assert "`planning_mode=compact`" in text
+    assert "one combined Plan/Tasks review" in text
     assert "Mandatory Fallback" in text
-    assert "Zero-to-one projects use the standard path by default" in text
+    assert "Zero-to-one projects use the Standard path" in text
 
 
 def test_ai_team_work_field_spec_document_exists():
@@ -667,6 +713,8 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     assert steps[0]["type"] == "if"
     assert steps[0]["then"][0]["type"] == "init"
     assert "work_slug" in data["inputs"]
+    assert data["inputs"]["planning_mode"]["default"] == "standard"
+    assert data["inputs"]["planning_mode"]["enum"] == ["standard", "compact"]
     assert "also_resolves_issue_urls" in data["inputs"]
     assert "handoff_requirement_url" in data["inputs"]
     assert "published_requirement_url" in data["inputs"]
@@ -700,7 +748,12 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     assert "checks" not in step_ids
     assert "evidence" not in step_ids
 
-    plan_cycle = next(step for step in steps if step["id"] == "plan-cycle")
+    planning_path = next(step for step in steps if step["id"] == "planning-path")
+    assert planning_path["type"] == "switch"
+    assert planning_path["expression"] == "{{ inputs.planning_mode }}"
+    assert set(planning_path["cases"]) == {"standard", "compact"}
+
+    plan_cycle = _find_step(planning_path["cases"]["standard"], "plan-cycle")
     assert plan_cycle["type"] == "do-while"
     assert plan_cycle["condition"] == "{{ steps.review-plan.output.choice == 'revise' }}"
     plan_cycle_ids = [s["id"] for s in plan_cycle["steps"]]
@@ -716,7 +769,7 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     assert "inputs.request" not in plan_revise["input"]["args"]
     assert "{{ inputs.request }}" in plan_initial["input"]["args"]
 
-    task_cycle = next(step for step in steps if step["id"] == "task-cycle")
+    task_cycle = _find_step(planning_path["cases"]["standard"], "task-cycle")
     assert task_cycle["type"] == "do-while"
     assert task_cycle["condition"] == "{{ steps.review-tasks.output.choice == 'revise' }}"
     task_cycle_ids = [s["id"] for s in task_cycle["steps"]]
@@ -729,6 +782,24 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     assert tasks_initial["id"] == "tasks-initial"
     assert "Revise tasks.md only" in tasks_revise["input"]["args"]
     assert "{{ inputs.request }}" in tasks_initial["input"]["args"]
+    compact_steps = planning_path["cases"]["compact"]
+    assert [step["id"] for step in compact_steps] == [
+        "review-compact-eligibility",
+        "compact-cycle",
+    ]
+    compact_cycle = _find_step(compact_steps, "compact-cycle")
+    assert [step["id"] for step in compact_cycle["steps"]] == [
+        "compact-plan",
+        "compact-plan-check",
+        "handoff-plan-to-tasks",
+        "compact-tasks",
+        "compact-analyze",
+        "review-compact-plan-tasks",
+    ]
+    assert "planning_mode=compact" in compact_cycle["steps"][0]["input"]["args"]
+    assert compact_cycle["steps"][2]["command"] == "speckit.ai-team.handoff"
+    assert compact_cycle["steps"][-1]["type"] == "gate"
+
     context_step = next(step for step in steps if step["id"] == "context-open")
     assert context_step["command"] == "speckit.ai-team.context"
     permission_analysis_step = next(
@@ -839,8 +910,23 @@ def test_ai_team_bugfix_workflow_pauses_at_context_gate(tmp_path):
             },
             [
                 "work_type=feature",
+                "planning_mode=standard",
                 "coding_issue_url=https://example.com/org/project/issues/456",
                 "handoff_requirement_url=",
+            ],
+        ),
+        (
+            "existing project compact feature from chat routing",
+            {
+                "request": "Use AI Team Compact mode for search export",
+                "work_type": "feature",
+                "planning_mode": "compact",
+                "coding_issue_url": "https://example.com/org/project/issues/457",
+            },
+            [
+                "work_type=feature",
+                "planning_mode=compact",
+                "coding_issue_url=https://example.com/org/project/issues/457",
             ],
         ),
         (

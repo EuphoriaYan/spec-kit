@@ -113,6 +113,20 @@ or `task-cycle` do-while). Revise iterations pass a fixed patch instruction (plu
 `work_slug`) instead of the original request/spec URLs — agents revise from
 `plan_check`, `context-pack.md`, or native analyze findings already on disk.
 
+**Compact planning:** Users do not need to know `planning_mode` or type a CLI
+command. In an installed Codex, Claude Code, Cursor Agent, or Trae workspace,
+say:
+
+```text
+请用 AI Team Compact 模式实现搜索结果导出，需求单是：
+https://example.com/org/project/issues/456
+```
+
+`speckit.ai-team.start` recognizes the explicit request and launches the same
+`ai-team-sdd` workflow with its Compact branch. After impact analysis, a human
+confirms Compact eligibility; Plan and Tasks run in isolated contexts and share
+one combined review. Requests without an explicit Compact choice use Standard.
+
 Without the preset, core commands do not know about `spec.override.md` or AI Team
 policy overlays.
 

@@ -116,25 +116,23 @@ Plan/Tasks extension and its mandatory fallback rules. The short version:
 
 ### Standard And Compact Planning
 
-The standard path remains the default and the only bundled implementation:
+The standard path remains the default:
 
 ```text
 Spec -> Plan -> Plan Review -> Tasks -> Tasks Review -> Implement
 ```
 
-A planned compact extension will allow one user action and one combined review
-for clear, low-risk, single-module work. It will still generate Plan decisions
-before Tasks in isolated role contexts. `plan.md` remains the canonical combined
-artifact; any `tasks.md` needed by Spec Kit core is a generated compatibility
-projection, not a second editable source.
+The bundled Compact mode allows one workflow launch and one combined Plan/Tasks
+review for clear, low-risk, single-module work. It still generates `plan.md`
+before `tasks.md` in isolated role contexts and connects them with a written
+handoff. Both remain native Spec Kit artifacts with their existing meanings.
 
 Compact mode must never be selected only because a change sounds small or
 touches few files. Public contracts, database migration, security/privacy,
 cross-module work, dependency changes, uncertain design, new-project
 architecture, or non-trivial release/rollback needs require the standard path.
-AI may recommend compact mode; an accountable human selects it after impact
-analysis. Until the extension is implemented, continue using the standard
-workflow and its separate gates.
+AI may recommend Compact mode, but the user must explicitly select it and an
+accountable human confirms eligibility after impact analysis.
 
 ### Chat Aliases
 
@@ -144,7 +142,8 @@ aliases instead of asking the user to remember command details:
 | Chat alias | Maps to |
 |---|---|
 | `ai-team-sdd feature path` | `work_type=feature` plus a coding issue URL or handoff requirement URL |
-| `ai-team-bugfix path` | `work_slug=bug-<repo-slug>-<issue-number>` and an optional coding issue URL |
+| `ai-team-sdd compact path` | `work_type=feature`, `planning_mode=compact`, plus a coding issue URL or handoff requirement URL |
+| `ai-team-bugfix path` | `work_slug=bug-<repo-slug>-<issue-number>` and a required coding issue URL |
 | `ai-team-sdd new-project path` | `work_type=new-project` plus a public project issue/charter or handoff requirement URL |
 | `ai-team-sdd resume path` | `work_slug=<work_slug>` plus `resume_from=<phase>` or workflow run resume |
 | `ai-team-memory consolidate path` | completed work source plus `target_tier=local|department|enterprise` |
@@ -158,6 +157,9 @@ https://example.com/org/project/issues/456
 
 Use the ai-team-sdd feature path for this internal handoff requirement:
 https://example.com/enhancements/rfcs/REQ-2026-015
+
+请用 AI Team Compact 模式实现搜索结果导出，需求单是：
+https://example.com/org/project/issues/456
 
 Use the ai-team-bugfix path with work_slug=bug-project-alpha-123 for this coding issue:
 https://example.com/org/project/issues/123
@@ -287,14 +289,25 @@ optional Spec Kit init bootstrap -> workspace contract -> request routing
 -> speckit.implement -> speckit.converge (native + checks + evidence via preset)
 ```
 
+That diagram is the Standard branch. The explicit Compact branch reuses the
+same intake, Spec, permissions, implementation, and evidence stages, but runs:
+
+```text
+impact -> compact eligibility gate -> plan -> plan check
+-> plan-to-tasks handoff -> tasks -> analyze
+-> combined Plan/Tasks review -> implementation
+```
+
 ### Plan check, preset, and workflow gates
 
 | Step | Type | Writes files? | Human decision |
 |---|---|---|---|
-| `speckit.ai-team.plan-check` | extension command | Updates `work-context.yml` (`plan_check`) and `context-pack.md` only | No; produces chat report |
-| `review-plan` | workflow gate | No | Yes; approve / revise / reject before `tasks` |
-| `speckit.analyze` | native cross-artifact check | Read-only chat report | No; produces analyze report |
-| `review-tasks` | workflow gate | No | Yes; approve / revise / reject before `implement` |
+| `speckit.ai-team.plan-check` | extension command | Updates `work-context.yml` (`plan_check`) and `context-pack.md` only | No — produces chat report |
+| `review-plan` | workflow gate | No | Yes — approve / revise / reject before `tasks` |
+| `speckit.analyze` | native cross-artifact check | Read-only chat report | No — produces analyze report |
+| `review-tasks` | workflow gate | No | Yes — approve / revise / reject before `implement` |
+| `review-compact-eligibility` | workflow gate | No | Yes - confirm Compact after impact analysis |
+| `review-compact-plan-tasks` | workflow gate | No | Yes - approve or revise Plan and Tasks together |
 
 Plan check does **not** run core `speckit.checklist` and does **not** create
 `checklists/*.md` or `plan-check.md`. Cross-artifact consistency before
@@ -307,6 +320,10 @@ prompt (work slug only) to patch `plan.md` from `plan_check` and `context-pack.m
 not the original spec/request args. At `review-tasks`, **revise** re-runs
 `speckit.tasks` and `speckit.analyze` (`task-cycle` loop) with the same pattern for
 `tasks.md` and native analyze findings.
+
+In Compact mode, `compact-cycle` regenerates Plan, the role-isolated handoff,
+Tasks, Plan Check, and native analyze output after a combined review chooses
+**revise**. There is no separate Plan review and Tasks review.
 
 The bundled `ai-team-bugfix` workflow gives bug work a deterministic path:
 

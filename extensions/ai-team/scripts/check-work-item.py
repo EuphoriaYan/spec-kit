@@ -36,6 +36,7 @@ def _split_urls(value: object) -> list[str]:
 
 def validate(inputs: dict[str, object]) -> dict[str, object]:
     work_type = str(inputs.get("work_type", "auto"))
+    planning_mode = str(inputs.get("planning_mode", "standard"))
     primary = str(inputs.get("coding_issue_url", "")).strip()
     handoff = str(inputs.get("handoff_requirement_url", "")).strip()
     related = _split_urls(inputs.get("also_resolves_issue_urls"))
@@ -47,6 +48,8 @@ def validate(inputs: dict[str, object]) -> dict[str, object]:
             "feature work requires exactly one primary anchor: "
             "coding_issue_url or handoff_requirement_url"
         )
+    if planning_mode == "compact" and work_type == "new-project":
+        raise ValueError("new-project work requires standard planning mode")
     if related and not primary:
         raise ValueError("also_resolves_issue_urls requires a primary coding_issue_url")
 
@@ -68,6 +71,7 @@ def validate(inputs: dict[str, object]) -> dict[str, object]:
 
     return {
         "work_type": work_type,
+        "planning_mode": planning_mode,
         "primary_anchor": primary or handoff or None,
         "also_resolves_count": len(related),
     }
