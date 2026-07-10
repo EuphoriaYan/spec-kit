@@ -46,8 +46,8 @@ or Trae to collaborate on enterprise software. It keeps the Spec Kit SDD phases
 but adds team controls around them:
 
 ```text
-intake -> work context -> requirement or bug work item -> code graph impact
--> specify -> review-spec gate -> plan
+plain-language request -> read-only intake -> reviewed work item
+-> work context -> code graph impact -> specify -> review-spec gate -> plan
 -> plan-check (chat report) -> review-plan gate -> tasks
 -> analyze (native cross-artifact report) -> review-tasks gate
 -> implement -> converge (composite checks/evidence) -> PR/review
@@ -69,6 +69,7 @@ The exact path depends on the user journey:
 
 | Journey | When to use | Required anchor |
 |---|---|---|
+| start with one sentence | intent is clear enough to analyze, but no issue exists | generated Intake slug; issue required only before formal SDD |
 | existing project bug fix | current behavior is broken, flaky, regressed, or throws errors | primary coding issue URL; work slug identifies local artifacts |
 | existing project new feature | adding public behavior to an existing repository | coding issue URL for public work, or internal handoff requirement URL for confidential enterprise traceability |
 | new project from zero | creating a new repository, service, product, or application | public project issue/charter, or handoff requirement URL for confidential enterprise work |
@@ -92,6 +93,7 @@ specify init . --integration codex --integration-options="--skills"
 specify extension add ai-team
 specify extension add bug
 specify preset add ai-team-handoff-spec
+specify workflow add ai-team-intake
 specify workflow add ai-team-sdd
 specify workflow add ai-team-bugfix
 ```
@@ -116,6 +118,18 @@ or `task-cycle` do-while). Revise iterations pass a fixed patch instruction (plu
 **Compact planning:** Users do not need to know `planning_mode` or type a CLI
 command. In an installed Codex, Claude Code, Cursor Agent, or Trae workspace,
 say:
+
+```text
+请帮我在导出结果里增加 CSV 格式，字段和页面列表保持一致；如果影响很小，可以建议走 Compact。
+```
+
+No issue is needed for this first message. `speckit.ai-team.start` launches the
+read-only `ai-team-intake` workflow, which analyzes impact, drafts the issue,
+and asks a human to confirm publication and Standard/Compact mode. The system
+then creates the issue and launches formal SDD when its approval conditions are
+met. The user never has to compose the workflow command.
+
+An existing issue can still be supplied explicitly:
 
 ```text
 请用 AI Team Compact 模式实现搜索结果导出，需求单是：
@@ -179,6 +193,8 @@ For chat-first tools, use stable path aliases. These phrases are aliases for the
 workflow inputs above:
 
 ```text
+Please add CSV export whose fields match the page list. I do not have an issue yet.
+
 Use the ai-team-sdd feature path for this public coding issue:
 https://example.com/org/project/issues/456
 

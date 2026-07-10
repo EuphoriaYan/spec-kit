@@ -27,6 +27,9 @@ provides:
     - name: speckit.ai-team.start
       file: commands/speckit.ai-team.start.md
       description: "Route a plain-language request, including explicit Compact planning, and launch the correct AI Team workflow without requiring CLI knowledge."
+    - name: speckit.ai-team.intake
+      file: commands/speckit.ai-team.intake.md
+      description: "Turn a request without a work item into read-only impact evidence, a reviewed issue, and a formal workflow handoff."
     - name: speckit.ai-team.context
       file: commands/speckit.ai-team.context.md
       description: "Open, update, or reconstruct the durable Work Context Package so interrupted AI Team SDD work can resume."

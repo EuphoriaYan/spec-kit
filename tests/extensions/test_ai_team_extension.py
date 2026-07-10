@@ -13,6 +13,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[2]
 EXTENSION_ROOT = REPO_ROOT / "extensions" / "ai-team"
 WORKFLOW_PATH = REPO_ROOT / "workflows" / "ai-team-sdd" / "workflow.yml"
+INTAKE_WORKFLOW_PATH = REPO_ROOT / "workflows" / "ai-team-intake" / "workflow.yml"
 BUGFIX_WORKFLOW_PATH = REPO_ROOT / "workflows" / "ai-team-bugfix" / "workflow.yml"
 MEMORY_ADAPTER_PATH = EXTENSION_ROOT / "scripts" / "memory_adapter.py"
 WORK_ITEM_GATE = EXTENSION_ROOT / "scripts" / "check-work-item.py"
@@ -182,6 +183,7 @@ def test_ai_team_extension_command_files_exist():
     assert command_names == {
         "speckit.ai-team.workspace",
         "speckit.ai-team.start",
+        "speckit.ai-team.intake",
         "speckit.ai-team.context",
         "speckit.ai-team.permissions",
         "speckit.ai-team.requirement",
@@ -213,8 +215,25 @@ def test_ai_team_start_launches_compact_from_plain_language():
     assert "请用 AI Team Compact 模式" in text
     assert "planning_mode=compact" in text
     assert "Do not merely print the command" in text
-    assert "Without an explicit Compact request" in text
+    assert "With an existing work item and no Compact selection" in text
     assert "New projects always start in Standard mode" in text
+    assert "ai-team-intake" in text
+    assert "When no work item exists" in text
+    assert "Technical Committee" in text
+
+
+def test_ai_team_intake_command_keeps_pre_work_item_analysis_read_only():
+    text = (
+        EXTENSION_ROOT / "commands" / "speckit.ai-team.intake.md"
+    ).read_text(encoding="utf-8")
+
+    assert ".specify/ai-team/intake/<intake_slug>/" in text
+    assert "must not edit product source" in text
+    assert "issue-draft.md" in text
+    assert "AI recommends" in text
+    assert "Technical Committee" in text
+    assert "gh issue create" in text
+    assert "do not ask the user to type" in text
 
 
 def test_ai_team_config_template_defines_repository_and_role_contracts():
@@ -706,8 +725,10 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     data = yaml.safe_load(WORKFLOW_PATH.read_text(encoding="utf-8"))
     assert data["workflow"]["id"] == "ai-team-sdd"
     assert "ai-team-sdd" in catalog["workflows"]
+    assert "ai-team-intake" in catalog["workflows"]
     assert "ai-team-bugfix" in catalog["workflows"]
     assert "workflows/ai-team-sdd" in pyproject
+    assert "workflows/ai-team-intake" in pyproject
     assert "workflows/ai-team-bugfix" in pyproject
     steps = data["steps"]
     assert steps[0]["type"] == "if"
@@ -828,7 +849,9 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     )
     assert "mode=implementation" in permission_implementation_step["input"]["args"]
     assert step_ids.index("permission-analysis") < step_ids.index("codegraph")
-    assert step_ids.index("validate-work-item") < step_ids.index("context-open")
+    assert step_ids.index("context-open") < step_ids.index("validate-work-item")
+    assert step_ids.index("impact") < step_ids.index("validate-work-item")
+    assert step_ids.index("validate-work-item") < step_ids.index("specify")
     assert step_ids.index("permission-implementation") < step_ids.index("implement")
     assert step_ids.index("review-permissions") < step_ids.index("implement")
     converge_step = next(step for step in steps if step["id"] == "converge")
@@ -869,6 +892,46 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     assert bugfix_step_ids.index("review-permissions") < bugfix_step_ids.index(
         "bug-fix"
     )
+
+
+def test_ai_team_intake_workflow_is_read_only_until_issue_approval():
+    from specify_cli.workflows.engine import WorkflowDefinition
+
+    assert INTAKE_WORKFLOW_PATH.exists()
+    WorkflowDefinition.from_yaml(INTAKE_WORKFLOW_PATH)
+    data = yaml.safe_load(INTAKE_WORKFLOW_PATH.read_text(encoding="utf-8"))
+    catalog = json.loads(
+        (REPO_ROOT / "workflows" / "catalog.json").read_text(encoding="utf-8")
+    )
+
+    assert data["workflow"]["id"] == "ai-team-intake"
+    assert "ai-team-intake" in catalog["workflows"]
+    assert data["inputs"]["work_type"]["enum"] == ["auto", "bug", "feature"]
+    assert data["inputs"]["planning_preference"]["enum"] == [
+        "auto",
+        "standard",
+        "compact",
+    ]
+
+    steps = data["steps"]
+    step_ids = [step["id"] for step in steps]
+    assert step_ids == [
+        "workspace",
+        "intake-open",
+        "permission-analysis",
+        "review-intake-boundary",
+        "codegraph",
+        "impact",
+        "issue-draft",
+        "review-issue-draft",
+        "publish-and-route",
+    ]
+    assert all(step.get("command") != "speckit.specify" for step in steps)
+    assert all(step.get("command") != "speckit.implement" for step in steps)
+    assert steps[3]["type"] == "gate"
+    assert steps[7]["type"] == "gate"
+    assert steps[-1]["command"] == "speckit.ai-team.intake"
+    assert "mode=publish" in steps[-1]["input"]["args"]
 
 
 def test_ai_team_bugfix_workflow_pauses_at_context_gate(tmp_path):

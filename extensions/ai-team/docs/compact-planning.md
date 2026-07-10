@@ -56,6 +56,12 @@ gate, and the combined review result. No additional change manifest is required.
 
 ## Eligibility
 
+If the user starts with one sentence and no issue, run the Plain-Language
+Intake first. Intake may recommend Compact from read-only impact evidence, but
+formal Compact SDD starts only after the issue draft and mode are approved and
+the issue URL exists. Feature acceptance remains a Technical Committee or
+delegated human decision.
+
 AI may recommend compact planning, but an accountable human must select it
 after impact analysis. All of the following must be true:
 
@@ -99,6 +105,15 @@ the following invokes `speckit.ai-team.start`, which launches `ai-team-sdd` with
 ```text
 请用 AI Team Compact 模式实现搜索结果导出，需求单是：<issue URL>
 ```
+
+An issue is optional at the first chat turn:
+
+```text
+请帮我在导出结果里增加 CSV 格式，字段和页面列表保持一致；如果影响很小，可以建议走 Compact。
+```
+
+The agent launches `ai-team-intake`, not formal SDD, and handles the CLI on the
+user's behalf.
 
 The workflow records the user-selected mode, pauses after impact analysis for
 the Compact eligibility decision, runs Plan and Tasks in isolated contexts,

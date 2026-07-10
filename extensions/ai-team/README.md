@@ -101,11 +101,12 @@ enforcement semantics, and
 
 Use [docs/user-journeys.md](docs/user-journeys.md) for the complete
 step-by-step journeys. See
-[docs/compact-planning.md](docs/compact-planning.md) for the planned low-risk
+[docs/compact-planning.md](docs/compact-planning.md) for the bundled low-risk
 Plan/Tasks extension and its mandatory fallback rules. The short version:
 
 | Journey | Work item | Main path |
 |---|---|---|
+| one-sentence request with no issue | provisional local Intake slug | `ai-team-intake`: privacy/classification gate -> read-only code graph and impact -> issue draft -> human approval -> create issue -> formal workflow |
 | existing project bug fix | coding issue or bug slug | `ai-team-bugfix`: context -> context gate -> code graph -> impact gate -> bug assess -> assessment gate -> bug fix -> fix gate -> `speckit.bug.test` (composite checks/evidence) -> PR |
 | existing project new feature | coding issue URL or handoff requirement URL | optional requirement review -> context -> code graph -> native SDD with plan check, task gate, and converge evidence -> PR |
 | new project from zero | public project issue/charter or handoff requirement URL | bootstrap -> workspace -> context -> native SDD with plan-check, task gate (preset), and converge evidence -> thin slice -> PR |
@@ -152,6 +153,8 @@ aliases instead of asking the user to remember command details:
 Recommended prompts:
 
 ```text
+请帮我在导出结果里增加 CSV 格式，字段和页面列表保持一致；如果影响很小，可以建议走 Compact。
+
 Use the ai-team-sdd feature path for this public coding issue:
 https://example.com/org/project/issues/456
 

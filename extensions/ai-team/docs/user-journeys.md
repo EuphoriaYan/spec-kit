@@ -326,6 +326,21 @@ required but the recorded enforcement mode is only `policy-only`.
 
 ## Journey 6: Compact Plan And Tasks
 
+### Starting without an issue
+
+A user may begin with only a natural-language request:
+
+```text
+请帮我在导出结果里增加 CSV 格式，字段和页面列表保持一致；如果影响很小，可以建议走 Compact。
+```
+
+`speckit.ai-team.start` launches `ai-team-intake`. Intake performs only
+read-only context, Code Graph, and impact analysis; writes a local issue draft;
+and lets AI recommend Standard or Compact. The human approves the issue draft,
+publication target, and planning choice. The system then creates the coding
+issue and launches the formal workflow. A feature stops at `state/draft` until
+Technical Committee or delegated acceptance is recorded.
+
 Use this mode only for clear, low-risk work whose impact analysis
 shows a local or single-module change. The user starts one planning action, but
 the workflow still isolates the architect context from the developer context:

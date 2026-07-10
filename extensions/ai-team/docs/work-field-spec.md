@@ -76,9 +76,10 @@ All linked issues must use the same work type and must map to distinct
 reproduction and verification evidence. Split the work when root cause,
 approved scope, rollback, or release risk differs.
 
-If there is no issue yet, create a coding issue first when possible. If that is
-not possible, use a concise lower-kebab bug slug and replace it with the issue
-identity once the issue exists.
+If there is no issue yet, `ai-team-intake` may use a concise lower-kebab Intake
+slug for read-only classification and impact analysis. After human review, the
+system creates the coding issue and replaces the provisional identity with the
+issue-derived work slug before formal SDD or bug-fix implementation begins.
 
 ## Feature Work Items
 

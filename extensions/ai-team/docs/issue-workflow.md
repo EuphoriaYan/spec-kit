@@ -3,6 +3,12 @@
 AI Team work is tracked with repository issues and labels. Issues are the
 human-visible work ledger; Work Context Packages are only the AI reload context.
 
+The first user message does not need an existing issue. `ai-team-intake` may
+perform read-only source and Code Graph analysis, create an issue draft, and
+recommend a planning mode. A human approves the exact publication target and
+draft before the system creates the issue. Formal specification, planning, and
+source edits still require the resulting issue or confidential handoff URL.
+
 ## Repository Roles
 
 | Repository | Purpose | Allowed type labels |
