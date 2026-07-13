@@ -100,7 +100,8 @@ Before writing memory, generate the managed ignore block:
 python .specify/extensions/ai-team/scripts/memory_adapter.py --ensure-ignore
 ```
 
-Persist a reviewed card:
+Write candidate cards under the ignored
+`.specify/ai-team/memory/staging/` directory, then persist a reviewed card:
 
 ```text
 python .specify/extensions/ai-team/scripts/memory_adapter.py \

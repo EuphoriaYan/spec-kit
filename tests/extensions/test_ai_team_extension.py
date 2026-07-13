@@ -38,6 +38,13 @@ owner: module-maintainer
 """
 
 
+def _staged_card(tmp_path: Path, name: str, content: str) -> Path:
+    source = tmp_path / ".specify" / "ai-team" / "memory" / "staging" / name
+    source.parent.mkdir(parents=True, exist_ok=True)
+    source.write_text(content, encoding="utf-8")
+    return source
+
+
 def _collect_step_ids(steps: list) -> list[str]:
     """Return step ids from a workflow, including nested control-flow bodies."""
     ids: list[str] = []
@@ -273,8 +280,7 @@ def test_memory_adapter_generates_idempotent_git_ignore_rules(tmp_path):
 def test_memory_adapter_private_paths_are_ignored_by_git(tmp_path):
     adapter = _load_memory_adapter()
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
-    source = tmp_path / "candidate.md"
-    source.write_text(_memory_card("local", "private"), encoding="utf-8")
+    source = _staged_card(tmp_path, "candidate.md", _memory_card("local", "private"))
 
     result = adapter.persist_memory(
         project_root=tmp_path,
@@ -294,8 +300,9 @@ def test_memory_adapter_private_paths_are_ignored_by_git(tmp_path):
 
 def test_memory_adapter_writes_enterprise_memory_to_docs(tmp_path):
     adapter = _load_memory_adapter()
-    source = tmp_path / "reviewed.md"
-    source.write_text(_memory_card("enterprise", "public-safe"), encoding="utf-8")
+    source = _staged_card(
+        tmp_path, "reviewed.md", _memory_card("enterprise", "public-safe")
+    )
 
     result = adapter.persist_memory(
         project_root=tmp_path,
@@ -309,8 +316,7 @@ def test_memory_adapter_writes_enterprise_memory_to_docs(tmp_path):
 
 def test_memory_adapter_mem0_mirrors_sanitized_non_private_card(tmp_path, monkeypatch):
     adapter = _load_memory_adapter()
-    source = tmp_path / "department.md"
-    source.write_text(_memory_card("department"), encoding="utf-8")
+    source = _staged_card(tmp_path, "department.md", _memory_card("department"))
     config = tmp_path / "config.yml"
     config.write_text(
         """memory:
@@ -352,8 +358,7 @@ def test_memory_adapter_mem0_mirrors_sanitized_non_private_card(tmp_path, monkey
 
 def test_memory_adapter_rejects_private_mem0_sync(tmp_path, monkeypatch):
     adapter = _load_memory_adapter()
-    source = tmp_path / "private.md"
-    source.write_text(_memory_card("local", "private"), encoding="utf-8")
+    source = _staged_card(tmp_path, "private.md", _memory_card("local", "private"))
 
     with pytest.raises(adapter.MemoryAdapterError, match="cannot be synced"):
         adapter.persist_memory(

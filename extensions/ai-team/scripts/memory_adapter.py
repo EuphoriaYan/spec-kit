@@ -20,6 +20,7 @@ import yaml
 IGNORE_START = "# BEGIN AI TEAM PRIVATE MEMORY"
 IGNORE_END = "# END AI TEAM PRIVATE MEMORY"
 IGNORE_PATHS = (
+    "/.specify/ai-team/memory/staging/",
     "/.specify/ai-team/memory/local/",
     "/.specify/ai-team/memory/department/",
     "/.specify/ai-team/releases/private/",
@@ -185,6 +186,14 @@ def persist_memory(
 
     ensure_memory_gitignore(project_root)
     config = _load_config(project_root, config_path)
+    allowed_source_roots = [
+        project_root / ".specify" / "ai-team" / "memory" / "staging",
+        project_root / DEFAULT_TIER_PATHS[tier],
+    ]
+    if not any(_inside(source, root) for root in allowed_source_roots):
+        raise MemoryAdapterError(
+            "memory source must be under the managed staging or canonical tier path"
+        )
     card_text = source.read_text(encoding="utf-8")
     metadata = _frontmatter(card_text)
     if metadata.get("tier") != tier:
