@@ -257,24 +257,29 @@ New project work needs a stricter build-from-zero plan:
 
 ## Commands
 
-| Command | Use |
-|---|---|
-| `speckit.ai-team.workspace` | create or update repository role and privacy boundary config |
-| `speckit.ai-team.start` | chat-first routing to bug, feature, or template workflow (not a bundled workflow step) |
-| `speckit.ai-team.context` | open, update, or reconstruct a durable Work Context Package |
-| `speckit.ai-team.permissions` | create or verify a task-scoped Permission Envelope without claiming an unverified sandbox |
-| `speckit.ai-team.requirement` | create or refine internal enhancement context and sanitized handoff requirements |
-| `speckit.ai-team.codegraph` | generate or attach the code graph slice used for impact and gates |
-| `speckit.ai-team.impact` | inspect code graph or source-structure impact before code edits |
-| `speckit.ai-team.plan-check` | assess plan readiness after `speckit.plan`; chat report only (no gate file) |
-| `speckit.ai-team.handoff` | create role-isolated handoff documents between phases |
-| `speckit.ai-team.feature-review` | help maintainers and the technical committee assess internal enhancement handoff readiness |
-| `speckit.ai-team.pr` | prepare a PR in the correct repository with linked work item and evidence |
-| `speckit.ai-team.review` | help human reviewers assess boundary safety and evidence |
-| `speckit.ai-team.retrospect` | turn failures into durable process improvements |
-| `speckit.ai-team.memory-consolidate` | consolidate completed work into local, department, or enterprise memory |
-| `speckit.ai-team.release-archive` | archive a release and distill feature, bugfix, migration, and operations knowledge |
-| `speckit.ai-team.support` | audit Skill, Knowledge, and Memory support layers |
+Each command owns one phase. Workflow files own sequencing; commands must not
+silently perform the next command's decision.
+
+| Command | Unique responsibility | Explicitly does not own |
+|---|---|---|
+| `workspace` | repository roles, remotes, privacy configuration | task routing or work analysis |
+| `start` | thin chat routing and workflow launch | classification without a work item, context creation, code analysis |
+| `intake` | unanchored request classification, read-only impact, Issue draft | Issue publication, Feature acceptance, formal context |
+| `requirement` | confidential demand and sanitized handoff | public Issue publication or Feature acceptance |
+| `feature-review` | Technical Committee/delegated Feature acceptance evidence | requirement writing or implementation |
+| `context` | formal Work Context creation and resume | pre-Issue Intake or long-term memory |
+| `permissions` | Intake/formal access envelope and enforcement truth | business or architecture approval |
+| `codegraph` | source-derived graph facts and normalized graph artifacts | task-specific impact decisions |
+| `impact` | interpret graph/source facts for one work item | graph generation or architecture approval |
+| `handoff-spec-sync` | fetch an allowed private handoff into ignored override input | role handoff or requirement approval |
+| `handoff` | role-isolated phase-to-phase document transfer | remote requirement synchronization |
+| `plan-check` | pre-Tasks plan readiness report | PR review or human gate decision |
+| `pr` | assemble and submit the PR evidence package | independent merge-readiness judgment |
+| `review` | independent PR architecture/evidence assessment | PR authorship or Feature acceptance |
+| `retrospect` | classify one failure and propose a durable control | general memory promotion or release batching |
+| `memory-consolidate` | promote reviewed lessons across memory tiers | failure diagnosis or release enumeration |
+| `release-archive` | batch one release's work and invoke memory promotion | changing current system specification |
+| `support` | audit Skill, Knowledge, and Memory registries | task execution or lesson creation |
 
 ## Workflow
 

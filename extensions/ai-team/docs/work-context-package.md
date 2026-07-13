@@ -4,6 +4,10 @@ The Work Context Package is the durable handoff unit for AI Team SDD work. It
 ties one bug fix, feature, or template change to the current phase, source
 snapshot, graph evidence, required human decisions, and next command.
 
+Create it only after a stable Issue, charter, or handoff exists. Pre-work-item
+Intake remains under `.specify/ai-team/intake/<intake_slug>/` and must not create
+a formal Work Context Package.
+
 It exists because AI agents may stop, switch tools, lose chat context, or enter
 the work after a human approval step. Recovery must come from repository facts,
 not from hidden conversation memory.

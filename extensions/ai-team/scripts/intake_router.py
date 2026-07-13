@@ -126,8 +126,10 @@ def publish_issue(
     draft, issue_body = _frontmatter(intake_dir / "issue-draft.md")
 
     work_type = str(intake.get("work_type", ""))
-    if work_type not in {"bug", "feature"}:
-        raise IntakeRouteError("intake work_type must be resolved to bug or feature")
+    if work_type not in {"bug", "feature", "new-project"}:
+        raise IntakeRouteError(
+            "intake work_type must be resolved to bug, feature, or new-project"
+        )
     privacy = str(intake.get("privacy_class", "unknown"))
     if privacy not in {"public-safe", "confidential"}:
         raise IntakeRouteError("privacy_class must be resolved before publication")
@@ -135,7 +137,7 @@ def publish_issue(
     if planning_mode not in {"standard", "compact"}:
         raise IntakeRouteError("planning_mode must be standard or compact")
 
-    expected_type = f"type/{work_type}"
+    expected_type = "type/bug" if work_type == "bug" else "type/feature"
     if draft.get("type_label") != expected_type:
         raise IntakeRouteError("issue draft type does not match intake classification")
     repository = str(draft.get("target_repository", ""))
@@ -145,9 +147,11 @@ def publish_issue(
     if not title:
         raise IntakeRouteError("issue draft title is required")
 
-    feature_decision = str(intake.get("feature_decision", "not-applicable"))
+    feature_decision = str(
+        intake.get("feature_decision_evidence", "not-applicable")
+    )
     accepted = work_type == "bug" or feature_decision == "accepted"
-    if work_type == "feature" and accepted:
+    if work_type in {"feature", "new-project"} and accepted:
         if not intake.get("feature_approver") or not intake.get("feature_approver_role"):
             raise IntakeRouteError(
                 "accepted feature requires Technical Committee or delegated approver evidence"
@@ -188,7 +192,7 @@ def publish_issue(
     route_status = "ready"
     if privacy == "confidential":
         route_status = "awaiting-handoff"
-    elif work_type == "feature" and not accepted:
+    elif work_type in {"feature", "new-project"} and not accepted:
         route_status = "awaiting-feature-acceptance"
     result = {
         "intake_slug": intake_slug,
@@ -237,12 +241,13 @@ def route_formal_workflow(
             "--input", "work_type=bug",
             "--input", f"coding_issue_url={issue_url}",
         ]
-    elif work_type == "feature":
+    elif work_type in {"feature", "new-project"}:
+        planning_mode = "standard" if work_type == "new-project" else result["planning_mode"]
         command = [
             "specify", "workflow", "run", "ai-team-sdd",
             "--input", f"request={request}",
-            "--input", "work_type=feature",
-            "--input", f"planning_mode={result['planning_mode']}",
+            "--input", f"work_type={work_type}",
+            "--input", f"planning_mode={planning_mode}",
             "--input", f"coding_issue_url={issue_url}",
         ]
     else:

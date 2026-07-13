@@ -1,11 +1,13 @@
 ---
-description: "Turn an unanchored plain-language request into read-only impact evidence, a reviewed issue, and a resumable formal workflow handoff."
+description: "Classify an unanchored request and produce read-only impact evidence plus an Issue draft."
 ---
 
 # AI Team Intake
 
-Handle a request that does not yet have a coding issue or confidential
-requirement handoff. Intake is not formal SDD and must not edit product source.
+Handle a request that does not yet have a coding issue, project charter, or
+confidential requirement handoff. Intake owns normalization, classification,
+read-only impact evidence, and the Issue draft. It does not approve features,
+publish issues, create formal Work Context, or launch formal SDD.
 
 ## User Input
 
@@ -18,11 +20,11 @@ $ARGUMENTS
 Use `.specify/ai-team/intake/<intake_slug>/`:
 
 ```text
-intake.yml              # resolved classification, privacy, recommendation, approvals
+intake.yml              # resolved classification, privacy, recommendation, approval evidence
 request.md              # concise user wording; never copy confidential text publicly
 impact-summary.md       # links to Code Graph or source-structure evidence
 issue-draft.md          # proposed issue body and labels
-result.yml              # created URL and formal workflow resume information
+result.yml              # written later by deterministic workflow scripts
 ```
 
 These are provisional local workflow artifacts. Do not commit them merely to
@@ -33,7 +35,7 @@ start work. Durable formal context begins under
 
 1. Preserve the user's original intent in `request.md` and assign a safe,
    lower-kebab `intake_slug`.
-2. Classify provisionally as `bug`, `feature`, or `unclear`. Ask one focused
+2. Classify provisionally as `bug`, `feature`, `new-project`, or `unclear`. Ask one focused
    question only when bug versus feature changes the repository or approval
    route.
 3. Classify publication as `public-safe`, `confidential`, or `unknown`. Never
@@ -47,17 +49,18 @@ start work. Durable formal context begins under
    boundary review:
 
 ```yaml
-work_type: bug | feature
+work_type: bug | feature | new-project
 privacy_class: public-safe | confidential
 planning_mode: standard | compact
-feature_decision: not-applicable | draft | accepted
+feature_decision_evidence: not-applicable | unreviewed | accepted
 feature_approver:
 feature_approver_role:
 ```
 
 `work_type=auto` is allowed only as input to this analysis. It must be resolved
-to `bug` or `feature` in `intake.yml`; otherwise the review must be revised or
-rejected and no formal workflow may start.
+to `bug`, `feature`, or `new-project` in `intake.yml`; otherwise the review must
+be revised or rejected and no formal workflow may start. `new-project` always
+uses Standard planning and publishes a `type/feature` work item.
 
 ## Mode: Draft
 
@@ -86,57 +89,39 @@ change, no security/privacy or critical-dependency decision, and simple
 rollback. Words such as "small" or "quick" are not evidence. AI recommends;
 the human gate selects.
 
-## Publication And Routing
+Feature acceptance is owned by `speckit.ai-team.feature-review` and the
+Technical Committee or delegated authority. Intake may copy verifiable approval
+evidence into `intake.yml`; it must not create that decision. Without such
+evidence, the Issue remains `state/draft` after publication.
 
-Publication is not an AI prose action. After the draft review reaches
-`approve`, `ai-team-intake` invokes the installed deterministic script:
+## Handoff To Workflow
 
-```text
-python .specify/extensions/ai-team/scripts/intake_router.py publish \
-  --run-id <run-id> --intake-slug <slug>
-python .specify/extensions/ai-team/scripts/intake_router.py route \
-  --run-id <run-id> --intake-slug <slug>
-```
-
-The script verifies both gate decisions, validates the draft against
-`intake.yml`, publishes through the configured GitHub CLI adapter, records the
-returned URL in `result.yml`, and launches the formal workflow with structured
-arguments. Before side effects:
-
-1. Record the approving human and whether they are authorized to accept a
-   feature for the Technical Committee or delegated authority.
-2. Use the configured repository adapter. The bundled implementation is
-   `github-cli`; other platforms must replace the adapter contract rather than
-   falling back to an invented URL.
-3. Apply `type/bug` or `type/feature` and one state label. A newly reported bug
-   may proceed after issue creation. A feature remains `state/draft` unless the
-   authorized feature decision is recorded; only then may it move to
-   `state/accepted`.
-4. Write the returned issue URL, labels, approver, selected planning mode, and
-   next action to `result.yml`.
-5. Let `intake_router.py route` launch the next workflow; do not ask the user to
-   type the CLI command:
+Intake ends after returning its artifacts and recommendation:
 
 ```text
-bug -> ai-team-bugfix with coding_issue_url and generated bug work_slug
-accepted feature -> ai-team-sdd with coding_issue_url and human-selected planning_mode
-draft feature -> stop with a resumable chat instruction for feature review
-confidential feature -> route to enhancement-internal; do not create a public coding issue
+AI Team Intake Result:
+- intake slug:
+- classification:
+- privacy class:
+- issue draft path:
+- impact evidence path:
+- planning recommendation:
+- feature acceptance evidence, if supplied:
+- unresolved questions:
+- stop conditions:
 ```
 
-For an accepted Compact feature, invoke `ai-team-sdd` with
-`planning_mode=compact`. That formal workflow repeats the post-impact Compact
-eligibility gate before Plan and Tasks. If the formal impact result is broader,
-restart in Standard mode.
+The `ai-team-intake` workflow owns review loops, publication, waiting states,
+and formal workflow routing. Intake must not invoke or reproduce those steps.
 
 ## Stop Conditions
 
-Stop without publishing or editing source when:
+Stop without completing the Intake draft when:
 
-- repository visibility is unknown and the request may be confidential;
-- the issue target or authenticated publication adapter is unavailable;
+- classification, repository visibility, or target repository is unresolved;
 - issue body and analyzed request disagree;
-- no human approved the issue draft;
-- a feature lacks Technical Committee or delegated acceptance;
+- required read-only impact evidence is missing;
+- Intake claims a Feature is accepted without external Technical Committee or
+  delegated approval evidence;
 - Compact was selected without qualifying impact evidence;
-- issue creation did not return a verifiable URL.
+- confidential demand would be copied into a public-safe draft.

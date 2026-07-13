@@ -5,7 +5,8 @@ description: "Open, update, or reconstruct the durable Work Context Package so i
 # AI Team Context
 
 Create, load, update, or reconstruct the durable Work Context Package for an
-AI Team SDD work unit.
+AI Team SDD work unit after a stable Issue, charter, or handoff exists. Intake
+uses its own provisional directory and never creates a formal Work Context.
 
 ## User Input
 
@@ -45,8 +46,6 @@ Use a stable `work_slug`:
 - for bug work: same as `bug_slug`;
 - for new-project or template work: explicit slug at intake;
 - explicit `work_slug=<value>` when the work item has no stable ID yet.
-- during pre-work-item Intake only: `intake-<intake_slug>`; replace it with the
-  formal issue-derived slug after issue creation.
 
 Use `extensions/ai-team/docs/work-field-spec.md` or the installed equivalent as
 the field naming contract.
@@ -148,21 +147,18 @@ updated_at:
    `also_resolves_issue_urls`,
    `handoff_requirement_url`, deprecated `published_requirement_url`,
    `bug_slug`, and `workflow_run_id` from arguments and existing work context.
-3. When `intake_mode=true`, allow a provisional `intake-<intake_slug>` with no
-   issue URL, but keep the phase at `intake`, permit read-only analysis only,
-   and do not create formal SDD artifacts.
-4. If `resume=true`, load `work-context.yml`, `context-pack.md`, and
+3. If `resume=true`, load `work-context.yml`, `context-pack.md`, and
    `permission-envelope.yml`; otherwise create the first two and leave
    permissions blocked until explicitly assessed.
-5. Resolve native artifacts from the active feature directory or bug slug.
+4. Resolve native artifacts from the active feature directory or bug slug.
    Record missing artifacts as missing; do not invent paths.
-6. Treat `coding_issue_url` as the primary coding issue. Accept
+5. Treat `coding_issue_url` as the primary coding issue. Accept
    `also_resolves_issue_urls` only when the linked issues describe different
    symptoms of the same root-cause change. Keep all linked issues the same work
    type and require separate evidence mapping for each one.
-7. Update `phase`, `last_completed_command`, `next_command`, and artifact
+6. Update `phase`, `last_completed_command`, `next_command`, and artifact
    locations when arguments include newer phase evidence.
-8. Return the resume summary, permission status, and next command.
+7. Return the resume summary, permission status, and next command.
 
 ## Output Shape
 
@@ -192,9 +188,8 @@ Stop and ask when:
 
 - the work cannot be mapped to a bug issue/slug, coding issue URL, handoff
   requirement URL, or explicit work slug;
-- a feature tries to enter formal SDD without a coding issue or handoff
-  requirement; Intake may use an approved provisional slug for read-only
-  analysis only;
+- a feature or new project tries to enter formal SDD without a coding issue,
+  charter, or handoff requirement;
 - additional issue URLs are present without a primary coding issue, use another
   work type, or do not share one root-cause change;
 - the context pack contains private enhancement content in a public coding

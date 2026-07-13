@@ -21,7 +21,13 @@ record a fallback source-structure slice. It does not approve design changes.
 
 ## Required Inputs
 
-Read when present:
+Select exactly one context root:
+
+- formal work: `.specify/ai-team/work/<work_slug>/`;
+- pre-work-item analysis: `intake_mode=true`, `intake_slug=<slug>`, and
+  `.specify/ai-team/intake/<intake_slug>/`.
+
+Read when present under the selected root:
 
 - `.specify/ai-team/work/<work_slug>/work-context.yml`;
 - `.specify/ai-team/work/<work_slug>/permission-envelope.yml`;
@@ -49,10 +55,11 @@ license review status, and the confidence level.
 
 ## Required Output
 
-Write or attach the code graph slice under:
+Write or attach the code graph slice under the selected root:
 
 ```text
 .specify/ai-team/work/<work_slug>/codegraph/
+or .specify/ai-team/intake/<intake_slug>/codegraph/
 |-- nodes.jsonl
 |-- edges.jsonl
 |-- summary.md
@@ -88,8 +95,8 @@ contains, imports, calls, implements, extends, reads_config, tests, depends_on
 
 ## Workflow
 
-1. Load the active Work Context Package or create it with
-   `speckit.ai-team.context` if needed.
+1. Load the formal Work Context Package, or the Intake artifact when
+   `intake_mode=true`. Never create formal context merely to analyze Intake.
 2. Require an analysis-mode Permission Envelope. Verify that its repository,
    read paths, commands, network access, approval state, and enforcement mode
    cover the proposed graph operation. Do not treat a workflow gate as a
@@ -100,8 +107,8 @@ contains, imports, calls, implements, extends, reads_config, tests, depends_on
    service result.
 6. Normalize output to `nodes.jsonl`, `edges.jsonl`, `summary.md`, and
    `adapter-report.md`.
-7. Update `work-context.yml` with the code graph artifact path, source
-   snapshot, status, and next command.
+7. Update `work-context.yml` for formal work or `intake.yml` for Intake with
+   the graph path, source snapshot, status, and next command.
 8. Hand the graph artifact to `speckit.ai-team.impact`, `speckit.plan`,
    `speckit.ai-team.plan-check`, `speckit.analyze`, or `speckit.converge`
    (composite checks and evidence run inside converge when preset
@@ -111,7 +118,7 @@ contains, imports, calls, implements, extends, reads_config, tests, depends_on
 
 Stop and ask when:
 
-- no work slug or work item can be resolved;
+- neither a formal work unit nor a valid Intake unit can be resolved;
 - the analysis Permission Envelope is missing, stale, not approved when
   approval is required, or does not cover the requested access;
 - hard runtime confinement is required but the effective enforcement mode is

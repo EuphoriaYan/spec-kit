@@ -15,9 +15,9 @@ $ARGUMENTS
 
 ## Required Inputs
 
-Resolve:
+Resolve either a formal work scope or an Intake scope:
 
-- `work_slug`;
+- formal `work_slug`, or `intake_mode=true` plus `intake_slug`;
 - requested `mode=analysis|implementation|verification|submission`;
 - repository role and target module;
 - active AI integration;
@@ -25,10 +25,12 @@ Resolve:
   network destinations;
 - requested enforcement mode, if any.
 
-Load:
+Load exactly one context root:
 
-- `.specify/ai-team/work/<work_slug>/work-context.yml`;
-- existing `permission-envelope.yml`;
+- formal: `.specify/ai-team/work/<work_slug>/work-context.yml` and its
+  `permission-envelope.yml`;
+- Intake: `.specify/ai-team/intake/<intake_slug>/intake.yml` and its
+  `permission-envelope.yml`;
 - repository and AI integration rules.
 
 ## Workflow
@@ -41,9 +43,9 @@ Load:
    - use `agent-native` when native controls are configured and checked;
    - use `wrapper-enforced` when all relevant operations use a verified wrapper;
    - otherwise use `policy-only` and list the enforcement gaps.
-5. Write or update
-   `.specify/ai-team/work/<work_slug>/permission-envelope.yml`.
-6. Update the permission summary in `work-context.yml` and `context-pack.md`.
+5. Write or update the envelope under the selected formal or Intake root.
+6. For formal work, update `work-context.yml` and `context-pack.md`. For Intake,
+   update only `intake.yml`; do not create formal context files.
 7. Return the envelope diff and required human approvals. Do not begin the next
    protected phase.
 
@@ -70,7 +72,8 @@ AI Team Permission Check:
 
 Stop and recommend `block` when:
 
-- the Work Context Package is missing or identifies another work unit;
+- the selected formal Work Context or Intake artifact is missing or identifies
+  another unit;
 - paths are absolute, ambiguous, or broader than the approved module without a
   human decision;
 - implementation requests writes before plan/task review;

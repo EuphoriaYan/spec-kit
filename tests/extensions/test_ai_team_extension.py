@@ -218,19 +218,18 @@ def test_ai_team_extension_command_files_exist():
         assert command_file.read_text(encoding="utf-8").startswith("---\n")
 
 
-def test_ai_team_start_launches_compact_from_plain_language():
+def test_ai_team_start_is_a_thin_plain_language_router():
     text = (
         EXTENSION_ROOT / "commands" / "speckit.ai-team.start.md"
     ).read_text(encoding="utf-8")
 
-    assert "请用 AI Team Compact 模式" in text
-    assert "planning_mode=compact" in text
-    assert "Do not merely print the command" in text
-    assert "With an existing work item and no Compact selection" in text
-    assert "New projects always start in Standard mode" in text
+    assert "thin router" in text
+    assert "does not" in text
+    assert "No work item -> `ai-team-intake`" in text
     assert "ai-team-intake" in text
-    assert "When no work item exists" in text
-    assert "Technical Committee" in text
+    assert "do not decide whether this is a bug or feature here" in text
+    assert "Work Context Package:" not in text
+    assert "likely modules:" not in text
 
 
 def test_ai_team_intake_command_keeps_pre_work_item_analysis_read_only():
@@ -239,12 +238,37 @@ def test_ai_team_intake_command_keeps_pre_work_item_analysis_read_only():
     ).read_text(encoding="utf-8")
 
     assert ".specify/ai-team/intake/<intake_slug>/" in text
-    assert "must not edit product source" in text
+    assert "does not approve features" in text
     assert "issue-draft.md" in text
     assert "AI recommends" in text
     assert "Technical Committee" in text
-    assert "intake_router.py" in text
-    assert "intake_router.py route" in text
+    assert "It does not approve features" in text
+    assert "AI Team Intake Result:" in text
+    assert "intake_router.py" not in text
+
+
+def test_ai_team_command_responsibilities_are_non_overlapping():
+    readme = (EXTENSION_ROOT / "README.md").read_text(encoding="utf-8")
+    requirement = (
+        EXTENSION_ROOT / "commands" / "speckit.ai-team.requirement.md"
+    ).read_text(encoding="utf-8")
+    feature_review = (
+        EXTENSION_ROOT / "commands" / "speckit.ai-team.feature-review.md"
+    ).read_text(encoding="utf-8")
+    codegraph = (
+        EXTENSION_ROOT / "commands" / "speckit.ai-team.codegraph.md"
+    ).read_text(encoding="utf-8")
+    impact = (
+        EXTENSION_ROOT / "commands" / "speckit.ai-team.impact.md"
+    ).read_text(encoding="utf-8")
+
+    assert "Each command owns one phase" in readme
+    assert "classification without a work item" in readme
+    assert "Feature acceptance" in readme
+    assert "it does not\naccept the Feature" in requirement
+    assert "does not author the\nrequirement" in feature_review
+    assert ".specify/ai-team/intake/<intake_slug>/codegraph/" in codegraph
+    assert "does not generate the\nnormalized graph" in impact
 
 
 def test_ai_team_config_template_defines_repository_and_role_contracts():
@@ -628,6 +652,8 @@ def test_ai_team_work_context_document_exists():
     assert "`archived`" in text
     assert "speckit.ai-team.memory-consolidate" in text
     assert "speckit.ai-team.release-archive" in text
+    assert "after a stable Issue, charter, or handoff exists" in text
+    assert "intake-<intake_slug>" not in text
 
 
 def test_ai_team_reuses_native_sdd_artifacts_without_change_manifest():
@@ -922,7 +948,12 @@ def test_ai_team_intake_workflow_is_read_only_until_issue_approval():
 
     assert data["workflow"]["id"] == "ai-team-intake"
     assert "ai-team-intake" in catalog["workflows"]
-    assert data["inputs"]["work_type"]["enum"] == ["auto", "bug", "feature"]
+    assert data["inputs"]["work_type"]["enum"] == [
+        "auto",
+        "bug",
+        "feature",
+        "new-project",
+    ]
     assert data["inputs"]["planning_preference"]["enum"] == [
         "auto",
         "standard",
@@ -951,6 +982,9 @@ def test_ai_team_intake_workflow_is_read_only_until_issue_approval():
     assert _find_step(steps, "launch-formal-workflow")["type"] == "shell"
     assert "intake_router.py publish" in _find_step(steps, "publish-issue")["run"]
     assert "intake_router.py route" in _find_step(steps, "launch-formal-workflow")["run"]
+    permission_step = _find_step(steps, "permission-analysis")
+    assert "intake_mode=true" in permission_step["input"]["args"]
+    assert "work_slug=intake-" not in permission_step["input"]["args"]
 
 
 def _write_approved_intake(tmp_path: Path, *, work_type: str, accepted: bool = True):
@@ -978,9 +1012,9 @@ def _write_approved_intake(tmp_path: Path, *, work_type: str, accepted: bool = T
         "work_type": work_type,
         "privacy_class": "public-safe",
         "planning_mode": "compact" if work_type == "feature" else "standard",
-        "feature_decision": "accepted" if accepted else "draft",
-        "feature_approver": "tc-member" if accepted and work_type == "feature" else None,
-        "feature_approver_role": "technical-committee" if accepted and work_type == "feature" else None,
+        "feature_decision_evidence": "accepted" if accepted else "unreviewed",
+        "feature_approver": "tc-member" if accepted and work_type != "bug" else None,
+        "feature_approver_role": "technical-committee" if accepted and work_type != "bug" else None,
     }
     (intake_dir / "intake.yml").write_text(
         yaml.safe_dump(intake, sort_keys=False), encoding="utf-8"
@@ -988,7 +1022,7 @@ def _write_approved_intake(tmp_path: Path, *, work_type: str, accepted: bool = T
     (intake_dir / "issue-draft.md").write_text(
         f"""---
 title: Add CSV export
-type_label: type/{work_type}
+type_label: {"type/bug" if work_type == "bug" else "type/feature"}
 target_repository: example/project
 ---
 
@@ -1064,6 +1098,41 @@ def test_intake_router_draft_feature_stops_after_issue_creation(tmp_path):
 
     assert result["route_status"] == "awaiting-feature-acceptance"
     route_runner.assert_not_called()
+
+
+def test_intake_router_launches_new_project_in_standard_mode(tmp_path):
+    router = _load_intake_router()
+    run_id, slug = _write_approved_intake(tmp_path, work_type="new-project")
+    publish_runner = MagicMock(
+        return_value=subprocess.CompletedProcess(
+            args=[],
+            returncode=0,
+            stdout="https://github.com/example/project/issues/44\n",
+            stderr="",
+        )
+    )
+    router.publish_issue(
+        project_root=tmp_path,
+        run_id=run_id,
+        intake_slug=slug,
+        runner=publish_runner,
+    )
+    route_runner = MagicMock(
+        return_value=subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="Workflow paused", stderr=""
+        )
+    )
+
+    router.route_formal_workflow(
+        project_root=tmp_path,
+        run_id=run_id,
+        intake_slug=slug,
+        runner=route_runner,
+    )
+
+    command = route_runner.call_args.args[0]
+    assert "work_type=new-project" in command
+    assert "planning_mode=standard" in command
 
 
 def test_intake_router_refuses_unapproved_draft(tmp_path):

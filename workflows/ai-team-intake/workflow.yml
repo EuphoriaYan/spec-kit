@@ -31,7 +31,7 @@ inputs:
   work_type:
     type: string
     default: "auto"
-    enum: ["auto", "bug", "feature"]
+    enum: ["auto", "bug", "feature", "new-project"]
   privacy_class:
     type: string
     default: "unknown"
@@ -63,7 +63,7 @@ steps:
         command: speckit.ai-team.permissions
         integration: "{{ inputs.integration }}"
         input:
-          args: "{{ inputs.request }} work_slug=intake-{{ inputs.intake_slug }} mode=analysis work_type={{ inputs.work_type }} workflow_run_id={{ context.run_id }}"
+          args: "{{ inputs.request }} intake_mode=true intake_slug={{ inputs.intake_slug }} mode=analysis work_type={{ inputs.work_type }} workflow_run_id={{ context.run_id }}"
 
       - id: review-intake-boundary
         type: gate
