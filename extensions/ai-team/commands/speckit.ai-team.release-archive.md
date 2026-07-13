@@ -61,24 +61,27 @@ context, or internal approval discussion into release archives.
 
 ## Archive Shape
 
-Create or update:
+Create or update two explicitly different destinations:
 
 ```text
-.specify/ai-team/releases/<release_id>/
+ .specify/ai-team/releases/private/<release_id>/
+|-- evidence-rollup.md
+|-- archived-work.yml
+`-- privacy-review.md
+
+docs/ai-team/memory/releases/<release_id>/
 |-- release-summary.md
 |-- shipped-work-index.md
 |-- bugfix-lessons.md
 |-- feature-decisions.md
-|-- migration-playbook.md
-|-- evidence-rollup.md
-|-- archived-work.yml
-`-- privacy-review.md
+`-- migration-playbook.md
 ```
 
-Recommended committed artifacts are the public-safe summaries. Raw task traces
-may stay in `.specify/ai-team/work/<work_slug>/` or move to a private/internal
-archive depending on repository policy. Do not delete raw evidence unless the
-team has an explicit retention rule.
+The private archive is Git-ignored and may contain internal indexes and privacy
+review details. The enterprise directory is created only by an explicit,
+owner-approved promotion of sanitized summaries and is the only release archive
+location intended for commit. Do not copy raw evidence into `docs/` or delete
+it unless the team has an explicit retention rule.
 
 ## Bugfix Lesson Card
 
@@ -170,7 +173,8 @@ private customer examples in internal-only memory instead.
    - superseded by release summary;
    - private/internal-only;
    - must remain because audit or incident policy requires it.
-4. Write the release archive files.
+4. Write private archive files first. Run the memory adapter ignore setup before
+   writing `.specify/ai-team/releases/private/`.
 5. Promote durable knowledge:
    - bugfix lessons to department or enterprise attempt memory, knowledge map,
      tests, hooks, or skills;
@@ -218,6 +222,8 @@ Stop and ask when:
 - the release range is ambiguous;
 - a work item has no stable issue, PR, tag, or `work_slug`;
 - raw customer demand would be copied into a public coding repository;
+- enterprise files would be written without explicit owner approval and a
+  completed privacy review;
 - a bugfix lesson implies a new product behavior rather than a defect fix;
 - a feature decision changes public compatibility without owner approval;
 - deleting or moving raw evidence would violate audit, incident, or retention

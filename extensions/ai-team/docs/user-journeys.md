@@ -360,8 +360,11 @@ Flow:
    or explicit `work_slugs`.
 2. Read completed Work Context Packages, specs, bug artifacts, PR evidence,
    release verification, and code graph summaries.
-3. Create `.specify/ai-team/releases/<release_id>/`.
-4. Produce:
+3. Create the ignored private archive under
+   `.specify/ai-team/releases/private/<release_id>/`.
+4. Promote only approved, sanitized summaries to
+   `docs/ai-team/memory/releases/<release_id>/`.
+5. Produce the private evidence/index files and reviewed enterprise summaries:
    - release summary;
    - shipped work index;
    - bugfix lessons;
@@ -370,7 +373,7 @@ Flow:
    - evidence rollup;
    - archived work status;
    - privacy review.
-5. Promote durable knowledge:
+6. Promote durable knowledge:
    - bugfix symptoms, root causes, missing detections, and future guards to
      local, department, or enterprise memory, tests, hooks, or skills;
    - accepted architecture and compatibility choices to decision memory;

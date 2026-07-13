@@ -51,7 +51,8 @@ PRs, evidence, comments, CI output         merge evidence
 After release archive:
 
 ```text
-.specify/ai-team/releases/<release_id>/    public-safe release knowledge package
+.specify/ai-team/releases/private/<release_id>/ internal archive and privacy evidence
+docs/ai-team/memory/releases/<release_id>/ reviewed enterprise release knowledge
 .specify/ai-team/support/knowledge-map.md  updated current project knowledge
 .specify/ai-team/support/memory-index.md   indexed decisions and attempt lessons
 .specify/ai-team/memory/local/...          local-only contributor memory
@@ -65,18 +66,19 @@ delete.
 
 ## Artifact Contract
 
-`speckit.ai-team.release-archive` creates:
+`speckit.ai-team.release-archive` creates private records first and promotes a
+smaller reviewed subset to enterprise docs:
 
 | File | Purpose |
 |---|---|
-| `release-summary.md` | What shipped, why, and what changed at user/system level |
+| `release-summary.md` | Enterprise docs after privacy and owner review: what shipped and why |
 | `shipped-work-index.md` | Feature, bugfix, PR, issue, work slug, and evidence links |
 | `bugfix-lessons.md` | Curated bugfix lessons and future detection rules |
 | `feature-decisions.md` | Durable feature decisions, rejected scope, and compatibility commitments |
 | `migration-playbook.md` | Reusable design and implementation patterns for similar projects |
-| `evidence-rollup.md` | Release-level self-test, CI, scenario, and deferred evidence |
-| `archived-work.yml` | Archive status for each `work_slug` or `bug_slug` |
-| `privacy-review.md` | What stayed public-safe and what remained internal-only |
+| `evidence-rollup.md` | Private archive: release-level test and deferred evidence |
+| `archived-work.yml` | Private archive: status for each work or bug slug |
+| `privacy-review.md` | Private archive: what may be promoted and what remains internal |
 
 ## Bugfix Knowledge Is Special
 

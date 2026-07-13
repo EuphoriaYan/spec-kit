@@ -32,10 +32,15 @@ memory:
   # Three-tier memory keeps contributor scratch, department learning, and
   # enterprise guidance separate.
   service:
-    default_backend: mem0-compatible
-    allow_file_only: true
+    default_backend: file
+    supported_backends:
+      - file
+      - mem0
     require_namespace_for_upload: true
     store_raw_transcripts_by_default: false
+    mem0:
+      optional_package: mem0ai
+      api_key_env: MEM0_API_KEY
   tiers:
     local:
       path: .specify/ai-team/memory/local
@@ -72,20 +77,22 @@ release_archive:
   # Release archive is a release-scoped batch view of memory consolidation.
   # It summarizes completed work so future tasks do not need to load every
   # task-level trace.
-  root: .specify/ai-team/releases
-  default_privacy: public-safe
-  default_target_tier: enterprise
+  private_root: .specify/ai-team/releases/private
+  enterprise_root: docs/ai-team/memory/releases
+  default_privacy: department-internal
+  default_target_tier: department
   summarize_before_delete: true
   delete_raw_evidence_by_default: false
-  required_outputs:
+  private_outputs:
+    - evidence-rollup.md
+    - archived-work.yml
+    - privacy-review.md
+  enterprise_outputs:
     - release-summary.md
     - shipped-work-index.md
     - bugfix-lessons.md
     - feature-decisions.md
     - migration-playbook.md
-    - evidence-rollup.md
-    - archived-work.yml
-    - privacy-review.md
   promote_bugfix_lessons_to:
     - support/knowledge-map.md
     - support/memory-index.md

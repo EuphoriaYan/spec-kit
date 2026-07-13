@@ -169,8 +169,8 @@ After consolidation, future agents usually need a smaller artifact:
 - evidence rollup.
 
 `speckit.ai-team.release-archive` is the release-scoped batch version of the same
-process. It may create `.specify/ai-team/releases/<release_id>/` and then use the
-same promotion rules to decide what stays local, what is shared to department
+process. It may create `.specify/ai-team/releases/private/<release_id>/` and
+then use the same promotion rules to decide what stays local, what is shared to department
 memory, and what becomes enterprise memory.
 
 Bugfix lessons deserve special care because they often capture operational

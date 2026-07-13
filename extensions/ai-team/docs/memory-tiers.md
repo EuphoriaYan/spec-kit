@@ -15,8 +15,8 @@ authority.
 
 | Tier | Upload | Lives under docs | Appears in formal releases | Git policy | Typical owner |
 |---|---|---|---|---|---|
-| local memory | no | no | no | ignore or local-only | individual contributor |
-| department memory | yes, internal | no | no | internal-only repository or service sync | maintainer or team lead |
+| local memory | no | no | no | generated Git ignore | individual contributor |
+| department memory | yes, internal | no | no | generated Git ignore plus internal service sync | maintainer or team lead |
 | enterprise memory | yes, controlled | yes | yes when relevant | commit after review | maintainer, architecture owner, or technical committee |
 
 ## Local Memory
@@ -43,8 +43,8 @@ Rules:
 - do not place in `docs/`;
 - do not treat as an instruction to other agents;
 - sanitize before promotion;
-- prefer `.gitignore` or `.git/info/exclude` in product repositories when the
-  path may contain local-only notes.
+- run the installed memory adapter, which generates a managed `.gitignore`
+  block before writing local memory.
 
 ## Department Memory
 
@@ -67,7 +67,8 @@ Use department memory for:
 
 Rules:
 
-- upload only to approved internal repositories or memory services;
+- keep the coding-repository cache Git-ignored and upload only to approved
+  internal memory services;
 - do not put in `docs/`;
 - do not include in release documentation by default;
 - mark owner, privacy, evidence, and expiry;
@@ -101,10 +102,14 @@ Rules:
 - may guide future projects, but still ranks below current source, current
   spec, current plan, and current owner decisions.
 
-## Default Memory Service: mem0-like
+## Adapter Model
 
-AI Team can start with files only, but the default service model should be
-compatible with mem0-style memory:
+The default adapter is local file storage. It atomically writes a validated card,
+updates a local index, and ensures local/department/private-release paths are
+ignored by Git. A Mem0 adapter is optional and mirrors sanitized department or
+enterprise cards using the official `MemoryClient.add` interface.
+
+The memory shape remains compatible with mem0-style memory:
 
 - a memory entry is a small card, not a raw transcript;
 - metadata includes tier, owner, privacy, source work item, module, code graph
@@ -169,3 +174,4 @@ Stop before writing or syncing memory when:
 - the memory conflicts with current source, spec, plan, issue, release notes, or
   owner decision;
 - mem0 or another memory service lacks an approved namespace and access boundary.
+- the local file adapter cannot install or verify its managed Git ignore block.

@@ -116,7 +116,8 @@ contributors or maintainers may run `speckit.ai-team.memory-consolidate` and
 choose local, department, or enterprise memory. After a release candidate,
 final release, milestone, or maintainer-chosen checkpoint, maintainers may run
 `speckit.ai-team.release-archive` to summarize many completed work items into
-`.specify/ai-team/releases/<release_id>/`.
+`.specify/ai-team/releases/private/<release_id>/`; only reviewed, sanitized
+enterprise summaries are promoted to `docs/ai-team/memory/releases/<release_id>/`.
 
 The memory or release archive record should mark each `work_slug` or `bug_slug`
 as one of:

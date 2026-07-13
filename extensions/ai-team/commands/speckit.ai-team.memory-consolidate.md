@@ -26,7 +26,7 @@ Useful arguments:
 - `source_issue_url=<coding-or-internal-issue-url>`
 - `target_tier=local|department|enterprise`
 - `privacy=private|department-internal|public-safe`
-- `memory_service=file|mem0`
+- `memory_service=file|mem0` (`file` is the safe default)
 
 ## Goal
 
@@ -86,9 +86,33 @@ with formal project documentation and releases. It is suitable for long-term
 architecture guidance, compatibility rules, bugfix playbooks, and migration
 patterns that future projects should load early.
 
-## Default Memory Service
+## Memory Adapter
 
-The default service model is mem0-like:
+The installed executable adapter is
+`.specify/extensions/ai-team/scripts/memory_adapter.py`. The local file adapter
+is always available and is the source of truth. The optional Mem0 adapter
+mirrors an already sanitized department or enterprise card; it does not replace
+the local record.
+
+Before writing memory, generate the managed ignore block:
+
+```text
+python .specify/extensions/ai-team/scripts/memory_adapter.py --ensure-ignore
+```
+
+Persist a reviewed card:
+
+```text
+python .specify/extensions/ai-team/scripts/memory_adapter.py \
+  --source <card-path> --tier <local|department|enterprise> \
+  --backend <file|mem0>
+```
+
+`mem0` requires the optional `mem0ai` package, `MEM0_API_KEY` (or the configured
+environment variable), and a non-empty namespace for the selected tier. Local
+or `privacy: private` cards are rejected by the remote adapter.
+
+The adapter follows a mem0-like contract:
 
 - memory entries are small, structured cards;
 - each card has metadata, evidence links, privacy classification, owner, and
@@ -185,9 +209,11 @@ supersedes:
    - maintainer may promote to `department`;
    - maintainer, architecture owner, technical committee, or equivalent owner
      approves `enterprise`.
-5. Write or update the memory card.
-6. If `memory_service=mem0`, sync the sanitized card metadata and summary to the
-   configured service namespace for the selected tier.
+5. Write the candidate card inside the project, then run `memory_adapter.py`.
+   The adapter validates metadata, writes the canonical tier path atomically,
+   updates `index.json`, and ensures private paths are ignored by Git.
+6. If `memory_service=mem0`, the adapter syncs the sanitized card to the
+   configured namespace after the canonical file write succeeds.
 7. Update indexes:
    - local index for local memory;
    - department memory index for uploaded internal memory;
@@ -248,3 +274,4 @@ Stop and ask when:
   owner decision;
 - mem0 or another service would receive data without a configured namespace,
   access boundary, and privacy classification.
+- the managed `.gitignore` block cannot be generated or is malformed.

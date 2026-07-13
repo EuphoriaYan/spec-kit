@@ -1,5 +1,8 @@
 import json
+import importlib.util
+import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,6 +13,29 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 EXTENSION_ROOT = REPO_ROOT / "extensions" / "ai-team"
 WORKFLOW_PATH = REPO_ROOT / "workflows" / "ai-team-sdd" / "workflow.yml"
 BUGFIX_WORKFLOW_PATH = REPO_ROOT / "workflows" / "ai-team-bugfix" / "workflow.yml"
+MEMORY_ADAPTER_PATH = EXTENSION_ROOT / "scripts" / "memory_adapter.py"
+
+
+def _load_memory_adapter():
+    spec = importlib.util.spec_from_file_location("ai_team_memory_adapter", MEMORY_ADAPTER_PATH)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _memory_card(tier: str, privacy: str = "department-internal") -> str:
+    return f"""---
+memory_type: bugfix_lesson
+tier: {tier}
+privacy: {privacy}
+owner: module-maintainer
+---
+
+# Retry exhaustion
+
+- Root cause: retry budget was shared across requests.
+"""
 
 
 def _collect_step_ids(steps: list) -> list[str]:
@@ -147,8 +173,9 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["work_context"]["root"] == ".specify/ai-team/work"
     assert config["work_context"]["context_pack_file"] == "context-pack.md"
     assert config["work_context"]["work_context_file"] == "work-context.yml"
-    assert config["memory"]["service"]["default_backend"] == "mem0-compatible"
-    assert config["memory"]["service"]["allow_file_only"] is True
+    assert config["memory"]["service"]["default_backend"] == "file"
+    assert config["memory"]["service"]["supported_backends"] == ["file", "mem0"]
+    assert config["memory"]["service"]["mem0"]["optional_package"] == "mem0ai"
     assert config["memory"]["service"]["store_raw_transcripts_by_default"] is False
     assert config["memory"]["tiers"]["local"]["upload"] is False
     assert config["memory"]["tiers"]["local"]["docs"] is False
@@ -162,16 +189,19 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["memory"]["tiers"]["enterprise"]["upload"] is True
     assert config["memory"]["tiers"]["enterprise"]["docs"] is True
     assert config["memory"]["tiers"]["enterprise"]["git_policy"] == "commit-after-review"
-    assert config["release_archive"]["root"] == ".specify/ai-team/releases"
-    assert config["release_archive"]["default_privacy"] == "public-safe"
-    assert config["release_archive"]["default_target_tier"] == "enterprise"
+    assert config["release_archive"]["private_root"] == ".specify/ai-team/releases/private"
+    assert config["release_archive"]["enterprise_root"] == "docs/ai-team/memory/releases"
+    assert config["release_archive"]["default_privacy"] == "department-internal"
+    assert config["release_archive"]["default_target_tier"] == "department"
     assert config["release_archive"]["delete_raw_evidence_by_default"] is False
-    assert set(config["release_archive"]["required_outputs"]) == {
+    assert set(config["release_archive"]["enterprise_outputs"]) == {
         "release-summary.md",
         "shipped-work-index.md",
         "bugfix-lessons.md",
         "feature-decisions.md",
         "migration-playbook.md",
+    }
+    assert set(config["release_archive"]["private_outputs"]) == {
         "evidence-rollup.md",
         "archived-work.yml",
         "privacy-review.md",
@@ -224,6 +254,114 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["privacy"]["private_handoff_override_file"] == "spec.override.md"
     assert set(config["roles"]) == {"specify", "plan", "tasks_and_implement"}
     assert all(role["context_isolation"] is True for role in config["roles"].values())
+
+
+def test_memory_adapter_generates_idempotent_git_ignore_rules(tmp_path):
+    adapter = _load_memory_adapter()
+    (tmp_path / ".gitignore").write_text("dist/\n", encoding="utf-8")
+
+    adapter.ensure_memory_gitignore(tmp_path)
+    adapter.ensure_memory_gitignore(tmp_path)
+
+    text = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+    assert text.startswith("dist/\n")
+    assert text.count(adapter.IGNORE_START) == 1
+    for ignored in adapter.IGNORE_PATHS:
+        assert ignored in text
+
+
+def test_memory_adapter_private_paths_are_ignored_by_git(tmp_path):
+    adapter = _load_memory_adapter()
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    source = tmp_path / "candidate.md"
+    source.write_text(_memory_card("local", "private"), encoding="utf-8")
+
+    result = adapter.persist_memory(
+        project_root=tmp_path,
+        source=source,
+        tier="local",
+    )
+
+    destination = tmp_path / result["path"]
+    assert destination.exists()
+    ignored = subprocess.run(
+        ["git", "-C", str(tmp_path), "check-ignore", "-q", str(destination)],
+        check=False,
+    )
+    assert ignored.returncode == 0
+    assert result["backend"] == "file"
+
+
+def test_memory_adapter_writes_enterprise_memory_to_docs(tmp_path):
+    adapter = _load_memory_adapter()
+    source = tmp_path / "reviewed.md"
+    source.write_text(_memory_card("enterprise", "public-safe"), encoding="utf-8")
+
+    result = adapter.persist_memory(
+        project_root=tmp_path,
+        source=source,
+        tier="enterprise",
+    )
+
+    assert result["path"] == "docs/ai-team/memory/reviewed.md"
+    assert (tmp_path / result["index"]).exists()
+
+
+def test_memory_adapter_mem0_mirrors_sanitized_non_private_card(tmp_path, monkeypatch):
+    adapter = _load_memory_adapter()
+    source = tmp_path / "department.md"
+    source.write_text(_memory_card("department"), encoding="utf-8")
+    config = tmp_path / "config.yml"
+    config.write_text(
+        """memory:
+  service:
+    mem0:
+      api_key_env: TEST_MEM0_KEY
+  tiers:
+    department:
+      path: .specify/ai-team/memory/department
+      namespace: ai-team/example/department
+""",
+        encoding="utf-8",
+    )
+    client = MagicMock()
+    client.add.return_value = {"id": "memory-123"}
+    client_type = MagicMock(return_value=client)
+    monkeypatch.setenv("TEST_MEM0_KEY", "secret-not-written")
+    monkeypatch.setattr(
+        adapter.importlib,
+        "import_module",
+        lambda _name: SimpleNamespace(MemoryClient=client_type),
+    )
+
+    result = adapter.persist_memory(
+        project_root=tmp_path,
+        source=source,
+        tier="department",
+        backend="mem0",
+        config_path=config,
+    )
+
+    client_type.assert_called_once_with(api_key="secret-not-written")
+    client.add.assert_called_once()
+    assert result["remote"] == {"id": "memory-123"}
+    assert "secret-not-written" not in (tmp_path / result["index"]).read_text(
+        encoding="utf-8"
+    )
+
+
+def test_memory_adapter_rejects_private_mem0_sync(tmp_path, monkeypatch):
+    adapter = _load_memory_adapter()
+    source = tmp_path / "private.md"
+    source.write_text(_memory_card("local", "private"), encoding="utf-8")
+
+    with pytest.raises(adapter.MemoryAdapterError, match="cannot be synced"):
+        adapter.persist_memory(
+            project_root=tmp_path,
+            source=source,
+            tier="local",
+            backend="mem0",
+        )
 
 
 def test_ai_team_support_model_document_exists():
