@@ -113,6 +113,15 @@ planning:
   compact_requires_post_impact_human_gate: true
   compact_for_new_project: false
 
+issue_publishing:
+  default_adapter: github-cli
+  supported_adapters:
+    - github-cli
+  github_cli:
+    command: gh
+  require_verified_issue_url: true
+  require_approved_intake_gates: true
+
 permissions:
   # Spec Kit workflow gates are not a runtime sandbox. Keep policy-only until
   # a tool-native or wrapper adapter is configured and verified.

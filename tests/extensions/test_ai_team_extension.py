@@ -17,6 +17,15 @@ INTAKE_WORKFLOW_PATH = REPO_ROOT / "workflows" / "ai-team-intake" / "workflow.ym
 BUGFIX_WORKFLOW_PATH = REPO_ROOT / "workflows" / "ai-team-bugfix" / "workflow.yml"
 MEMORY_ADAPTER_PATH = EXTENSION_ROOT / "scripts" / "memory_adapter.py"
 WORK_ITEM_GATE = EXTENSION_ROOT / "scripts" / "check-work-item.py"
+INTAKE_ROUTER = EXTENSION_ROOT / "scripts" / "intake_router.py"
+
+
+def _load_intake_router():
+    spec = importlib.util.spec_from_file_location("ai_team_intake_router", INTAKE_ROUTER)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _load_memory_adapter():
@@ -123,7 +132,9 @@ def _run_ai_team_workflow_to_context_gate(
 def _run_work_item_gate(tmp_path: Path, inputs: dict, run_id: str = "test-run"):
     run_dir = tmp_path / ".specify" / "workflows" / "runs" / run_id
     run_dir.mkdir(parents=True)
-    (run_dir / "inputs.json").write_text(json.dumps(inputs), encoding="utf-8")
+    (run_dir / "inputs.json").write_text(
+        json.dumps({"inputs": inputs}), encoding="utf-8"
+    )
     return subprocess.run(
         [
             sys.executable,
@@ -232,8 +243,8 @@ def test_ai_team_intake_command_keeps_pre_work_item_analysis_read_only():
     assert "issue-draft.md" in text
     assert "AI recommends" in text
     assert "Technical Committee" in text
-    assert "gh issue create" in text
-    assert "do not ask the user to type" in text
+    assert "intake_router.py" in text
+    assert "intake_router.py route" in text
 
 
 def test_ai_team_config_template_defines_repository_and_role_contracts():
@@ -309,6 +320,9 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["planning"]["compact_requires_explicit_user_selection"] is True
     assert config["planning"]["compact_requires_post_impact_human_gate"] is True
     assert config["planning"]["compact_for_new_project"] is False
+    assert config["issue_publishing"]["default_adapter"] == "github-cli"
+    assert config["issue_publishing"]["require_verified_issue_url"] is True
+    assert config["issue_publishing"]["require_approved_intake_gates"] is True
     assert "root" not in config["code_graph"]
     assert set(config["code_graph"]["normalized_outputs"]) == {
         "nodes.jsonl",
@@ -485,6 +499,7 @@ def test_work_item_gate_accepts_same_repository_issue_group(tmp_path):
 @pytest.mark.parametrize(
     ("inputs", "error"),
     [
+        ({"work_type": "auto"}, "must be resolved after intake classification"),
         ({"work_type": "bug"}, "primary coding_issue_url"),
         (
             {
@@ -510,6 +525,7 @@ def test_work_item_gate_accepts_same_repository_issue_group(tmp_path):
             },
             "requires standard planning mode",
         ),
+        ({"work_type": "new-project"}, "requires a coding issue/project charter"),
     ],
 )
 def test_work_item_gate_rejects_inconsistent_anchors(tmp_path, inputs, error):
@@ -917,21 +933,154 @@ def test_ai_team_intake_workflow_is_read_only_until_issue_approval():
     step_ids = [step["id"] for step in steps]
     assert step_ids == [
         "workspace",
-        "intake-open",
-        "permission-analysis",
-        "review-intake-boundary",
+        "intake-boundary-cycle",
         "codegraph",
         "impact",
-        "issue-draft",
-        "review-issue-draft",
-        "publish-and-route",
+        "issue-draft-cycle",
+        "publish-issue",
+        "launch-formal-workflow",
     ]
-    assert all(step.get("command") != "speckit.specify" for step in steps)
-    assert all(step.get("command") != "speckit.implement" for step in steps)
-    assert steps[3]["type"] == "gate"
-    assert steps[7]["type"] == "gate"
-    assert steps[-1]["command"] == "speckit.ai-team.intake"
-    assert "mode=publish" in steps[-1]["input"]["args"]
+    nested_ids = _collect_step_ids(steps)
+    assert "review-intake-boundary" in nested_ids
+    assert "review-issue-draft" in nested_ids
+    boundary_cycle = _find_step(steps, "intake-boundary-cycle")
+    draft_cycle = _find_step(steps, "issue-draft-cycle")
+    assert boundary_cycle["condition"] == "{{ steps.review-intake-boundary.output.choice == 'revise' }}"
+    assert draft_cycle["condition"] == "{{ steps.review-issue-draft.output.choice == 'revise' }}"
+    assert _find_step(steps, "publish-issue")["type"] == "shell"
+    assert _find_step(steps, "launch-formal-workflow")["type"] == "shell"
+    assert "intake_router.py publish" in _find_step(steps, "publish-issue")["run"]
+    assert "intake_router.py route" in _find_step(steps, "launch-formal-workflow")["run"]
+
+
+def _write_approved_intake(tmp_path: Path, *, work_type: str, accepted: bool = True):
+    run_id = "intake-run"
+    slug = "csv-export"
+    run_dir = tmp_path / ".specify" / "workflows" / "runs" / run_id
+    run_dir.mkdir(parents=True)
+    (run_dir / "inputs.json").write_text(
+        json.dumps({"inputs": {"request": "Add CSV export"}}), encoding="utf-8"
+    )
+    (run_dir / "state.json").write_text(
+        json.dumps(
+            {
+                "step_results": {
+                    "review-intake-boundary": {"output": {"choice": "approve"}},
+                    "review-issue-draft": {"output": {"choice": "approve"}},
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    intake_dir = tmp_path / ".specify" / "ai-team" / "intake" / slug
+    intake_dir.mkdir(parents=True)
+    intake = {
+        "work_type": work_type,
+        "privacy_class": "public-safe",
+        "planning_mode": "compact" if work_type == "feature" else "standard",
+        "feature_decision": "accepted" if accepted else "draft",
+        "feature_approver": "tc-member" if accepted and work_type == "feature" else None,
+        "feature_approver_role": "technical-committee" if accepted and work_type == "feature" else None,
+    }
+    (intake_dir / "intake.yml").write_text(
+        yaml.safe_dump(intake, sort_keys=False), encoding="utf-8"
+    )
+    (intake_dir / "issue-draft.md").write_text(
+        f"""---
+title: Add CSV export
+type_label: type/{work_type}
+target_repository: example/project
+---
+
+## Requested behavior
+
+Add CSV export with the visible columns.
+""",
+        encoding="utf-8",
+    )
+    return run_id, slug
+
+
+def test_intake_router_publishes_and_launches_accepted_feature(tmp_path):
+    router = _load_intake_router()
+    run_id, slug = _write_approved_intake(tmp_path, work_type="feature")
+    publish_runner = MagicMock(
+        return_value=subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="https://github.com/example/project/issues/42\n", stderr=""
+        )
+    )
+
+    published = router.publish_issue(
+        project_root=tmp_path,
+        run_id=run_id,
+        intake_slug=slug,
+        runner=publish_runner,
+    )
+    route_runner = MagicMock(
+        return_value=subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="Workflow paused at review-context", stderr=""
+        )
+    )
+    routed = router.route_formal_workflow(
+        project_root=tmp_path,
+        run_id=run_id,
+        intake_slug=slug,
+        runner=route_runner,
+    )
+
+    assert published["route_status"] == "ready"
+    assert routed["route_status"] == "launched"
+    command = route_runner.call_args.args[0]
+    assert command[:4] == ["specify", "workflow", "run", "ai-team-sdd"]
+    assert "work_type=feature" in command
+    assert "planning_mode=compact" in command
+    assert "coding_issue_url=https://github.com/example/project/issues/42" in command
+
+
+def test_intake_router_draft_feature_stops_after_issue_creation(tmp_path):
+    router = _load_intake_router()
+    run_id, slug = _write_approved_intake(
+        tmp_path, work_type="feature", accepted=False
+    )
+    runner = MagicMock(
+        return_value=subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="https://github.com/example/project/issues/43\n", stderr=""
+        )
+    )
+
+    router.publish_issue(
+        project_root=tmp_path,
+        run_id=run_id,
+        intake_slug=slug,
+        runner=runner,
+    )
+    route_runner = MagicMock()
+    result = router.route_formal_workflow(
+        project_root=tmp_path,
+        run_id=run_id,
+        intake_slug=slug,
+        runner=route_runner,
+    )
+
+    assert result["route_status"] == "awaiting-feature-acceptance"
+    route_runner.assert_not_called()
+
+
+def test_intake_router_refuses_unapproved_draft(tmp_path):
+    router = _load_intake_router()
+    run_id, slug = _write_approved_intake(tmp_path, work_type="bug")
+    state_path = tmp_path / ".specify" / "workflows" / "runs" / run_id / "state.json"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    state["step_results"]["review-issue-draft"]["output"]["choice"] = "revise"
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+
+    with pytest.raises(router.IntakeRouteError, match="not approved"):
+        router.publish_issue(
+            project_root=tmp_path,
+            run_id=run_id,
+            intake_slug=slug,
+            runner=MagicMock(),
+        )
 
 
 def test_ai_team_bugfix_workflow_pauses_at_context_gate(tmp_path):

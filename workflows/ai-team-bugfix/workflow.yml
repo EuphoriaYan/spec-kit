@@ -34,6 +34,10 @@ inputs:
     type: string
     required: true
     prompt: "Work slug (equals bug_slug), for example bug-project-alpha-123"
+  work_type:
+    type: string
+    default: "bug"
+    enum: ["bug"]
   coding_issue_url:
     type: string
     required: true

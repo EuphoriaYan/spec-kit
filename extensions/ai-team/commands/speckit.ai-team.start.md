@@ -58,6 +58,10 @@ feature. A feature without authorized Technical Committee or delegated
 acceptance remains `state/draft`; return a resumable chat instruction instead
 of bypassing that gate.
 
+`work_type=auto` exists only at this Intake boundary. The Intake artifact and
+human boundary review must resolve it to `bug` or `feature`; the formal
+work-item gate rejects `auto` before `speckit.specify` or bug assessment.
+
 With an existing work item and no Compact selection, launch
 `planning_mode=standard`. With no work item, Intake may recommend Compact from
 impact evidence, but a human must explicitly select it at the gate. Bug fixes

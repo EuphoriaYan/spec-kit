@@ -41,6 +41,10 @@ def validate(inputs: dict[str, object]) -> dict[str, object]:
     handoff = str(inputs.get("handoff_requirement_url", "")).strip()
     related = _split_urls(inputs.get("also_resolves_issue_urls"))
 
+    if work_type in {"auto", "unclear", ""}:
+        raise ValueError(
+            "work_type must be resolved after intake classification and before the formal work-item gate"
+        )
     if work_type == "bug" and not primary:
         raise ValueError("bug work requires a primary coding_issue_url")
     if work_type == "feature" and bool(primary) == bool(handoff):
@@ -50,6 +54,10 @@ def validate(inputs: dict[str, object]) -> dict[str, object]:
         )
     if planning_mode == "compact" and work_type == "new-project":
         raise ValueError("new-project work requires standard planning mode")
+    if work_type == "new-project" and not (primary or handoff):
+        raise ValueError(
+            "new-project work requires a coding issue/project charter URL or handoff_requirement_url"
+        )
     if related and not primary:
         raise ValueError("also_resolves_issue_urls requires a primary coding_issue_url")
 
@@ -95,7 +103,10 @@ def main() -> int:
         / "inputs.json"
     )
     try:
-        inputs = json.loads(inputs_path.read_text(encoding="utf-8"))
+        payload = json.loads(inputs_path.read_text(encoding="utf-8"))
+        inputs = payload.get("inputs", payload)
+        if not isinstance(inputs, dict):
+            raise ValueError("workflow inputs must be a JSON object")
         result = validate(inputs)
     except (OSError, json.JSONDecodeError, ValueError) as exc:
         print(f"AI Team work-item gate failed: {exc}", file=sys.stderr)
