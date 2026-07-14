@@ -30,7 +30,11 @@ fork**, not in the user's project.
 
 - Update `catalog.json` when bumping bundle `version` or `download_url` (e.g.
   after `specify bundle build` and a GitHub release).
-- `download_url` may point at `bundle.yml` on `main` or at a versioned `.zip`
-  artifact from a release.
+- During development, `download_url` may point at `bundle.yml` on `main`.
+  Before marking an entry as verified for a release, replace it with a
+  versioned `.zip` release artifact so the same bundle version always resolves
+  to the same bytes.
+- Set `verified: true` only after the packaged CLI and the versioned bundle
+  artifact pass the clean-project install test.
 - Authoring: `specify bundle validate --path bundles/ai-team` and
   `specify bundle build --path bundles/ai-team --output dist/`.

@@ -35,6 +35,11 @@ specify bundle install ai-team
 (after the catalog is registered). Component references resolve from bundled
 assets shipped in this distribution's CLI where applicable.
 
+The catalog entry on `main` is a development channel and remains unverified.
+A release must publish a versioned bundle ZIP, update `download_url` to that
+immutable artifact, and pass the clean-project install test before setting
+`verified: true`.
+
 ### Validate and build artifact
 
 Authoring commands use `--path` on the bundle directory:

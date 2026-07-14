@@ -260,20 +260,39 @@ class _WorkflowKindManager:
             return False
 
     def install(self, component: ComponentRef) -> None:
-        if not self._allow_network and not self._is_bundled(component.id):
+        from ..._assets import _locate_bundled_workflow
+
+        bundled = _locate_bundled_workflow(component.id)
+        if not self._allow_network and bundled is None:
             raise BundlerError(
                 f"Workflow '{component.id}' installs from a catalog and network "
                 f"access is disabled; re-run without --offline or install it first "
                 f"with 'specify workflow add {component.id}'."
             )
-        self._assert_pinned_version(component)
+        if bundled is not None:
+            self._assert_bundled_version(component, bundled)
+        else:
+            self._assert_pinned_version(component)
         from ... import workflow_add
 
         with _chdir(self._root):
             _delegate_command(
                 "install", f"workflow '{component.id}'",
-                lambda: workflow_add(component.id),
+                lambda: workflow_add(
+                    str(bundled) if bundled is not None else component.id
+                ),
             )
+
+    @staticmethod
+    def _assert_bundled_version(component: ComponentRef, bundled: Path) -> None:
+        if not component.version:
+            return
+        from ...workflows.engine import WorkflowDefinition
+
+        definition = WorkflowDefinition.from_yaml(bundled / "workflow.yml")
+        _assert_pinned_version(
+            "Workflow", component.id, component.version, definition.version
+        )
 
     def _assert_pinned_version(self, component: ComponentRef) -> None:
         if not component.version:

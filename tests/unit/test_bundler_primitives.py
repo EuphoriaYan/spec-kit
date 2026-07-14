@@ -73,16 +73,49 @@ def test_offline_workflow_allows_bundled(tmp_path: Path, monkeypatch):
     import specify_cli
     import specify_cli._assets as assets
 
-    monkeypatch.setattr(
-        assets, "_locate_bundled_workflow", lambda wid: tmp_path / "wf"
-    )
+    bundled = tmp_path / "wf"
+    monkeypatch.setattr(assets, "_locate_bundled_workflow", lambda wid: bundled)
     calls: list[str] = []
     monkeypatch.setattr(specify_cli, "workflow_add", lambda wid: calls.append(wid))
 
     manager = primitive_manager("workflows", tmp_path, allow_network=False)
     manager.install(_component("workflows", "bundled-wf"))
 
-    assert calls == ["bundled-wf"]
+    assert calls == [str(bundled)]
+
+
+def test_online_workflow_prefers_bundled_asset(tmp_path: Path, monkeypatch):
+    """Bundled workflows must not depend on a separately configured catalog."""
+    import specify_cli
+    import specify_cli._assets as assets
+
+    bundled = tmp_path / "bundled-wf"
+    monkeypatch.setattr(assets, "_locate_bundled_workflow", lambda wid: bundled)
+    calls: list[str] = []
+    monkeypatch.setattr(specify_cli, "workflow_add", lambda source: calls.append(source))
+
+    manager = primitive_manager("workflows", tmp_path, allow_network=True)
+    manager.install(_component("workflows", "bundled-wf"))
+
+    assert calls == [str(bundled)]
+
+
+def test_bundled_workflow_version_mismatch_refuses(tmp_path: Path, monkeypatch):
+    import specify_cli._assets as assets
+
+    bundled = tmp_path / "bundled-wf"
+    bundled.mkdir()
+    (bundled / "workflow.yml").write_text(
+        "workflow:\n  id: bundled-wf\n  version: 2.0.0\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(assets, "_locate_bundled_workflow", lambda wid: bundled)
+
+    manager = primitive_manager("workflows", tmp_path, allow_network=False)
+    component = ComponentRef(
+        kind="workflows", id="bundled-wf", version="1.0.0"
+    )
+    with pytest.raises(BundlerError, match="pinned to version 1.0.0"):
+        manager.install(component)
 
 
 def test_assert_pinned_version_matches_passes():
