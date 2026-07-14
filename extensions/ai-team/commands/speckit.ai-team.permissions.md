@@ -33,6 +33,12 @@ Load exactly one context root:
   `permission-envelope.yml`;
 - repository and AI integration rules.
 
+For `mode=implementation`, also resolve and read the authoritative native
+`specs/<work_slug>/tasks.md` plus the current workflow run's `state.json`.
+Do not trust a stale `artifacts.tasks: missing` cache when the native file now
+exists. Treat an approved Plan/Tasks gate in workflow state as plan/task review
+evidence; the later `review-permissions` gate still owns final access approval.
+
 ## Workflow
 
 1. Derive the narrowest access required for the requested mode.
@@ -48,6 +54,19 @@ Load exactly one context root:
    update only `intake.yml`; do not create formal context files.
 7. Return the envelope diff and required human approvals. Do not begin the next
    protected phase.
+
+For implementation mode, write this machine-readable contract:
+
+- `status: pending-review` only when native `tasks.md` exists, required earlier
+  plan/task gates are approved, and every intended write path is present in
+  `allow.write_paths`;
+- `status: blocked` otherwise, with concrete `blockers`;
+- `requested_implementation_access.intended_write_paths` must be non-empty;
+- update `work-context.yml` so `artifacts.tasks` points to the native file when
+  it exists, but do not mark the work implementing before permission approval.
+
+After the human gate, the workflow's deterministic enforcement script changes
+`pending-review` to `approved`. Never write `approved` from this command.
 
 ## Output Shape
 

@@ -704,6 +704,8 @@ class WorkflowEngine:
         self,
         run_id: str,
         inputs: dict[str, Any] | None = None,
+        *,
+        recover_running: bool = False,
     ) -> RunState:
         """Resume a paused or failed workflow run.
 
@@ -714,6 +716,16 @@ class WorkflowEngine:
         empty/``None`` ``inputs`` leaves the run's inputs unchanged.
         """
         state = RunState.load(run_id, self.project_root)
+        if state.status == RunStatus.RUNNING and recover_running:
+            state.status = RunStatus.FAILED
+            state.append_log(
+                {
+                    "event": "stale_running_recovered",
+                    "step_id": state.current_step_id,
+                    "reason": "operator explicitly requested --recover-running",
+                }
+            )
+            state.save()
         if state.status not in (RunStatus.PAUSED, RunStatus.FAILED):
             msg = f"Cannot resume run {run_id!r} with status {state.status.value!r}."
             raise ValueError(msg)

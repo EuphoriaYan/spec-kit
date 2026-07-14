@@ -33,6 +33,12 @@ Use `.specify/workflows/runs/<run-id>/state.json` for Spec Kit's workflow
 engine state. Use `.specify/ai-team/work/<work_slug>/` for AI Team work identity
 and cross-session recovery.
 
+If the workflow process disappears while state still says `running`, first
+confirm the original process no longer exists, then use
+`specify workflow resume <run-id> --recover-running`. This records a
+`stale_running_recovered` event and re-executes the interrupted step. Never use
+the option while the original process may still be active.
+
 The files have separate responsibilities:
 
 - `work-context.yml` is the compact cross-session index: work item, native

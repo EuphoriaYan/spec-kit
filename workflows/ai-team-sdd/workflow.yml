@@ -262,6 +262,10 @@ steps:
     options: [approve, revise, reject]
     on_reject: abort
 
+  - id: enforce-implementation-permission
+    type: shell
+    run: "python .specify/extensions/ai-team/scripts/enforce-implementation-permission.py --run-id {{ context.run_id }} --work-slug {{ inputs.work_slug }}"
+
   - id: implement
     command: speckit.implement
     integration: "{{ inputs.integration }}"
@@ -273,3 +277,7 @@ steps:
     integration: "{{ inputs.integration }}"
     input:
       args: "{{ inputs.request }} work_slug={{ inputs.work_slug }} work_type={{ inputs.work_type }} planning_mode={{ inputs.planning_mode }} coding_issue_url={{ inputs.coding_issue_url }} also_resolves_issue_urls={{ inputs.also_resolves_issue_urls }} handoff_requirement_url={{ inputs.handoff_requirement_url }} published_requirement_url={{ inputs.published_requirement_url }} resume_from={{ inputs.resume_from }} workflow_run_id={{ context.run_id }}"
+
+  - id: finalize-work-evidence
+    type: shell
+    run: "python .specify/extensions/ai-team/scripts/finalize-work-evidence.py --work-slug {{ inputs.work_slug }}"

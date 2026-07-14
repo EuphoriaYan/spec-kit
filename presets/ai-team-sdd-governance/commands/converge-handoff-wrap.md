@@ -81,6 +81,10 @@ After checks (or when checks are skipped with documented reasons), produce the e
 ```
 
 3. Update the Work Context Package with evidence path and next command (`speckit.ai-team.pr` when ready).
+4. Before returning success, read back `evidence-board.md` and
+   `work-context.yml`. The workflow performs a deterministic post-check and
+   fails if the board is absent or the context cannot be finalized. A chat-only
+   convergence report is not durable evidence.
 
 Stop before claiming implementation success when behavior changed without
 self-test evidence, a linked work item lacks its own verification mapping,

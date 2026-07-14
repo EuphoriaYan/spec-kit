@@ -64,6 +64,8 @@ class _KindManager(Protocol):
 
     def install(self, component: ComponentRef) -> None: ...
 
+    def refresh(self, component: ComponentRef) -> None: ...
+
     def remove(self, component: ComponentRef) -> None: ...
 
 
@@ -174,6 +176,13 @@ class _PresetKindManager:
                 f"Failed to remove preset '{component.id}': {exc}"
             ) from exc
 
+    def refresh(self, component: ComponentRef) -> None:
+        # PresetManager intentionally rejects duplicate installs and has no
+        # force flag. Bundle refresh owns this component, so replacing it is
+        # safe and applies the bundle's pinned content and priority.
+        self.remove(component)
+        self.install(component)
+
 
 class _ExtensionKindManager:
     def __init__(self, project_root: Path, allow_network: bool) -> None:
@@ -190,6 +199,12 @@ class _ExtensionKindManager:
             return False
 
     def install(self, component: ComponentRef) -> None:
+        self._install(component, force=False)
+
+    def refresh(self, component: ComponentRef) -> None:
+        self._install(component, force=True)
+
+    def _install(self, component: ComponentRef, *, force: bool) -> None:
         from ... import get_speckit_version
         from ..._assets import _locate_bundled_extension
 
@@ -199,7 +214,7 @@ class _ExtensionKindManager:
         bundled = _locate_bundled_extension(component.id)
         if bundled is not None:
             self._manager.install_from_directory(
-                bundled, speckit_version, priority=priority
+                bundled, speckit_version, priority=priority, force=force
             )
             return
 
@@ -229,7 +244,7 @@ class _ExtensionKindManager:
         zip_path = catalog.download_extension(component.id)
         try:
             self._manager.install_from_zip(
-                zip_path, speckit_version, priority=priority
+                zip_path, speckit_version, priority=priority, force=force
             )
         finally:
             with contextlib.suppress(Exception):
@@ -317,6 +332,10 @@ class _WorkflowKindManager:
                 lambda: workflow_remove(component.id),
             )
 
+    def refresh(self, component: ComponentRef) -> None:
+        # workflow add validates and atomically overwrites the installed YAML.
+        self.install(component)
+
 
 class _StepKindManager:
     def __init__(self, project_root: Path, allow_network: bool) -> None:
@@ -355,3 +374,8 @@ class _StepKindManager:
                 "remove", f"step '{component.id}'",
                 lambda: workflow_step_remove(component.id),
             )
+
+    def refresh(self, component: ComponentRef) -> None:
+        # Step installation delegates to the existing add command, whose
+        # registry path is the primitive's update mechanism.
+        self.install(component)

@@ -18,6 +18,10 @@ BUGFIX_WORKFLOW_PATH = REPO_ROOT / "workflows" / "ai-team-bugfix" / "workflow.ym
 MEMORY_ADAPTER_PATH = EXTENSION_ROOT / "scripts" / "memory_adapter.py"
 WORK_ITEM_GATE = EXTENSION_ROOT / "scripts" / "check-work-item.py"
 INTAKE_ROUTER = EXTENSION_ROOT / "scripts" / "intake_router.py"
+IMPLEMENTATION_PERMISSION_GATE = (
+    EXTENSION_ROOT / "scripts" / "enforce-implementation-permission.py"
+)
+WORK_EVIDENCE_FINALIZER = EXTENSION_ROOT / "scripts" / "finalize-work-evidence.py"
 
 
 def _load_intake_router():
@@ -30,6 +34,14 @@ def _load_intake_router():
 
 def _load_memory_adapter():
     spec = importlib.util.spec_from_file_location("ai_team_memory_adapter", MEMORY_ADAPTER_PATH)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_script(path: Path, module_name: str):
+    spec = importlib.util.spec_from_file_location(module_name, path)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -148,6 +160,102 @@ def _run_work_item_gate(tmp_path: Path, inputs: dict, run_id: str = "test-run"):
         text=True,
         check=False,
     )
+
+
+def _write_permission_fixture(tmp_path: Path, status: str = "pending-review") -> None:
+    run_dir = tmp_path / ".specify" / "workflows" / "runs" / "run-1"
+    run_dir.mkdir(parents=True)
+    (run_dir / "state.json").write_text(
+        json.dumps(
+            {
+                "step_results": {
+                    "review-permissions": {
+                        "output": {
+                            "choice": "approve",
+                            "decided_by": "maintainer@example.com",
+                            "decided_at": "2026-07-14T00:00:00Z",
+                        }
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    work_root = tmp_path / ".specify" / "ai-team" / "work" / "001-test"
+    work_root.mkdir(parents=True)
+    (work_root / "permission-envelope.yml").write_text(
+        yaml.safe_dump(
+            {
+                "work_slug": "001-test",
+                "mode": "implementation",
+                "status": status,
+                "allow": {"write_paths": ["PROJECT_STATUS.md"]},
+                "requested_implementation_access": {
+                    "intended_write_paths": ["PROJECT_STATUS.md"]
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    (work_root / "work-context.yml").write_text(
+        yaml.safe_dump({"work_slug": "001-test", "artifacts": {"tasks": "missing"}}),
+        encoding="utf-8",
+    )
+    tasks = tmp_path / "specs" / "001-test" / "tasks.md"
+    tasks.parent.mkdir(parents=True)
+    tasks.write_text("# Tasks\n", encoding="utf-8")
+
+
+def test_implementation_permission_gate_approves_consistent_envelope(tmp_path: Path):
+    _write_permission_fixture(tmp_path)
+    module = _load_script(
+        IMPLEMENTATION_PERMISSION_GATE, "ai_team_implementation_permission"
+    )
+
+    result = module.enforce(tmp_path, "run-1", "001-test")
+
+    assert result["status"] == "approved"
+    envelope = yaml.safe_load(
+        (tmp_path / ".specify/ai-team/work/001-test/permission-envelope.yml").read_text()
+    )
+    context = yaml.safe_load(
+        (tmp_path / ".specify/ai-team/work/001-test/work-context.yml").read_text()
+    )
+    assert envelope["status"] == "approved"
+    assert envelope["approved_by"] == "maintainer@example.com"
+    assert context["phase"] == "implementing"
+    assert context["artifacts"]["tasks"] == "specs/001-test/tasks.md"
+
+
+def test_implementation_permission_gate_refuses_blocked_envelope(tmp_path: Path):
+    _write_permission_fixture(tmp_path, status="blocked")
+    module = _load_script(
+        IMPLEMENTATION_PERMISSION_GATE, "ai_team_blocked_implementation_permission"
+    )
+
+    with pytest.raises(ValueError, match="status is blocked"):
+        module.enforce(tmp_path, "run-1", "001-test")
+
+
+def test_work_evidence_finalizer_requires_and_indexes_board(tmp_path: Path):
+    _write_permission_fixture(tmp_path)
+    module = _load_script(WORK_EVIDENCE_FINALIZER, "ai_team_work_evidence")
+
+    with pytest.raises(ValueError, match="Evidence Board is missing"):
+        module.finalize(tmp_path, "001-test")
+
+    board = tmp_path / ".specify/ai-team/work/001-test/evidence/evidence-board.md"
+    board.parent.mkdir()
+    board.write_text("# Evidence Board\n\nAll checks passed.\n", encoding="utf-8")
+    result = module.finalize(tmp_path, "001-test")
+
+    assert result["status"] == "evidence-ready"
+    context = yaml.safe_load(
+        (tmp_path / ".specify/ai-team/work/001-test/work-context.yml").read_text()
+    )
+    assert context["phase"] == "evidence"
+    assert context["next_command"] == "speckit.ai-team.pr"
+    assert context["artifacts"]["evidence"].endswith("evidence-board.md")
 
 
 def test_ai_team_extension_manifest_and_catalog_are_in_sync():
@@ -806,8 +914,10 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     assert "review-tasks" in step_ids
     assert "permission-implementation" in step_ids
     assert "review-permissions" in step_ids
+    assert "enforce-implementation-permission" in step_ids
     assert "implement" in step_ids
     assert "converge" in step_ids
+    assert "finalize-work-evidence" in step_ids
     assert "checks" not in step_ids
     assert "evidence" not in step_ids
 
@@ -896,6 +1006,10 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     assert step_ids.index("validate-work-item") < step_ids.index("specify")
     assert step_ids.index("permission-implementation") < step_ids.index("implement")
     assert step_ids.index("review-permissions") < step_ids.index("implement")
+    assert step_ids.index("enforce-implementation-permission") < step_ids.index(
+        "implement"
+    )
+    assert step_ids.index("converge") < step_ids.index("finalize-work-evidence")
     converge_step = next(step for step in steps if step["id"] == "converge")
     assert converge_step["command"] == "speckit.converge"
 
