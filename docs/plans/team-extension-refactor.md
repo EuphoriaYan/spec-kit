@@ -443,15 +443,15 @@ implement 在用户选择提交 PR 后可产出 PR → review 审查该 PR；**r
 ### Phase A — 文档与 scaffold
 
 - [x] 本改造方案（`docs/plans/team-extension-refactor.md`）
-- [ ] `extensions/team/extension.yml`
-- [ ] `extensions/team/README.md`
-- [ ] `extensions/team/commands/speckit.team.implement.md`（Phase 1–5 + PR 询问）
-- [ ] `extensions/team/commands/prompts/implement-pr.md`（Phase 6，按需加载）
-- [ ] `extensions/team/commands/speckit.team.review.md`
+- [x] `extensions/team/extension.yml`
+- [x] `extensions/team/README.md`
+- [x] `extensions/team/commands/speckit.team.implement.md`（Phase 1–5 + PR 询问）
+- [x] `extensions/team/commands/prompts/implement-pr.md`（Phase 6，按需加载）
+- [x] `extensions/team/commands/speckit.team.review.md`
 
 ### Phase B — 本地验证
 
-- [ ] `specify extension add team --dev extensions/team`
+- [x] `specify extension add team --dev extensions/team`
 - [ ] 准备 `.specify/specs/{slug}/` 测试 fixture（plan/tasks/context/envelope）
 - [ ] implement：Verify 通过 → 代码 + 测试报告，`phase: verified`（不强制 PR）
 - [ ] implement：用户确认 PR → 加载 implement-pr.md → PR URL
