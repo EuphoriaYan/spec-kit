@@ -114,6 +114,10 @@ def _run_ai_team_workflow_to_context_gate(
     from specify_cli.workflows.engine import WorkflowDefinition, WorkflowEngine
 
     definition = WorkflowDefinition.from_yaml(workflow_path)
+    # These isolated workflow fixtures intentionally do not run ``specify
+    # init`` and therefore have no .specify/integration.json for the runtime
+    # ``auto`` sentinel to resolve. Pin the mocked CLI used by this helper.
+    inputs = {"integration": "codex", **inputs}
     engine = WorkflowEngine(tmp_path)
     mock_result = MagicMock()
     mock_result.returncode = 0
