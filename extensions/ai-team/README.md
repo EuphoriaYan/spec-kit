@@ -108,8 +108,8 @@ Plan/Tasks extension and its mandatory fallback rules. The short version:
 |---|---|---|
 | one-sentence request with no issue | provisional local Intake slug | `ai-team-intake`: privacy/classification gate -> read-only code graph and impact -> issue draft -> human approval -> create issue -> formal workflow |
 | existing project bug fix | coding issue or bug slug | `ai-team-bugfix`: context -> context gate -> code graph -> impact gate -> bug assess -> assessment gate -> bug fix -> fix gate -> `speckit.bug.test` (composite checks/evidence) -> PR |
-| existing project new feature | coding issue URL or handoff requirement URL | optional requirement review -> context -> code graph -> native SDD with plan check, task gate, and converge evidence -> PR |
-| new project from zero | public project issue/charter or handoff requirement URL | bootstrap -> workspace -> context -> native SDD with plan-check, task gate (preset), and converge evidence -> thin slice -> PR |
+| existing project new feature | coding issue URL or handoff requirement URL | context -> code graph -> Technical Committee acceptance -> native SDD with plan check, task gate, and converge evidence -> PR |
+| new project from zero | public project issue/charter or handoff requirement URL | bootstrap -> workspace -> context -> Technical Committee acceptance -> native SDD with plan-check, task gate (preset), and converge evidence -> thin slice -> PR |
 | resume from middle | workflow run ID or work slug | workflow resume for paused runs, or `speckit.ai-team.context work_slug=<work_slug> resume=true` for cross-session recovery |
 | failed review/check/incident | PR, check, incident, or repeated AI mistake | retrospect -> update command, gate, knowledge, memory, graph, or test evidence |
 | memory consolidation | work slug, bug slug, PR, incident, release id, or manual lesson | sanitize -> choose local/department/enterprise tier -> sync/index -> promote to skill, knowledge, test, gate, or playbook |
@@ -311,6 +311,7 @@ impact -> compact eligibility gate -> plan -> plan check
 | Step | Type | Writes files? | Human decision |
 |---|---|---|---|
 | `speckit.ai-team.plan-check` | extension command | Updates `work-context.yml` (`plan_check`) and `context-pack.md` only | No — produces chat report |
+| `review-feature-acceptance` | workflow gate | No | Yes - Technical Committee accepts feature/new-project entry into formal SDD |
 | `review-plan` | workflow gate | No | Yes — approve / revise / reject before `tasks` |
 | `speckit.analyze` | native cross-artifact check | Read-only chat report | No — produces analyze report |
 | `review-tasks` | workflow gate | No | Yes — approve / revise / reject before `implement` |
@@ -360,7 +361,7 @@ items. Use [docs/memory-tiers.md](docs/memory-tiers.md) for the three-tier memor
 model and [docs/release-archive.md](docs/release-archive.md) for the
 release-scoped artifact contract.
 
-`ai-team-sdd` accepts `work_slug`, `work_type`, `coding_issue_url`,
+`ai-team-sdd` requires a safe, stable `work_slug` and accepts `work_type`, `coding_issue_url`,
 `also_resolves_issue_urls`,
 `handoff_requirement_url`, backward-compatible `published_requirement_url`, and
 `resume_from` so a user can restart feature or new-project work from the

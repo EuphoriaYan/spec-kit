@@ -88,6 +88,7 @@ steps:
 
   - id: review-context
     type: gate
+    authority: maintainer
     message: "Review the bug work item, linked same-root-cause issues, analysis Permission Envelope, and resume point before source impact analysis."
     options: [approve, revise, reject]
     on_reject: abort
@@ -108,6 +109,7 @@ steps:
 
   - id: review-impact
     type: gate
+    authority: architecture-owner
     message: "Review source impact and decide whether architecture-level, public-contract, or cross-module changes are allowed for this bug fix."
     options: [approve, revise, reject]
     on_reject: abort
@@ -120,6 +122,7 @@ steps:
 
   - id: review-assessment
     type: gate
+    authority: maintainer
     message: "Review the bug assessment, root-cause hypothesis, and proposed remediation before source edits."
     options: [approve, revise, reject]
     on_reject: abort
@@ -132,6 +135,7 @@ steps:
 
   - id: review-permissions
     type: gate
+    authority: module-owner
     message: "Review bug-fix write paths, commands, network access, enforcement mode, and gaps before source edits."
     options: [approve, revise, reject]
     on_reject: abort
@@ -144,6 +148,7 @@ steps:
 
   - id: review-fix
     type: gate
+    authority: maintainer
     message: "Review fix scope and deviations from assessment before verification."
     options: [approve, revise, reject]
     on_reject: abort

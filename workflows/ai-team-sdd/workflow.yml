@@ -32,7 +32,8 @@ inputs:
     default: false
   work_slug:
     type: string
-    default: ""
+    required: true
+    prompt: "Stable lowercase work slug, for example 003-search-export"
   work_type:
     type: string
     default: "auto"
@@ -91,6 +92,7 @@ steps:
 
   - id: review-context
     type: gate
+    authority: maintainer
     message: "Review the work item, linked same-root-cause issues, analysis Permission Envelope, and resume point before continuing."
     options: [approve, revise, reject]
     on_reject: abort
@@ -113,14 +115,33 @@ steps:
     type: shell
     run: "python .specify/extensions/ai-team/scripts/check-work-item.py --run-id {{ context.run_id }}"
 
+  - id: feature-acceptance-if-needed
+    type: if
+    condition: "{{ inputs.work_type != 'template' }}"
+    then:
+      - id: review-feature-acceptance
+        type: gate
+        authority: technical-committee
+        message: "Confirm that the linked feature or new-project work item is accepted and may enter formal SDD. This records the decision; enterprise identity policy must verify committee membership."
+        options: [approve, reject]
+        on_reject: abort
+    else:
+      - id: review-template-maintenance
+        type: gate
+        authority: maintainer
+        message: "Confirm that this template maintenance item is accepted and may enter formal SDD."
+        options: [approve, reject]
+        on_reject: abort
+
   - id: specify
     command: speckit.specify
     integration: "{{ inputs.integration }}"
     input:
-      args: "{{ inputs.request }} work_slug={{ inputs.work_slug }} work_type={{ inputs.work_type }} planning_mode={{ inputs.planning_mode }} coding_issue_url={{ inputs.coding_issue_url }} also_resolves_issue_urls={{ inputs.also_resolves_issue_urls }} handoff_requirement_url={{ inputs.handoff_requirement_url }} published_requirement_url={{ inputs.published_requirement_url }} workflow_run_id={{ context.run_id }}"
+      args: "{{ inputs.request }} work_slug={{ inputs.work_slug }} SPECIFY_FEATURE_DIRECTORY=specs/{{ inputs.work_slug }} work_type={{ inputs.work_type }} planning_mode={{ inputs.planning_mode }} coding_issue_url={{ inputs.coding_issue_url }} also_resolves_issue_urls={{ inputs.also_resolves_issue_urls }} handoff_requirement_url={{ inputs.handoff_requirement_url }} published_requirement_url={{ inputs.published_requirement_url }} workflow_run_id={{ context.run_id }}"
 
   - id: review-spec
     type: gate
+    authority: maintainer
     message: "Review the generated spec and public/private boundary before architecture planning."
     options: [approve, revise, reject]
     on_reject: abort
@@ -165,6 +186,7 @@ steps:
 
             - id: review-plan
               type: gate
+              authority: architecture-owner
               message: "Review the Plan Check Report in chat. Approve to generate tasks, revise to re-run plan and plan-check, or reject to abort."
               options: [approve, revise, reject]
               on_reject: abort
@@ -198,6 +220,7 @@ steps:
 
             - id: review-tasks
               type: gate
+              authority: maintainer
               message: "Review the native analyze report before implementation. Revise re-runs tasks and analyze."
               options: [approve, revise, reject]
               on_reject: abort
@@ -205,6 +228,7 @@ steps:
       compact:
         - id: review-compact-eligibility
           type: gate
+          authority: maintainer
           message: "Confirm the impact evidence is local or single-module, low risk, and has no public-contract, migration, security/privacy, critical dependency, cross-module, or complex rollback change. Approve Compact or reject and restart with Standard."
           options: [approve, reject]
           on_reject: abort
@@ -246,6 +270,7 @@ steps:
 
             - id: review-compact-plan-tasks
               type: gate
+              authority: maintainer
               message: "Review the Compact Plan Check and native analyze reports together. Approve both Plan and Tasks, revise to regenerate both, or reject to abort."
               options: [approve, revise, reject]
               on_reject: abort
@@ -258,6 +283,7 @@ steps:
 
   - id: review-permissions
     type: gate
+    authority: module-owner
     message: "Review implementation write paths, commands, network access, enforcement mode, and gaps. Approve, revise, or reject before source edits."
     options: [approve, revise, reject]
     on_reject: abort

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import getpass
+import os
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -42,6 +45,7 @@ class GateStep(StepBase):
 
         options = config.get("options", ["approve", "reject"])
         on_reject = config.get("on_reject", "abort")
+        authority = config.get("authority")
 
         show_file = config.get("show_file")
         if isinstance(show_file, str) and "{{" in show_file:
@@ -59,6 +63,10 @@ class GateStep(StepBase):
             "on_reject": on_reject,
             "show_file": show_file,
             "choice": None,
+            "authority": authority,
+            "decided_by": None,
+            "decider_source": None,
+            "decided_at": None,
         }
 
         # Non-interactive: pause for later resume (the file is not read here)
@@ -72,6 +80,8 @@ class GateStep(StepBase):
         # adding review material never widens the interactive seam.
         choice = self._prompt(self._compose_prompt(message, show_file), options)
         output["choice"] = choice
+        output["decided_by"], output["decider_source"] = self._decision_actor()
+        output["decided_at"] = datetime.now(timezone.utc).isoformat()
 
         # Match rejection case-insensitively. ``_prompt`` echoes the option's
         # original casing, and ``validate`` accepts a reject option
@@ -95,6 +105,17 @@ class GateStep(StepBase):
             return StepResult(status=StepStatus.COMPLETED, output=output)
 
         return StepResult(status=StepStatus.COMPLETED, output=output)
+
+    @staticmethod
+    def _decision_actor() -> tuple[str, str]:
+        """Return auditable operator attribution, not an authorization verdict."""
+        explicit = os.getenv("SPECKIT_GATE_ACTOR", "").strip()
+        if explicit:
+            return explicit, "environment"
+        try:
+            return getpass.getuser(), "os-user"
+        except (OSError, KeyError):
+            return "unknown", "unavailable"
 
     @classmethod
     def _compose_prompt(cls, message: object, show_file: str | None) -> str:
@@ -200,6 +221,13 @@ class GateStep(StepBase):
             errors.append(
                 f"Gate step {config.get('id', '?')!r}: 'on_reject' must be "
                 f"'abort', 'skip', or 'retry'."
+            )
+        authority = config.get("authority")
+        if authority is not None and (
+            not isinstance(authority, str) or not authority.strip()
+        ):
+            errors.append(
+                f"Gate step {config.get('id', '?')!r}: 'authority' must be a non-empty string."
             )
         # Only inspect option text when every option is a string; otherwise the
         # `o.lower()` below would raise AttributeError on a non-string option

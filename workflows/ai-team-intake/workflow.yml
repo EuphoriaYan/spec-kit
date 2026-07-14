@@ -67,6 +67,7 @@ steps:
 
       - id: review-intake-boundary
         type: gate
+        authority: maintainer
         message: "Confirm the provisional bug/feature classification, repository visibility, and read-only analysis boundary. Revise regenerates the intake analysis; reject aborts."
         options: [approve, revise, reject]
         on_reject: abort
@@ -98,6 +99,7 @@ steps:
 
       - id: review-issue-draft
         type: gate
+        authority: maintainer
         message: "Review the issue draft, impact evidence, publication target, and planning recommendation. Revise regenerates the draft; approval authorizes publication. Feature acceptance must identify Technical Committee or delegated authority."
         options: [approve, revise, reject]
         on_reject: abort

@@ -133,6 +133,14 @@ The context pack records decisions but does not replace decision owners.
 AI-generated output is evidence for those roles, not a transfer of
 accountability.
 
+Each native workflow Gate may declare an `authority` role. Once a person makes
+the interactive decision, workflow state records `authority`, `decided_by`,
+`decider_source`, and `decided_at`. Set `SPECKIT_GATE_ACTOR` to an approved
+enterprise identity when the local OS account is not sufficiently specific;
+otherwise the engine records the OS user. These fields provide attribution and
+an audit trail. They do not prove role membership, so an enterprise identity or
+policy adapter must still authorize the named person for the declared role.
+
 ## Memory And Release Archive Status
 
 When a feature, bugfix, review cycle, or incident produces a reusable lesson,

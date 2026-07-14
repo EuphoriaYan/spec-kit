@@ -227,12 +227,17 @@ def _gate_outcome(state: Any) -> dict[str, Any] | None:
     # list[str] | None, choice → str | None (None means no decision yet).
     message = output.get("message")
     choice = output.get("choice")
-    return {
+    gate = {
         "step_id": state.current_step_id,
         "message": None if message is None else str(message),
         "options": _normalize_gate_options(output.get("options")),
         "choice": None if choice is None else str(choice),
     }
+    for field in ("authority", "decided_by", "decider_source", "decided_at"):
+        value = output.get(field)
+        if value is not None:
+            gate[field] = str(value)
+    return gate
 
 
 def _normalize_gate_options(options: Any) -> list[str] | None:

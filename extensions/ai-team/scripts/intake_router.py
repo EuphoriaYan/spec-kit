@@ -243,9 +243,11 @@ def route_formal_workflow(
         ]
     elif work_type in {"feature", "new-project"}:
         planning_mode = "standard" if work_type == "new-project" else result["planning_mode"]
+        work_slug = intake_slug
         command = [
             "specify", "workflow", "run", "ai-team-sdd",
             "--input", f"request={request}",
+            "--input", f"work_slug={work_slug}",
             "--input", f"work_type={work_type}",
             "--input", f"planning_mode={planning_mode}",
             "--input", f"coding_issue_url={issue_url}",

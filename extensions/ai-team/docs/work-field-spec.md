@@ -21,16 +21,23 @@ tools, PR reviews, and human approval pauses.
 Do not use a mutable issue title, chat summary, local file path, or branch name
 as the stable identity.
 
+`work_slug` is required before a formal SDD or bug-fix workflow starts. It must
+be 1-128 lowercase ASCII characters, begin with a letter or number, use only
+letters, numbers, `.`, `_`, and `-`, and must not contain `..`. Plain-language
+intake derives this value before it launches the formal workflow, so chat users
+do not need to invent it themselves.
+
 ## Canonical `work_slug`
 
 | Work type | Rule | Example |
 |---|---|---|
-| feature | basename of Spec Kit feature directory (`FEATURE_DIR`) | `003-user-auth` for `specs/003-user-auth/` |
+| feature | selected before formal SDD and used as the Spec Kit feature directory basename | `003-user-auth` for `specs/003-user-auth/` |
 | bug | same as `bug_slug` | `bug-project-alpha-123` |
-| new-project / template | explicit at intake or derived after first SDD step | `customer-notification` |
+| new-project / template | explicit at intake before formal SDD starts | `customer-notification` |
 
-For feature work after `speckit.specify`, set `work_slug` to the resolved feature
-directory basename — the same name used under `specs/`.
+For feature work, `ai-team-sdd` passes `SPECIFY_FEATURE_DIRECTORY=specs/<work_slug>`
+to `speckit.specify`. The work identity and native SDD artifact directory
+therefore remain the same across context, planning, implementation, and resume.
 
 ## Bug `bug_slug`
 

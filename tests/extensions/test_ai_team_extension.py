@@ -507,6 +507,7 @@ def test_work_item_gate_accepts_same_repository_issue_group(tmp_path):
     result = _run_work_item_gate(
         tmp_path,
         {
+            "work_slug": "bug-project-123",
             "work_type": "bug",
             "coding_issue_url": "https://example.com/org/project/issues/123",
             "also_resolves_issue_urls": (
@@ -523,10 +524,22 @@ def test_work_item_gate_accepts_same_repository_issue_group(tmp_path):
 @pytest.mark.parametrize(
     ("inputs", "error"),
     [
-        ({"work_type": "auto"}, "must be resolved after intake classification"),
-        ({"work_type": "bug"}, "primary coding_issue_url"),
+        (
+            {"work_slug": "work-1", "work_type": "auto"},
+            "must be resolved after intake classification",
+        ),
+        ({"work_slug": "bug-1", "work_type": "bug"}, "primary coding_issue_url"),
         (
             {
+                "work_slug": "../unsafe",
+                "work_type": "bug",
+                "coding_issue_url": "https://example.com/org/project/issues/1",
+            },
+            "safe lowercase directory name",
+        ),
+        (
+            {
+                "work_slug": "feature-1",
                 "work_type": "feature",
                 "coding_issue_url": "https://example.com/org/project/issues/1",
                 "handoff_requirement_url": "https://internal.example.com/req/1",
@@ -535,6 +548,7 @@ def test_work_item_gate_accepts_same_repository_issue_group(tmp_path):
         ),
         (
             {
+                "work_slug": "bug-1",
                 "work_type": "bug",
                 "coding_issue_url": "https://example.com/org/project/issues/1",
                 "also_resolves_issue_urls": "https://example.com/org/other/issues/2",
@@ -543,13 +557,18 @@ def test_work_item_gate_accepts_same_repository_issue_group(tmp_path):
         ),
         (
             {
+                "work_slug": "new-project-2",
                 "work_type": "new-project",
                 "planning_mode": "compact",
                 "handoff_requirement_url": "https://internal.example.com/req/2",
             },
             "requires standard planning mode",
         ),
-        ({"work_type": "new-project"}, "requires a coding issue/project charter"),
+        (
+            {"work_slug": "new-project", "work_type": "new-project"},
+            "requires a coding issue/project charter",
+        ),
+        ({"work_type": "feature"}, "stable work_slug"),
     ],
 )
 def test_work_item_gate_rejects_inconsistent_anchors(tmp_path, inputs, error):
@@ -788,6 +807,9 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     step_ids = _collect_step_ids(steps)
     assert "route" not in step_ids
     assert "review-context" in step_ids
+    assert "feature-acceptance-if-needed" in step_ids
+    assert "review-feature-acceptance" in step_ids
+    assert "review-template-maintenance" in step_ids
     assert "validate-work-item" in step_ids
     assert "context-open" in step_ids
     assert "codegraph" in step_ids
@@ -894,10 +916,21 @@ def test_ai_team_workflow_is_bundled_and_uses_init_step():
     assert step_ids.index("context-open") < step_ids.index("validate-work-item")
     assert step_ids.index("impact") < step_ids.index("validate-work-item")
     assert step_ids.index("validate-work-item") < step_ids.index("specify")
+    assert step_ids.index("review-feature-acceptance") < step_ids.index("specify")
+    assert (
+        _find_step(steps, "review-feature-acceptance")["authority"]
+        == "technical-committee"
+    )
+    assert _find_step(steps, "review-template-maintenance")["authority"] == "maintainer"
     assert step_ids.index("permission-implementation") < step_ids.index("implement")
     assert step_ids.index("review-permissions") < step_ids.index("implement")
     converge_step = next(step for step in steps if step["id"] == "converge")
     assert converge_step["command"] == "speckit.converge"
+    specify_step = next(step for step in steps if step["id"] == "specify")
+    assert (
+        "SPECIFY_FEATURE_DIRECTORY=specs/{{ inputs.work_slug }}"
+        in specify_step["input"]["args"]
+    )
 
     assert BUGFIX_WORKFLOW_PATH.exists()
     bugfix = yaml.safe_load(BUGFIX_WORKFLOW_PATH.read_text(encoding="utf-8"))
@@ -1066,6 +1099,7 @@ def test_intake_router_publishes_and_launches_accepted_feature(tmp_path):
     assert routed["route_status"] == "launched"
     command = route_runner.call_args.args[0]
     assert command[:4] == ["specify", "workflow", "run", "ai-team-sdd"]
+    assert "work_slug=csv-export" in command
     assert "work_type=feature" in command
     assert "planning_mode=compact" in command
     assert "coding_issue_url=https://github.com/example/project/issues/42" in command
@@ -1131,6 +1165,7 @@ def test_intake_router_launches_new_project_in_standard_mode(tmp_path):
     )
 
     command = route_runner.call_args.args[0]
+    assert "work_slug=csv-export" in command
     assert "work_type=new-project" in command
     assert "planning_mode=standard" in command
 
@@ -1186,6 +1221,7 @@ def test_ai_team_bugfix_workflow_pauses_at_context_gate(tmp_path):
             "existing project public feature",
             {
                 "request": "Implement public search result export",
+                "work_slug": "search-export",
                 "work_type": "feature",
                 "coding_issue_url": "https://example.com/org/project/issues/456",
             },
@@ -1200,6 +1236,7 @@ def test_ai_team_bugfix_workflow_pauses_at_context_gate(tmp_path):
             "existing project compact feature from chat routing",
             {
                 "request": "Use AI Team Compact mode for search export",
+                "work_slug": "search-export-compact",
                 "work_type": "feature",
                 "planning_mode": "compact",
                 "coding_issue_url": "https://example.com/org/project/issues/457",
@@ -1214,6 +1251,7 @@ def test_ai_team_bugfix_workflow_pauses_at_context_gate(tmp_path):
             "existing project confidential feature",
             {
                 "request": "Implement REQ-2026-015 search result export",
+                "work_slug": "req-2026-015",
                 "work_type": "feature",
                 "handoff_requirement_url": "https://example.com/enhancements/rfcs/REQ-2026-015",
             },
@@ -1227,6 +1265,7 @@ def test_ai_team_bugfix_workflow_pauses_at_context_gate(tmp_path):
             "new project from zero",
             {
                 "request": "Create the initial customer notification service",
+                "work_slug": "customer-notification",
                 "work_type": "new-project",
                 "bootstrap_workspace": True,
                 "handoff_requirement_url": "https://example.com/enhancements/rfcs/REQ-2026-020",
