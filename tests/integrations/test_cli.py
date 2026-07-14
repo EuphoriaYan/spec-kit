@@ -80,9 +80,10 @@ class TestInitIntegrationFlag:
         # init must not leave any legacy agent-context keys in init-options.json
         assert "context_file" not in opts
 
-        # agent-context is fully opt-in: init must not install it or write its config
+        # The distribution catalog installs agent-context, while the extension
+        # remains solely responsible for managing the actual context file.
         ext_cfg_path = project / ".specify" / "extensions" / "agent-context" / "agent-context-config.yml"
-        assert not ext_cfg_path.exists(), "init must not create the agent-context extension config"
+        assert ext_cfg_path.exists(), "init must install the agent-context extension"
 
         assert (project / ".specify" / "integrations" / "copilot.manifest.json").exists()
 
@@ -139,8 +140,12 @@ class TestInitIntegrationFlag:
         from specify_cli import app
         from specify_cli.presets import PresetManager
 
-        def fail_install(self, path, version):
-            raise OSError("preset install exploded\nwith context")
+        original_install = PresetManager.install_from_directory
+
+        def fail_install(self, path, version, priority=10):
+            if path.name == "lean":
+                raise OSError("preset install exploded\nwith context")
+            return original_install(self, path, version, priority)
 
         monkeypatch.setattr(PresetManager, "install_from_directory", fail_install)
 

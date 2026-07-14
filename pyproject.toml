@@ -53,6 +53,8 @@ packages = ["src/specify_cli"]
 # Bundled presets (installable via `specify preset add <name>` or `specify init --preset <name>`)
 "presets/lean" = "specify_cli/core_pack/presets/lean"
 "presets/ai-team-sdd-governance" = "specify_cli/core_pack/presets/ai-team-sdd-governance"
+# Distribution catalog consumed automatically by `specify init`.
+"bundles" = "specify_cli/core_pack/bundles"
 
 [project.optional-dependencies]
 test = [

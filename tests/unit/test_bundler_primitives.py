@@ -118,6 +118,33 @@ def test_bundled_workflow_version_mismatch_refuses(tmp_path: Path, monkeypatch):
         manager.install(component)
 
 
+def test_offline_bundled_workflow_does_not_query_catalog(tmp_path: Path, monkeypatch):
+    import specify_cli
+    import specify_cli._assets as assets
+
+    bundled = tmp_path / "wf"
+    bundled.mkdir()
+    (bundled / "workflow.yml").write_text(
+        "workflow:\n  id: bundled-wf\n  version: 1.0.0\n", encoding="utf-8"
+    )
+    calls: list[str] = []
+    monkeypatch.setattr(specify_cli, "workflow_add", lambda wid: calls.append(wid))
+    monkeypatch.setattr(assets, "_locate_bundled_workflow", lambda wid: bundled)
+
+    manager = primitive_manager("workflows", tmp_path, allow_network=False)
+    monkeypatch.setattr(
+        manager,
+        "_assert_pinned_version",
+        lambda component: pytest.fail("bundled workflow queried the catalog"),
+    )
+
+    manager.install(
+        ComponentRef(kind="workflows", id="bundled-wf", version="1.0.0")
+    )
+
+    assert calls == [str(bundled)]
+
+
 def test_assert_pinned_version_matches_passes():
     from specify_cli.bundler.services.primitives import _assert_pinned_version
 

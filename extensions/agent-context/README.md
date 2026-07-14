@@ -6,9 +6,10 @@ It owns the lifecycle of the managed section delimited by the configurable start
 
 ## Why an extension?
 
-Not every Spec Kit user wants Spec Kit to write into the coding agent's context file. Keeping this behavior in a dedicated, **opt-in** extension lets users:
+Not every Spec Kit user wants Spec Kit to write into the coding agent's context
+file. Keeping this behavior in a dedicated extension lets users:
 
-- **Choose whether to install it at all** — `specify init` does not install it. Add it explicitly when you want Spec Kit to manage the agent context file; if it is absent or disabled, Spec Kit never creates or modifies that file.
+- **Disable or remove it independently** — this distribution installs the extension during `specify init`, but only the extension's commands and hooks manage context files. If it is disabled or removed, Spec Kit never creates or modifies those files.
 - **Customize the markers** by editing `.specify/extensions/agent-context/agent-context-config.yml` — the bundled scripts honor the `context_markers` value.
 - **Synchronize multiple agent anchors** by setting `context_files` when a project intentionally uses more than one coding agent context file, such as `AGENTS.md` and `CLAUDE.md`.
 - **Refresh on demand** by running the `speckit.agent-context.update` command in your agent, or automatically through the hooks declared in `extension.yml` (`after_specify`, `after_plan`). Invoke it using your agent's slash-command separator — `/speckit.agent-context.update` for dot-separator agents or `/speckit-agent-context-update` for hyphen-separator agents (e.g. Forge, Cline).

@@ -22,7 +22,7 @@ inputs:
     prompt: "Describe the feature, new project, or template change"
   integration:
     type: string
-    default: "codex"
+    default: "auto"
     enum: ["codex", "claude", "cursor-agent", "trae"]
   bootstrap_workspace:
     type: boolean

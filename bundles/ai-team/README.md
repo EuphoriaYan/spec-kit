@@ -20,34 +20,23 @@ This bundle is **integration-agnostic** but AI Team workflows require one of:
 
 ## Usage
 
-**Install by bundle id** after registering the catalog (once per project). See
-[`../README.md`](../README.md) for the catalog/maintainer model.
+Install this distribution and initialize the project:
 
 ```bash
 specify init . --integration cursor-agent
-specify bundle catalog add https://raw.githubusercontent.com/EuphoriaYan/spec-kit/main/bundles/catalog.json \
-  --id ai-team --policy install-allowed
-specify bundle info ai-team
-specify bundle install ai-team
 ```
 
-`specify bundle install ai-team` also initializes an uninitialized directory
-(after the catalog is registered). Component references resolve from bundled
-assets shipped in this distribution's CLI where applicable.
+Initialization reads the packaged distribution catalog and installs this bundle
+automatically. No catalog registration or separate bundle command is required.
+The catalog entry remains `verified: false` until clean-project init install
+tests pass for a packaged CLI build.
 
-The catalog entry on `main` is a development channel and remains unverified.
-A release must publish a versioned bundle ZIP, update `download_url` to that
-immutable artifact, and pass the clean-project install test before setting
-`verified: true`.
+### Validate the manifest
 
-### Validate and build artifact
-
-Authoring commands use `--path` on the bundle directory:
+Maintainers can validate changes locally:
 
 ```bash
 specify bundle validate --path bundles/ai-team --offline
-specify bundle build --path bundles/ai-team --output dist/
-specify bundle install ai-team-0.1.0.zip --integration cursor-agent
 ```
 
 ## After install

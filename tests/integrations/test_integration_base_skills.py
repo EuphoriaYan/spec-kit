@@ -347,9 +347,8 @@ class SkillsIntegrationTests:
         skills_dir = i.skills_dest(project)
         assert skills_dir.is_dir(), f"Skills directory {skills_dir} not created"
 
-    def test_init_does_not_create_agent_context_config(self, tmp_path):
-        """agent-context is opt-in: init must not auto-install the extension
-        or write its config."""
+    def test_init_installs_agent_context_config(self, tmp_path):
+        """The distribution catalog installs agent-context during init."""
         from typer.testing import CliRunner
         from specify_cli import app
 
@@ -366,7 +365,7 @@ class SkillsIntegrationTests:
             os.chdir(old_cwd)
         assert result.exit_code == 0
         ext_cfg_path = project / ".specify" / "extensions" / "agent-context" / "agent-context-config.yml"
-        assert not ext_cfg_path.exists()
+        assert ext_cfg_path.exists()
 
     # -- IntegrationOption ------------------------------------------------
 

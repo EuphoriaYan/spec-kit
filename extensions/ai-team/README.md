@@ -396,26 +396,19 @@ knowledge consolidation, and `speckit.ai-team.support` to audit a project.
 
 ## Installation
 
-Install the full AI Team stack in one step with the **`ai-team` bundle** (see
-[`bundles/catalog.json`](../../bundles/catalog.json)):
+Install the distribution and initialize the coding repository:
 
 ```bash
 specify init . --integration cursor-agent
-
-# Once per project: register where the CLI fetches the bundle catalog
-specify bundle catalog add https://raw.githubusercontent.com/EuphoriaYan/spec-kit/main/bundles/catalog.json \
-  --id ai-team --policy install-allowed
-
-specify bundle info ai-team
-specify bundle install ai-team
 ```
 
 Supported integrations: `codex`, `claude`, `cursor-agent`, `trae`.
 
-On an existing Spec Kit project, skip `specify init` and run `catalog add` (if
-not already registered) plus `specify bundle install ai-team`.
+`specify init` reads the catalog packaged with this distribution and installs
+the AI Team extensions, governance preset, and workflows automatically and
+fully offline.
 
-**Alternative: manual install** (extension + preset + workflow separately):
+**Manual repair** (reinstall individual components if needed):
 
 ```bash
 specify extension add ai-team
@@ -440,12 +433,3 @@ Without the preset, core commands do not know about `spec.override.md` or AI Tea
 checks / evidence rules.
 The `bug` extension supplies `speckit.bug.test`, which receives composite checks
 and Evidence Board rules from the preset during bugfix workflows.
-
-For local development from this repository (catalog URL can point at the local
-file while iterating on `bundles/catalog.json`):
-
-```bash
-specify init . --integration cursor-agent
-specify bundle catalog add ./bundles/catalog.json --id ai-team --policy install-allowed
-specify bundle install ai-team
-```

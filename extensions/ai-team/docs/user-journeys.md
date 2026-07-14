@@ -6,16 +6,11 @@ features, new projects, and interrupted work.
 
 ## Common Setup
 
-Install Spec Kit from this independent distribution, initialize the coding
-repository, and add the AI Team extension, handoff-spec preset, and workflows:
+Install Spec Kit from this independent distribution and initialize the coding
+repository. Init installs the packaged AI Team bundle automatically:
 
 ```bash
 specify init . --integration codex --integration-options="--skills"
-specify extension add ai-team
-specify extension add bug
-specify preset add ai-team-sdd-governance
-specify workflow add ai-team-sdd
-specify workflow add ai-team-bugfix
 ```
 
 The `ai-team-sdd-governance` preset composes handoff spec rules and composite AI Team

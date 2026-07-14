@@ -1,7 +1,8 @@
 # Bundle catalogs (AI Team distribution)
 
-This directory publishes the **AI Team bundle catalog** for Spec Kit's bundle
-subsystem. It follows the upstream pattern: catalog JSON + per-bundle manifests.
+This directory defines the **distribution bundle catalog** consumed
+automatically by `specify init`. The catalog and manifests are packaged under
+`specify_cli/core_pack/bundles/`, so initialization is fully offline.
 
 ## Layout
 
@@ -11,30 +12,25 @@ subsystem. It follows the upstream pattern: catalog JSON + per-bundle manifests.
 | [`ai-team/bundle.yml`](ai-team/bundle.yml) | Manifest: pinned extensions, preset, workflows |
 | [`ai-team/README.md`](ai-team/README.md) | Bundle-specific usage |
 
-## Consumer flow (方案 A)
+## Consumer flow
 
-Users install the CLI from this fork, then **per coding repository**:
+Users install the CLI from this fork, then initialize each coding repository:
 
 ```bash
 specify init . --integration cursor-agent
-specify bundle catalog add https://raw.githubusercontent.com/EuphoriaYan/spec-kit/main/bundles/catalog.json \
-  --id ai-team --policy install-allowed
-specify bundle install ai-team
 ```
 
-`catalog add` writes `.specify/bundle-catalogs.yml` in the **coding repo** — it
-does not happen automatically because the catalog file lives in the **spec-kit
-fork**, not in the user's project.
+`specify init` reads `catalog.json`, resolves each entry's package-relative
+`download_url`, and installs every listed bundle. Users do not register a
+catalog or run `specify bundle install` separately.
 
 ## Maintainer notes
 
-- Update `catalog.json` when bumping bundle `version` or `download_url` (e.g.
-  after `specify bundle build` and a GitHub release).
-- During development, `download_url` may point at `bundle.yml` on `main`.
-  Before marking an entry as verified for a release, replace it with a
-  versioned `.zip` release artifact so the same bundle version always resolves
-  to the same bytes.
-- Set `verified: true` only after the packaged CLI and the versioned bundle
-  artifact pass the clean-project install test.
+- Add every distribution bundle to `catalog.json`; init installs all entries.
+- Keep each `download_url` relative to this directory, for example
+  `ai-team/bundle.yml`.
+- Keep catalog and manifest versions aligned.
+- Set `verified: true` only after the packaged CLI and clean-project init
+  install test pass for that catalog revision.
 - Authoring: `specify bundle validate --path bundles/ai-team` and
   `specify bundle build --path bundles/ai-team --output dist/`.

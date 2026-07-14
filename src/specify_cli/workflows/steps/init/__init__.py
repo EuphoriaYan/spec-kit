@@ -30,7 +30,8 @@ class InitStep(StepBase):
 
     The step runs the bundled ``specify init`` command non-interactively,
     scaffolding templates, scripts, shared infrastructure, and the
-    selected coding agent integration into the target directory.
+    selected coding agent integration into the target directory. It also
+    installs every bundle in the distribution's packaged catalog.
 
     Because workflows run unattended, the step defaults to
     ``--ignore-agent-tools`` (skip checks for an installed agent CLI) and

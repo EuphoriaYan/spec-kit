@@ -308,13 +308,6 @@ class _WorkflowKindManager:
                 "Workflow", component.id, component.version, info.get("version")
             )
 
-    @staticmethod
-    def _is_bundled(workflow_id: str) -> bool:
-        # A workflow that ships with Spec Kit installs fully offline.
-        from ..._assets import _locate_bundled_workflow
-
-        return _locate_bundled_workflow(workflow_id) is not None
-
     def remove(self, component: ComponentRef) -> None:
         from ... import workflow_remove
 

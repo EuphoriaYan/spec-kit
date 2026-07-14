@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "updated_at": "2026-07-13T00:00:00Z",
-  "catalog_url": "https://raw.githubusercontent.com/EuphoriaYan/spec-kit/main/bundles/catalog.json",
+  "catalog_url": "bundled://distribution",
   "bundles": {
     "ai-team": {
       "id": "ai-team",
@@ -12,7 +12,7 @@
       "author": "AI Team Template",
       "repository": "https://github.com/EuphoriaYan/spec-kit",
       "license": "MIT",
-      "download_url": "https://raw.githubusercontent.com/EuphoriaYan/spec-kit/main/bundles/ai-team/bundle.yml",
+      "download_url": "ai-team/bundle.yml",
       "requires": {
         "speckit_version": ">=0.12.4"
       },
