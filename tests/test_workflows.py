@@ -1553,6 +1553,33 @@ class TestGateStep:
         assert result.status == StepStatus.PAUSED
         assert result.output["message"] == "Review the spec."
         assert result.output["options"] == ["approve", "reject"]
+        assert result.output["authority"] is None
+        assert result.output["decided_by"] is None
+        assert result.output["decided_at"] is None
+
+    def test_interactive_gate_records_authority_and_actor(self, monkeypatch):
+        from specify_cli.workflows.steps.gate import GateStep
+        from specify_cli.workflows.base import StepContext, StepStatus
+
+        _force_gate_stdin(monkeypatch, tty=True)
+        monkeypatch.setattr("builtins.input", lambda _prompt="": "approve")
+        monkeypatch.setenv("SPECKIT_GATE_ACTOR", "alice@example.com")
+
+        result = GateStep().execute(
+            {
+                "id": "review",
+                "message": "Review.",
+                "authority": "technical-committee",
+                "options": ["approve", "reject"],
+            },
+            StepContext(),
+        )
+
+        assert result.status == StepStatus.COMPLETED
+        assert result.output["authority"] == "technical-committee"
+        assert result.output["decided_by"] == "alice@example.com"
+        assert result.output["decider_source"] == "environment"
+        assert result.output["decided_at"].endswith("+00:00")
 
     def test_validate_missing_message(self):
         from specify_cli.workflows.steps.gate import GateStep
@@ -1571,6 +1598,14 @@ class TestGateStep:
             "on_reject": "invalid",
         })
         assert any("on_reject" in e for e in errors)
+
+    def test_validate_rejects_empty_authority(self):
+        from specify_cli.workflows.steps.gate import GateStep
+
+        errors = GateStep().validate(
+            {"id": "test", "message": "Review", "authority": " "}
+        )
+        assert any("authority" in error for error in errors)
 
     def test_validate_non_string_options_does_not_raise(self):
         """Non-string options with on_reject=abort/retry must be REPORTED as an
@@ -6675,12 +6710,22 @@ steps:
             tmp_path, monkeypatch, self._WF_GATE, expected_exit=1
         )
         assert payload["status"] == "aborted"
-        assert payload["gate"] == {
+        assert {
+            key: payload["gate"][key]
+            for key in ("step_id", "message", "options", "choice")
+        } == {
             "step_id": "review",
             "message": "Approve the thing?",
             "options": ["approve", "reject"],
             "choice": "reject",
         }
+        assert payload["gate"]["decided_by"]
+        assert payload["gate"]["decider_source"] in {
+            "environment",
+            "os-user",
+            "unavailable",
+        }
+        assert payload["gate"]["decided_at"].endswith("+00:00")
 
     def test_gate_block_emitted_only_when_run_rests_at_gate(self):
         # A run rests *on* a gate only while `paused` (awaiting a decision) or
@@ -6782,6 +6827,35 @@ steps:
         assert _choice_payload(None) is None  # no decision yet
         assert _choice_payload("reject") == "reject"  # normal string passes through
         assert _choice_payload(2) == "2"  # non-string coerced
+
+    def test_gate_block_includes_accountability_metadata(self):
+        from types import SimpleNamespace
+        from specify_cli.workflows._commands import _gate_outcome
+
+        state = SimpleNamespace(
+            status=SimpleNamespace(value="aborted"),
+            current_step_id="review",
+            step_results={
+                "review": {
+                    "type": "gate",
+                    "output": {
+                        "message": "Approve?",
+                        "options": ["approve", "reject"],
+                        "choice": "reject",
+                        "authority": "module-owner",
+                        "decided_by": "alice@example.com",
+                        "decider_source": "environment",
+                        "decided_at": "2026-07-14T10:00:00+00:00",
+                    },
+                }
+            },
+        )
+
+        gate = _gate_outcome(state)
+        assert gate["authority"] == "module-owner"
+        assert gate["decided_by"] == "alice@example.com"
+        assert gate["decider_source"] == "environment"
+        assert gate["decided_at"] == "2026-07-14T10:00:00+00:00"
 
     def test_gate_block_detected_without_type_field(self):
         # A run paused by an older version has no persisted step `type`. The

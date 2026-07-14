@@ -5,9 +5,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from urllib.parse import urlparse
+
+
+_WORK_SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
 
 
 def _issue_repo(url: str) -> tuple[str, str, str]:
@@ -35,11 +39,20 @@ def _split_urls(value: object) -> list[str]:
 
 
 def validate(inputs: dict[str, object]) -> dict[str, object]:
+    work_slug = str(inputs.get("work_slug", "")).strip()
     work_type = str(inputs.get("work_type", "auto"))
     planning_mode = str(inputs.get("planning_mode", "standard"))
     primary = str(inputs.get("coding_issue_url", "")).strip()
     handoff = str(inputs.get("handoff_requirement_url", "")).strip()
     related = _split_urls(inputs.get("also_resolves_issue_urls"))
+
+    if not work_slug:
+        raise ValueError("formal AI Team work requires a stable work_slug")
+    if not _WORK_SLUG_PATTERN.fullmatch(work_slug) or ".." in work_slug:
+        raise ValueError(
+            "work_slug must be a safe lowercase directory name using only "
+            "letters, numbers, dot, underscore, and hyphen"
+        )
 
     if work_type in {"auto", "unclear", ""}:
         raise ValueError(
@@ -78,6 +91,7 @@ def validate(inputs: dict[str, object]) -> dict[str, object]:
             raise ValueError(f"invalid handoff requirement URL: {handoff}")
 
     return {
+        "work_slug": work_slug,
         "work_type": work_type,
         "planning_mode": planning_mode,
         "primary_anchor": primary or handoff or None,
