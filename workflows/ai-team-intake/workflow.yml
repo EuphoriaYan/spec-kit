@@ -22,7 +22,7 @@ inputs:
     prompt: "Describe the problem or capability in your own words"
   integration:
     type: string
-    default: "codex"
+    default: "auto"
     enum: ["codex", "claude", "cursor-agent", "trae"]
   intake_slug:
     type: string

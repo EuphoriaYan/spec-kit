@@ -405,6 +405,14 @@ def workflow_resume(
         "--json",
         help="Emit the resume outcome as a single JSON object instead of formatted text.",
     ),
+    recover_running: bool = typer.Option(
+        False,
+        "--recover-running",
+        help=(
+            "Explicitly recover a stale running run after confirming its original "
+            "process is no longer active. Re-executes the current step."
+        ),
+    ),
 ):
     """Resume a paused or failed workflow run."""
     from . import load_custom_steps
@@ -420,7 +428,9 @@ def workflow_resume(
 
     try:
         with _stdout_to_stderr_when(json_output):
-            state = engine.resume(run_id, inputs or None)
+            state = engine.resume(
+                run_id, inputs or None, recover_running=recover_running
+            )
     except FileNotFoundError:
         console.print(f"[red]Error:[/red] Run not found: {run_id}")
         raise typer.Exit(1)

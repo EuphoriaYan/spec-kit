@@ -66,7 +66,7 @@ plain-language request -> read-only intake -> reviewed work item
 | Layer | Example | Output |
 |---|---|---|
 | Extension command | `speckit.ai-team.plan-check` | Plan Check Report in chat; `plan_check` in work context |
-| Preset (optional) | `ai-team-handoff-spec` on `converge` / `bug.test` | Handoff spec rules; composite checks / evidence |
+| Preset (optional) | `ai-team-sdd-governance` on `converge` / `bug.test` | Handoff spec rules; composite checks / evidence |
 | Workflow human gate | `review-plan`, `review-tasks` | You approve, revise, or reject before the next SDD step |
 
 The `ai-team-sdd` workflow does **not** run core `speckit.checklist`. Requirement-quality
@@ -91,15 +91,35 @@ For detailed steps, start with
 
 ### AI Team Quick Start
 
-Install this distribution, initialize the coding repository, and add the AI
-Team extension, handoff-spec preset, and workflows:
+Install this distribution, then bootstrap each coding repository — `specify init`
+installs the full AI Team stack (extensions, governance preset, workflows)
+automatically; no extra flags or catalog URLs required.
 
 ```bash
 uv tool install specify-cli --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.1
-specify init . --integration codex --integration-options="--skills"
+cd your-coding-repo
+
+specify init . --integration cursor-agent
+```
+
+Use `codex`, `claude`, `cursor-agent`, or `trae` for `--integration`. Add
+`--integration-options="--skills"` when initializing a fresh repo with Codex if
+you prefer skills mode.
+
+During initialization, the CLI reads its packaged
+[`bundles/catalog.json`](bundles/catalog.json) and installs every listed bundle
+fully offline. The AI Team manifest lives at
+[`bundles/ai-team/bundle.yml`](bundles/ai-team/bundle.yml).
+
+**Alternative: manual install** (same components, separate commands):
+
+```bash
+uv tool install specify-cli --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.1
+specify init . --integration cursor-agent
 specify extension add ai-team
 specify extension add bug
-specify preset add ai-team-handoff-spec
+specify extension add agent-context
+specify preset add ai-team-sdd-governance
 specify workflow add ai-team-intake
 specify workflow add ai-team-sdd
 specify workflow add ai-team-bugfix
@@ -112,7 +132,7 @@ inside `speckit.bug.test`).
 Plan Check Report in chat (no gate markdown file), and records `plan_check` in the
 Work Context Package.
 
-**Preset:** `ai-team-handoff-spec` composes handoff spec rules and composite AI Team
+**Preset:** `ai-team-sdd-governance` composes handoff spec rules and composite AI Team
 logic into native commands: checks/evidence in `speckit.converge` (feature) or
 `speckit.bug.test` (bugfix). `speckit.analyze` stays native (read-only report).
 

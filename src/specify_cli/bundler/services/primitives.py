@@ -64,6 +64,8 @@ class _KindManager(Protocol):
 
     def install(self, component: ComponentRef) -> None: ...
 
+    def refresh(self, component: ComponentRef) -> None: ...
+
     def remove(self, component: ComponentRef) -> None: ...
 
 
@@ -174,6 +176,13 @@ class _PresetKindManager:
                 f"Failed to remove preset '{component.id}': {exc}"
             ) from exc
 
+    def refresh(self, component: ComponentRef) -> None:
+        # PresetManager intentionally rejects duplicate installs and has no
+        # force flag. Bundle refresh owns this component, so replacing it is
+        # safe and applies the bundle's pinned content and priority.
+        self.remove(component)
+        self.install(component)
+
 
 class _ExtensionKindManager:
     def __init__(self, project_root: Path, allow_network: bool) -> None:
@@ -190,6 +199,12 @@ class _ExtensionKindManager:
             return False
 
     def install(self, component: ComponentRef) -> None:
+        self._install(component, force=False)
+
+    def refresh(self, component: ComponentRef) -> None:
+        self._install(component, force=True)
+
+    def _install(self, component: ComponentRef, *, force: bool) -> None:
         from ... import get_speckit_version
         from ..._assets import _locate_bundled_extension
 
@@ -199,7 +214,7 @@ class _ExtensionKindManager:
         bundled = _locate_bundled_extension(component.id)
         if bundled is not None:
             self._manager.install_from_directory(
-                bundled, speckit_version, priority=priority
+                bundled, speckit_version, priority=priority, force=force
             )
             return
 
@@ -229,7 +244,7 @@ class _ExtensionKindManager:
         zip_path = catalog.download_extension(component.id)
         try:
             self._manager.install_from_zip(
-                zip_path, speckit_version, priority=priority
+                zip_path, speckit_version, priority=priority, force=force
             )
         finally:
             with contextlib.suppress(Exception):
@@ -260,20 +275,39 @@ class _WorkflowKindManager:
             return False
 
     def install(self, component: ComponentRef) -> None:
-        if not self._allow_network and not self._is_bundled(component.id):
+        from ..._assets import _locate_bundled_workflow
+
+        bundled = _locate_bundled_workflow(component.id)
+        if not self._allow_network and bundled is None:
             raise BundlerError(
                 f"Workflow '{component.id}' installs from a catalog and network "
                 f"access is disabled; re-run without --offline or install it first "
                 f"with 'specify workflow add {component.id}'."
             )
-        self._assert_pinned_version(component)
+        if bundled is not None:
+            self._assert_bundled_version(component, bundled)
+        else:
+            self._assert_pinned_version(component)
         from ... import workflow_add
 
         with _chdir(self._root):
             _delegate_command(
                 "install", f"workflow '{component.id}'",
-                lambda: workflow_add(component.id),
+                lambda: workflow_add(
+                    str(bundled) if bundled is not None else component.id
+                ),
             )
+
+    @staticmethod
+    def _assert_bundled_version(component: ComponentRef, bundled: Path) -> None:
+        if not component.version:
+            return
+        from ...workflows.engine import WorkflowDefinition
+
+        definition = WorkflowDefinition.from_yaml(bundled / "workflow.yml")
+        _assert_pinned_version(
+            "Workflow", component.id, component.version, definition.version
+        )
 
     def _assert_pinned_version(self, component: ComponentRef) -> None:
         if not component.version:
@@ -289,13 +323,6 @@ class _WorkflowKindManager:
                 "Workflow", component.id, component.version, info.get("version")
             )
 
-    @staticmethod
-    def _is_bundled(workflow_id: str) -> bool:
-        # A workflow that ships with Spec Kit installs fully offline.
-        from ..._assets import _locate_bundled_workflow
-
-        return _locate_bundled_workflow(workflow_id) is not None
-
     def remove(self, component: ComponentRef) -> None:
         from ... import workflow_remove
 
@@ -304,6 +331,10 @@ class _WorkflowKindManager:
                 "remove", f"workflow '{component.id}'",
                 lambda: workflow_remove(component.id),
             )
+
+    def refresh(self, component: ComponentRef) -> None:
+        # workflow add validates and atomically overwrites the installed YAML.
+        self.install(component)
 
 
 class _StepKindManager:
@@ -343,3 +374,8 @@ class _StepKindManager:
                 "remove", f"step '{component.id}'",
                 lambda: workflow_step_remove(component.id),
             )
+
+    def refresh(self, component: ComponentRef) -> None:
+        # Step installation delegates to the existing add command, whose
+        # registry path is the primitive's update mechanism.
+        self.install(component)

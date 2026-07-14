@@ -1,7 +1,8 @@
 """Static guard: the Specify CLI source must contain no agent-context lifecycle code.
 
-The ``agent-context`` extension is a full opt-in and owns its own lifecycle. The
-Python codebase (``src/specify_cli/**``) must therefore not reference any of the
+The ``agent-context`` extension owns its own lifecycle even when installed by
+the distribution bundle. The Python codebase (``src/specify_cli/**``) must
+therefore not reference any of the
 removed context-section management helpers, the extension config helpers, the
 context markers, or the obsolete deprecation message.
 

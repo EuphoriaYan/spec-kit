@@ -39,15 +39,13 @@ Recommended commands:
 
 ```bash
 specify init --here --integration <codex|claude|cursor-agent|trae>
-specify extension add ai-team
-specify extension add agent-context
-specify extension add bug
 ```
 
 Use `--force` only when the user has explicitly accepted merging Spec Kit files
 into a non-empty repository.
 
-After extension installation, run this command and then run
+Init installs the packaged AI Team extensions, preset, and workflows. After
+initialization, run this command and then run
 `speckit.agent-context.update` when agent context files should be refreshed.
 
 ## Steps

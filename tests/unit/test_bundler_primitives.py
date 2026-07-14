@@ -68,21 +68,97 @@ def test_default_installer_threads_allow_network(tmp_path: Path):
         installer.install(tmp_path, _component("workflows"))
 
 
+def test_default_installer_dispatches_refresh_hook(tmp_path: Path, monkeypatch):
+    calls: list[ComponentRef] = []
+
+    class _Manager:
+        def refresh(self, component):
+            calls.append(component)
+
+    installer = DefaultPrimitiveInstaller(allow_network=False)
+    monkeypatch.setattr(installer, "_manager_for", lambda component, root: _Manager())
+    component = _component("extensions", "ai-team")
+
+    installer.refresh(tmp_path, component)
+
+    assert calls == [component]
+
+
 def test_offline_workflow_allows_bundled(tmp_path: Path, monkeypatch):
     # A workflow that ships with Spec Kit must install even with --offline.
     import specify_cli
     import specify_cli._assets as assets
 
-    monkeypatch.setattr(
-        assets, "_locate_bundled_workflow", lambda wid: tmp_path / "wf"
-    )
+    bundled = tmp_path / "wf"
+    monkeypatch.setattr(assets, "_locate_bundled_workflow", lambda wid: bundled)
     calls: list[str] = []
     monkeypatch.setattr(specify_cli, "workflow_add", lambda wid: calls.append(wid))
 
     manager = primitive_manager("workflows", tmp_path, allow_network=False)
     manager.install(_component("workflows", "bundled-wf"))
 
-    assert calls == ["bundled-wf"]
+    assert calls == [str(bundled)]
+
+
+def test_online_workflow_prefers_bundled_asset(tmp_path: Path, monkeypatch):
+    """Bundled workflows must not depend on a separately configured catalog."""
+    import specify_cli
+    import specify_cli._assets as assets
+
+    bundled = tmp_path / "bundled-wf"
+    monkeypatch.setattr(assets, "_locate_bundled_workflow", lambda wid: bundled)
+    calls: list[str] = []
+    monkeypatch.setattr(specify_cli, "workflow_add", lambda source: calls.append(source))
+
+    manager = primitive_manager("workflows", tmp_path, allow_network=True)
+    manager.install(_component("workflows", "bundled-wf"))
+
+    assert calls == [str(bundled)]
+
+
+def test_bundled_workflow_version_mismatch_refuses(tmp_path: Path, monkeypatch):
+    import specify_cli._assets as assets
+
+    bundled = tmp_path / "bundled-wf"
+    bundled.mkdir()
+    (bundled / "workflow.yml").write_text(
+        "workflow:\n  id: bundled-wf\n  version: 2.0.0\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(assets, "_locate_bundled_workflow", lambda wid: bundled)
+
+    manager = primitive_manager("workflows", tmp_path, allow_network=False)
+    component = ComponentRef(
+        kind="workflows", id="bundled-wf", version="1.0.0"
+    )
+    with pytest.raises(BundlerError, match="pinned to version 1.0.0"):
+        manager.install(component)
+
+
+def test_offline_bundled_workflow_does_not_query_catalog(tmp_path: Path, monkeypatch):
+    import specify_cli
+    import specify_cli._assets as assets
+
+    bundled = tmp_path / "wf"
+    bundled.mkdir()
+    (bundled / "workflow.yml").write_text(
+        "workflow:\n  id: bundled-wf\n  version: 1.0.0\n", encoding="utf-8"
+    )
+    calls: list[str] = []
+    monkeypatch.setattr(specify_cli, "workflow_add", lambda wid: calls.append(wid))
+    monkeypatch.setattr(assets, "_locate_bundled_workflow", lambda wid: bundled)
+
+    manager = primitive_manager("workflows", tmp_path, allow_network=False)
+    monkeypatch.setattr(
+        manager,
+        "_assert_pinned_version",
+        lambda component: pytest.fail("bundled workflow queried the catalog"),
+    )
+
+    manager.install(
+        ComponentRef(kind="workflows", id="bundled-wf", version="1.0.0")
+    )
+
+    assert calls == [str(bundled)]
 
 
 def test_assert_pinned_version_matches_passes():
@@ -131,3 +207,25 @@ def test_preset_install_preserves_explicit_zero_priority(tmp_path: Path, monkeyp
 
     # An explicit priority of 0 must be passed through, not replaced by default.
     assert calls["priority"] == 0
+
+
+def test_bundled_extension_refresh_forces_reinstall(tmp_path: Path, monkeypatch):
+    import specify_cli._assets as assets
+
+    calls: list[bool] = []
+
+    class _FakeManager:
+        def install_from_directory(
+            self, directory, speckit_version, *, priority, force=False
+        ):
+            calls.append(force)
+
+    monkeypatch.setattr(assets, "_locate_bundled_extension", lambda cid: tmp_path)
+    manager = primitive_manager("extensions", tmp_path, allow_network=False)
+    manager._manager = _FakeManager()
+    component = _component("extensions", "ai-team")
+
+    manager.install(component)
+    manager.refresh(component)
+
+    assert calls == [False, True]

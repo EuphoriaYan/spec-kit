@@ -148,6 +148,7 @@ def register(app: typer.Typer) -> None:
         3. Install bundled Spec Kit templates, scripts, workflow, and shared
            project infrastructure
         4. Set up coding agent integration commands and optional presets
+        5. Install every bundle in this distribution's packaged catalog
 
         Examples:
             specify init my-project
@@ -575,6 +576,30 @@ def register(app: typer.Typer) -> None:
                             preset_err,
                             continuing="Continuing without the optional preset.",
                         )
+
+                tracker.add("bundles", "Install distribution bundles")
+                try:
+                    from ..bundler.services.bundled_install import (
+                        install_bundled_catalog,
+                    )
+
+                    bundle_results = install_bundled_catalog(
+                        project_path,
+                        active_integration_key=resolved_integration.key,
+                    )
+                    if bundle_results:
+                        added = sum(len(result.installed) for result in bundle_results)
+                        skipped = sum(len(result.skipped) for result in bundle_results)
+                        tracker.complete(
+                            "bundles",
+                            f"{len(bundle_results)} bundles, {added} added, "
+                            f"{skipped} already present",
+                        )
+                    else:
+                        tracker.skip("bundles", "catalog contains no bundles")
+                except Exception as bundle_err:
+                    tracker.error("bundles", str(bundle_err)[:120])
+                    raise
 
                 tracker.complete("final", "project ready")
             except (typer.Exit, SystemExit):

@@ -6178,6 +6178,45 @@ steps:
         assert resumed.status == RunStatus.FAILED  # still "exit 1"
         assert resumed.inputs["cmd"] == "exit 1"
 
+    def test_explicit_recover_running_reexecutes_current_step(self, project_dir):
+        import json as _json
+
+        from specify_cli.workflows.base import RunStatus
+        from specify_cli.workflows.engine import WorkflowDefinition
+
+        definition = WorkflowDefinition.from_string(self._WF_CMD)
+        engine = self._engine(project_dir)
+        state = engine.execute(definition)
+        state.status = RunStatus.RUNNING
+        state.save()
+
+        with pytest.raises(ValueError, match="Cannot resume"):
+            engine.resume(state.run_id, {"cmd": "exit 0"})
+
+        resumed = engine.resume(
+            state.run_id, {"cmd": "exit 0"}, recover_running=True
+        )
+        assert resumed.status == RunStatus.COMPLETED
+        log_path = (
+            project_dir
+            / ".specify"
+            / "workflows"
+            / "runs"
+            / state.run_id
+            / "log.jsonl"
+        )
+        events = [_json.loads(line)["event"] for line in log_path.read_text().splitlines()]
+        assert "stale_running_recovered" in events
+
+    def test_cli_resume_help_exposes_recover_running(self):
+        from typer.testing import CliRunner
+
+        from specify_cli import app
+
+        result = CliRunner().invoke(app, ["workflow", "resume", "--help"])
+        assert result.exit_code == 0
+        assert "recover-running" in result.stdout
+
     def test_resume_merges_and_coerces_typed_input(self, project_dir):
         import json as _json
         from specify_cli.workflows.engine import WorkflowDefinition

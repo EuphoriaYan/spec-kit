@@ -294,7 +294,9 @@ optional Spec Kit init bootstrap -> workspace contract -> request routing
 -> speckit.ai-team.plan-check -> review-plan gate
 -> speckit.tasks -> speckit.analyze (native cross-artifact report)
 -> review-tasks gate -> implementation permission check -> permission gate
--> speckit.implement -> speckit.converge (native + checks + evidence via preset)
+-> deterministic permission enforcement -> speckit.implement
+-> speckit.converge (native + checks + evidence via preset)
+-> deterministic Evidence Board and Work Context finalization
 ```
 
 That diagram is the Standard branch. The explicit Compact branch reuses the
@@ -349,6 +351,13 @@ Permission gates do not create a sandbox. The envelope defaults to
 adapter and verification evidence are recorded. A task that requires hard
 confinement must stop when only policy controls are available.
 
+For feature/new-project implementation, a human `approve` choice is necessary
+but not sufficient: the workflow then verifies that native `tasks.md` exists,
+the implementation envelope is ready rather than blocked, and every intended
+write path is allowed. After converge, the workflow also requires a durable
+`evidence/evidence-board.md` and refreshes `work-context.yml`; missing evidence
+or stale blocked context fails the run instead of reporting false completion.
+
 Workspace creation uses Spec Kit's own `init` step. AI Team does not copy
 template repositories into product repositories.
 
@@ -397,18 +406,31 @@ knowledge consolidation, and `speckit.ai-team.support` to audit a project.
 
 ## Installation
 
-AI Team handoff spec and composite gates require **extension + preset + workflow**
-installs (plus `bug` for bugfix):
+Install the distribution and initialize the coding repository:
+
+```bash
+specify init . --integration cursor-agent
+```
+
+Supported integrations: `codex`, `claude`, `cursor-agent`, `trae`.
+
+`specify init` reads the catalog packaged with this distribution and installs
+the AI Team extensions, governance preset, and workflows automatically and
+fully offline.
+
+**Manual repair** (reinstall individual components if needed):
 
 ```bash
 specify extension add ai-team
 specify extension add bug
-specify preset add ai-team-handoff-spec
+specify extension add agent-context
+specify preset add ai-team-sdd-governance
 specify workflow add ai-team-sdd
 specify workflow add ai-team-bugfix
+specify workflow add ai-team-intake
 ```
 
-The `ai-team-handoff-spec` preset composes into native SDD and bug commands:
+The `ai-team-sdd-governance` preset composes into native SDD and bug commands:
 
 - **prepend** on `plan`, `tasks`, `plan-template`: prefer `spec.override.md` when reading requirements
 - **wrap** on `converge`: handoff spec before core steps, composite checks / evidence after
@@ -421,12 +443,3 @@ Without the preset, core commands do not know about `spec.override.md` or AI Tea
 checks / evidence rules.
 The `bug` extension supplies `speckit.bug.test`, which receives composite checks
 and Evidence Board rules from the preset during bugfix workflows.
-
-For local development:
-
-```bash
-specify extension add --dev /path/to/spec-kit/extensions/ai-team
-specify preset add --dev /path/to/spec-kit/extensions/ai-team/preset
-specify workflow add /path/to/spec-kit/workflows/ai-team-sdd
-specify workflow add /path/to/spec-kit/workflows/ai-team-bugfix
-```

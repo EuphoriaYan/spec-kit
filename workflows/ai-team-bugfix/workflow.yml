@@ -22,7 +22,7 @@ inputs:
     prompt: "Describe the bug or provide the coding issue URL"
   integration:
     type: string
-    default: "codex"
+    default: "auto"
     enum: ["codex", "claude", "cursor-agent", "trae"]
   bootstrap_workspace:
     type: boolean

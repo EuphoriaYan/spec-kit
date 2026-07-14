@@ -51,6 +51,7 @@ specify workflow resume <run_id>
 | ------------------- | -------------------------------------------------------- |
 | `-i` / `--input`    | Updated input values as `key=value` (repeatable)         |
 | `--json`            | Emit the resume outcome as a single JSON object          |
+| `--recover-running` | Recover a stale run after its original process is gone   |
 
 Resumes a paused or failed workflow run from the exact step where it stopped. Useful after responding to a gate step or fixing an issue that caused a failure.
 
@@ -59,6 +60,17 @@ Supplied `--input` values are merged over the run's stored inputs and re-validat
 ```bash
 specify workflow resume <run_id> --input cmd="exit 0"
 ```
+
+If a process or WSL/terminal instance disappears while a step is running, the
+durable state may still say `running`. After independently confirming the
+original process no longer exists, recover and re-execute the current step:
+
+```bash
+specify workflow resume <run_id> --recover-running
+```
+
+This explicit option writes a `stale_running_recovered` audit event before
+resuming. It must not be used while the original workflow process is active.
 
 ## Workflow Status
 
