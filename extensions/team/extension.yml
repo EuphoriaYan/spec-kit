@@ -1,0 +1,31 @@
+schema_version: "1.0"
+
+extension:
+  id: team
+  name: "Team Implement & Review"
+  version: "0.1.0"
+  description: "Implement task-ready features, verify the result, optionally open a pull request, and review pull requests against Spec-Driven Development artifacts."
+  author: spec-kit-core
+  repository: https://github.com/github/spec-kit
+  license: MIT
+
+requires:
+  speckit_version: ">=0.12.4"
+  tools:
+    - name: gh
+      required: false
+
+provides:
+  commands:
+    - name: speckit.team.implement
+      file: commands/speckit.team.implement.md
+      description: "Implement selected tasks from a feature, verify the changes, and optionally submit a pull request"
+    - name: speckit.team.review
+      file: commands/speckit.team.review.md
+      description: "Review a pull request for correctness, evidence, permissions, and SDD alignment"
+
+tags:
+  - "team"
+  - "implementation"
+  - "review"
+  - "sdd"
