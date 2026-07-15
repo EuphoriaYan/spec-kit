@@ -100,7 +100,7 @@ def test_context_initializer_writes_natural_language_skill_router(tmp_path: Path
     assert ".specify/<feature|bugfix>/<work_id>/" in agents
 
 
-def test_router_automatically_includes_later_role_skills(
+def test_router_only_includes_approved_role_skills(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     module = _load_init_module()
@@ -113,12 +113,16 @@ def test_router_automatically_includes_later_role_skills(
     fake_script.write_text("# location marker\n", encoding="utf-8")
     for name, _, _ in module.ROUTES:
         (commands / f"{name}.md").write_text("# role\n", encoding="utf-8")
+    for name in ("speckit.team.implement", "speckit.team.review"):
+        (commands / f"{name}.md").write_text("# unapproved role\n", encoding="utf-8")
     monkeypatch.setattr(module, "__file__", str(fake_script))
 
     section = module._managed_section("AGENTS.md")
 
     for name, _, _ in module.ROUTES:
         assert name in section
+    assert "speckit.team.implement" not in section
+    assert "speckit.team.review" not in section
 
 
 def test_direct_team_setup_rolls_back_extension_when_rules_fail(

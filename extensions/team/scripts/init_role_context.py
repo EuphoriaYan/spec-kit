@@ -30,16 +30,6 @@ ROUTES = (
         "An accepted Feature or Bugfix Issue needs architecture, scope, tasks, and self-tests",
         "summarize the Issue and create and check `plan-and-task.md`",
     ),
-    (
-        "speckit.team.implement",
-        "The checked plan has human implementation permission",
-        "implement the approved tasks and collect evidence",
-    ),
-    (
-        "speckit.team.review",
-        "A change or PR needs a human merge decision",
-        "review architecture fit, scope, tests, evidence, and risk",
-    ),
 )
 
 
