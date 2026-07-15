@@ -161,14 +161,19 @@ def test_init_installs_every_bundle_from_distribution_catalog(
     )
 
     assert result.exit_code == 0, result.stdout
-    assert (tmp_path / ".specify" / "extensions" / "ai-team").is_dir()
+    assert (tmp_path / ".specify" / "extensions" / "team").is_dir()
     assert (tmp_path / ".specify" / "extensions" / "bug").is_dir()
-    assert (
+    assert (tmp_path / ".specify" / "extensions" / "agent-context").is_dir()
+    assert not (tmp_path / ".specify" / "extensions" / "ai-team").exists()
+    assert not (
         tmp_path / ".specify" / "presets" / "ai-team-sdd-governance"
-    ).is_dir()
-    assert (tmp_path / ".specify" / "workflows" / "ai-team-intake").is_dir()
-    assert (tmp_path / ".specify" / "workflows" / "ai-team-sdd").is_dir()
-    assert (tmp_path / ".specify" / "workflows" / "ai-team-bugfix").is_dir()
+    ).exists()
+    assert not (tmp_path / ".specify" / "workflows" / "ai-team-intake").exists()
+    assert not (tmp_path / ".specify" / "workflows" / "ai-team-sdd").exists()
+    assert not (tmp_path / ".specify" / "workflows" / "ai-team-bugfix").exists()
+    assert "AI TEAM CONTEXT START" in (tmp_path / "AGENTS.md").read_text(
+        encoding="utf-8"
+    )
     assert [record.bundle_id for record in load_records(tmp_path)] == ["ai-team"]
 
 

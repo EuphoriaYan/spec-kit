@@ -38,12 +38,15 @@ $ARGUMENTS
    `spec.override.md` when present.
 3. Create the analysis Permission Envelope.
 4. Generate or attach a Code Graph slice. Fall back to explicit source
-   structure evidence when the adapter is unavailable.
+   structure evidence when the adapter is unavailable. Persist the evidence
+   file and record its kind, project-relative path, and exact source revision.
 5. Record affected modules, owners, reuse candidates, callers/callees,
    contracts, dependencies, tests, and declared file scope.
 6. Read `.specify/<category>/<work_id>/spec.md`. Verify its Issue is already
    `state/accepted` or `state/working`; this decision must exist before the
-   skill starts and cannot be granted inside the skill. Create or update
+   skill starts and cannot be granted inside the skill. Require a named human
+   decision maker and the exact Issue/comment URL; the local checker validates
+   that reference shape but does not claim remote authenticity. Create or update
    `plan-and-task.md` in that same directory. It combines architecture Plan,
    change scope, ordered Tasks, minimum self-tests, compatibility, and rollback.
 7. For Bugfix work, include root-cause evidence and regression Tasks. For

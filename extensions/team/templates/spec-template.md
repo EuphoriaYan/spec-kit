@@ -4,6 +4,9 @@ work_id: ""
 work_type: feature
 primary_issue: ""
 issue_state: draft
+approval:
+  decided_by: ""
+  evidence_url: ""
 privacy_boundary: public-safe
 ---
 

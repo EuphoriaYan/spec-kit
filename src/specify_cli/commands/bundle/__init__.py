@@ -71,28 +71,13 @@ def _speckit_version() -> str:
 
 def _initialize_bundled_ai_team_context(project_root: Path, manifest) -> list[str]:
     """Install AI Team rule pointers from trusted package assets only."""
-    if manifest.bundle.id != "ai-team":
-        return []
+    from ...bundler.services.team_context import initialize_bundled_team_context
 
-    import runpy
-
-    from ..._assets import _locate_bundled_extension
-
-    bundled = _locate_bundled_extension("team")
-    script = bundled / "scripts" / "init_role_context.py" if bundled else None
-    if script is None or not script.is_file():
-        raise BundlerError(
-            "The built-in AI Team context initializer is missing from this "
-            "Spec Kit distribution."
+    targets = initialize_bundled_team_context(project_root, manifest)
+    if targets:
+        console.print(
+            "[green]OK[/green] AI Team rules initialized: " + ", ".join(targets)
         )
-    try:
-        initialize = runpy.run_path(str(script))["initialize"]
-        targets = initialize(project_root)
-    except (KeyError, OSError, UnicodeError, ValueError) as exc:
-        raise BundlerError(f"Could not initialize AI Team agent rules: {exc}") from exc
-    console.print(
-        "[green]OK[/green] AI Team rules initialized: " + ", ".join(targets)
-    )
     return targets
 
 
@@ -407,8 +392,10 @@ def bundle_install(
             plan,
             DefaultPrimitiveInstaller(allow_network=not offline),
             manifest=manifest,
+            finalize=lambda: _initialize_bundled_ai_team_context(
+                project_root, manifest
+            ),
         )
-        _initialize_bundled_ai_team_context(project_root, manifest)
     except BundlerError as exc:
         _fail(str(exc))
         return
@@ -465,8 +452,16 @@ def bundle_update(
                 active_integration=detected if detected is not None else integration,
                 integration_explicit=bool(integration) and detected is None,
             )
-            install_bundle(project_root, plan, installer, manifest=manifest, refresh=True)
-            _initialize_bundled_ai_team_context(project_root, manifest)
+            install_bundle(
+                project_root,
+                plan,
+                installer,
+                manifest=manifest,
+                refresh=True,
+                finalize=lambda: _initialize_bundled_ai_team_context(
+                    project_root, manifest
+                ),
+            )
             console.print(f"[green]✓[/green] Updated '{target}' to v{plan.version}.")
     except BundlerError as exc:
         _fail(str(exc))

@@ -12,6 +12,11 @@ approval. The Technical Committee or delegated authority later changes a
 Feature Issue to `state/accepted` outside the skill. Plan-and-Task may start only
 after that repository decision is visible.
 
+`spec.md` mirrors the decision with a named decider and an Issue/comment URL so
+later roles can resume without hidden chat context. The repository Issue is the
+authority. The deterministic local check validates that the reference is
+present and well formed; it does not authenticate the remote decision.
+
 Create the primary Feature Issue before Plan and Tasks. It explains who needs
 what, why it matters, the accepted scope, and how success is observed. It is
 not an implementation checklist. `plan-and-task.md` is created later from the accepted

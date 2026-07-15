@@ -7,11 +7,16 @@ source_revision: ""
 declared_paths: []
 affected_modules: []
 impact_analysis:
-  code_graph_evidence: ""
+  code_graph:
+    kind: code-graph
+    evidence_path: ""
+    source_revision: ""
   cross_module: false
   class_changes: false
   public_contract_change: none
-  contract_owner_approval: not-required
+  contract_owner_approval:
+    decided_by: not-required
+    evidence_url: not-required
 compact_approved_by: not-applicable
 ---
 

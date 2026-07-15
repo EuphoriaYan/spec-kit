@@ -26,6 +26,9 @@ work_id: "{work_id}"
 work_type: {work_type}
 primary_issue: https://example.com/org/repo/issues/{work_id}
 issue_state: {state}
+approval:
+  decided_by: technical-committee@example.com
+  evidence_url: https://example.com/org/repo/issues/{work_id}#accepted
 privacy_boundary: public-safe
 ---
 
@@ -49,7 +52,9 @@ No API change.
 None.
 """
     if work_type == "feature":
-        return common + """
+        return (
+            common
+            + """
 
 ## Feature Specification
 
@@ -63,7 +68,10 @@ As an operator, I want an export, so that I can reconcile results.
 |---|---|---|---|
 | AC-001 | filtered rows | export runs | matching rows are returned |
 """
-    return common + """
+        )
+    return (
+        common
+        + """
 
 ## Bugfix Specification
 
@@ -87,6 +95,7 @@ One export is incomplete.
 |---|---|---|
 | AC-001 | BUG-OBS-001 | all rows are present |
 """
+    )
 
 
 def _plan(
@@ -97,7 +106,8 @@ def _plan(
     cross_module: bool = False,
     class_changes: bool = False,
     contract_change: str = "none",
-    owner: str = "not-required",
+    owner: str = "module-owner@example.com",
+    owner_evidence: str = "https://example.com/org/repo/issues/approval",
     compact_owner: str = "not-applicable",
     task_test: str = "TEST-001",
 ) -> str:
@@ -113,11 +123,16 @@ declared_paths:
 affected_modules:
   - export
 impact_analysis:
-  code_graph_evidence: .specify/{'feature' if work_type == 'feature' else 'bugfix'}/{work_id}/codegraph/summary.md
+  code_graph:
+    kind: code-graph
+    evidence_path: .specify/{"feature" if work_type == "feature" else "bugfix"}/{work_id}/codegraph/summary.md
+    source_revision: abc123
   cross_module: {str(cross_module).lower()}
   class_changes: {str(class_changes).lower()}
   public_contract_change: {contract_change}
-  contract_owner_approval: {owner}
+  contract_owner_approval:
+    decided_by: {owner}
+    evidence_url: {owner_evidence}
 compact_approved_by: {compact_owner}
 ---
 
@@ -157,7 +172,9 @@ Existing callers remain compatible. Revert src/export.py to roll back.
 None.
 """
     if work_type == "feature":
-        return common + """
+        return (
+            common
+            + """
 
 ## Feature Delivery Plan
 
@@ -166,7 +183,10 @@ None.
 |---|---|---|
 | US-001 | AC-001 | T001 |
 """
-    return common + """
+        )
+    return (
+        common
+        + """
 
 ## Bugfix Delivery Plan
 
@@ -178,12 +198,16 @@ The page cursor is advanced before the last row is copied.
 |---|---|---|---|
 | BUG-OBS-001 | cursor trace | T001 | TEST-001 |
 """
+    )
 
 
 def _write_package(tmp_path: Path, work_id: str, work_type: str, **plan_kwargs) -> Path:
     category = "feature" if work_type == "feature" else "bugfix"
     root = tmp_path / ".specify" / category / work_id
     root.mkdir(parents=True)
+    graph = root / "codegraph" / "summary.md"
+    graph.parent.mkdir()
+    graph.write_text("source revision abc123 impact slice\n", encoding="utf-8")
     (root / "spec.md").write_text(_spec(work_id, work_type), encoding="utf-8")
     (root / "plan-and-task.md").write_text(
         _plan(work_id, work_type, **plan_kwargs), encoding="utf-8"
@@ -237,13 +261,17 @@ def test_check_is_deterministic_and_cli_detects_stale_output(tmp_path: Path) -> 
 def test_draft_issue_blocks_planning(tmp_path: Path) -> None:
     module = _module()
     root = _write_package(tmp_path, "104", "feature")
-    (root / "spec.md").write_text(_spec("104", "feature", state="draft"), encoding="utf-8")
+    (root / "spec.md").write_text(
+        _spec("104", "feature", state="draft"), encoding="utf-8"
+    )
     result, rendered = module.evaluate(tmp_path, "feature", "104")
     assert result == "blocked"
     assert "| ISSUE_STATE | BLOCK |" in rendered
 
 
-def test_public_contract_and_unsafe_compact_require_human_authority(tmp_path: Path) -> None:
+def test_public_contract_and_unsafe_compact_require_human_authority(
+    tmp_path: Path,
+) -> None:
     module = _module()
     _write_package(
         tmp_path,
@@ -254,12 +282,61 @@ def test_public_contract_and_unsafe_compact_require_human_authority(tmp_path: Pa
         class_changes=True,
         contract_change="spi",
         owner="pending",
+        owner_evidence="pending",
         compact_owner="maintainer@example.com",
     )
     result, rendered = module.evaluate(tmp_path, "feature", "105")
     assert result == "blocked"
     assert "| CONTRACT_AUTHORITY | BLOCK |" in rendered
     assert "| PLANNING_MODE | BLOCK |" in rendered
+
+
+def test_acceptance_requires_human_decision_reference(tmp_path: Path) -> None:
+    module = _module()
+    root = _write_package(tmp_path, "107", "feature")
+    spec = (root / "spec.md").read_text(encoding="utf-8")
+    (root / "spec.md").write_text(
+        spec.replace(
+            "technical-committee@example.com\n  evidence_url: https://example.com/org/repo/issues/107#accepted",
+            "approved\n  evidence_url: pending",
+        ),
+        encoding="utf-8",
+    )
+
+    result, rendered = module.evaluate(tmp_path, "feature", "107")
+
+    assert result == "blocked"
+    assert "| ISSUE_APPROVAL_EVIDENCE | BLOCK |" in rendered
+
+
+def test_code_graph_evidence_must_exist_and_match_revision(tmp_path: Path) -> None:
+    module = _module()
+    root = _write_package(tmp_path, "108", "bugfix")
+    (root / "codegraph" / "summary.md").unlink()
+
+    result, rendered = module.evaluate(tmp_path, "bugfix", "108")
+
+    assert result == "blocked"
+    assert "| IMPACT_EVIDENCE | BLOCK |" in rendered
+
+
+def test_empty_sections_and_incomplete_delivery_mapping_require_revision(
+    tmp_path: Path,
+) -> None:
+    module = _module()
+    root = _write_package(tmp_path, "109", "feature")
+    plan = (root / "plan-and-task.md").read_text(encoding="utf-8")
+    plan = plan.replace(
+        "### Implementation Plan\nAdjust selection and verify the result.",
+        "### Implementation Plan\n",
+    ).replace("| US-001 | AC-001 | T001 |", "| US-999 | AC-001 | T001 |")
+    (root / "plan-and-task.md").write_text(plan, encoding="utf-8")
+
+    result, rendered = module.evaluate(tmp_path, "feature", "109")
+
+    assert result == "revise"
+    assert "| PLAN_CONTENT | FAIL |" in rendered
+    assert "| DELIVERY_MAPPING | FAIL |" in rendered
 
 
 def test_missing_self_test_mapping_requires_revision(tmp_path: Path) -> None:

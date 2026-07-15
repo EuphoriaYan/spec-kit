@@ -31,6 +31,10 @@ contains, imports, calls, implements, extends, reads_config, tests, depends_on
 
 `adapter-report.md` records adapter name, version, command, license review,
 source snapshot, confidence, skipped evidence, and fallback reason.
+`plan-and-task.md` records the chosen evidence file, adapter kind, and source
+revision. The readiness check requires that project-relative evidence file to
+exist and its revision to match the Plan; a free-form claim such as "checked"
+is not evidence.
 
 ## Open Source Candidates
 

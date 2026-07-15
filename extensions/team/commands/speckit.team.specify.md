@@ -53,6 +53,10 @@ $ARGUMENTS
    Feature/new-project specs contain prioritized, independently testable User
    Stories. Bugfix specs contain observation, expected behavior, reproduction,
    environment, impact, and fix acceptance.
+   New draft work leaves `approval.decided_by` and `approval.evidence_url`
+   empty. For an already accepted Issue, copy the named decision maker and the
+   exact Issue/comment URL only after reading that repository evidence; never
+   infer or self-author an acceptance record.
 8. Create or update `work-context.yml` beside `spec.md`. Record category,
    `work_id`, primary Issue, phase, and the Spec path. Do not create the formal
    work directory until a stable Issue or approved requirement identifier
@@ -62,7 +66,8 @@ $ARGUMENTS
 The Technical Committee's `state/accepted` decision is outside this skill. Do
 not ask for it, simulate it, or continue into architecture planning. When an
 existing Issue is already `state/accepted`, report that fact without changing
-it; `speckit.team.plan-and-task` remains a separate invocation.
+it, and synchronize only its verifiable approval reference;
+`speckit.team.plan-and-task` remains a separate invocation.
 
 Never wait for `plan-and-task.md` to create the primary Issue. Do not use
 `speckit.taskstoissues` for the primary work item. Optional child execution

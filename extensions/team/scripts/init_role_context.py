@@ -130,8 +130,20 @@ def initialize(root: Path) -> list[str]:
         target = AGENT_FILES[integration]
         if target not in targets:
             targets.append(target)
-    for target in targets:
-        _merge(_safe_target(root, target), target)
+    paths = [(target, _safe_target(root, target)) for target in targets]
+    snapshots = {
+        path: path.read_bytes() if path.exists() else None for _, path in paths
+    }
+    try:
+        for target, path in paths:
+            _merge(path, target)
+    except (OSError, UnicodeError, ValueError):
+        for path, content in snapshots.items():
+            if content is None:
+                path.unlink(missing_ok=True)
+            else:
+                path.write_bytes(content)
+        raise
     return targets
 
 

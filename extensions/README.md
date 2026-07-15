@@ -41,21 +41,20 @@ You control which extensions your team can discover and install:
 
 ### Bundled Extensions In This Distribution
 
-This independent distribution includes the `team` extension. It exposes four
-role skills: `speckit.team.specify`, `speckit.team.decide`,
-`speckit.team.plan-and-task`, and `speckit.team.implement-and-verify`.
+This independent distribution includes the `team` extension. The target model
+has four role skills; this iteration exposes the two whose contracts are
+agreed: `speckit.team.specify` and `speckit.team.plan-and-task`.
 
 ```bash
 specify extension add team
 specify extension add bug
 specify extension add agent-context
-specify workflow add ai-team-sdd
-specify workflow add ai-team-bugfix
 ```
 
 Supporting permissions, Code Graph, impact, evidence, and memory capabilities
-are internal extension references and scripts. No preset overlays or modifies
-native Spec Kit commands.
+are internal extension references and scripts. AI Team does not install a
+workflow or a governance preset, and it does not modify native Spec Kit
+commands.
 ### Option 1: Curated Catalog (Recommended for Organizations)
 
 Populate your `catalog.json` with approved extensions:

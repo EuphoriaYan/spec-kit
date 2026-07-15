@@ -22,6 +22,7 @@ PLAN_SCHEMA = "ai-team-plan-and-task/v1"
 ACCEPTED_STATES = {"accepted", "working"}
 PLACEHOLDER = re.compile(r"(?i)\b(?:TBD|TODO|FIXME)\b|<[^>]+>|path/to/file")
 ID_SPLIT = re.compile(r"\s*(?:,|;|<br\s*/?>)\s*", re.IGNORECASE)
+HTTP_URL = re.compile(r"^https?://\S+$", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -52,9 +53,7 @@ def _headings(body: str) -> set[str]:
 
 
 def _section(body: str, heading: str) -> str:
-    match = re.search(
-        rf"(?m)^(#{{2,4}})\s+{re.escape(heading)}\s*$", body
-    )
+    match = re.search(rf"(?m)^(#{{2,4}})\s+{re.escape(heading)}\s*$", body)
     if not match:
         return ""
     rest = body[match.end() :]
@@ -65,7 +64,9 @@ def _section(body: str, heading: str) -> str:
 
 def _table(body: str, heading: str) -> list[dict[str, str]]:
     section = _section(body, heading)
-    lines = [line.strip() for line in section.splitlines() if line.strip().startswith("|")]
+    lines = [
+        line.strip() for line in section.splitlines() if line.strip().startswith("|")
+    ]
     if len(lines) < 2:
         return []
 
@@ -102,6 +103,34 @@ def _meaningful(section: str) -> bool:
     return bool(content) and not PLACEHOLDER.search(content)
 
 
+def _evidence_file(project_root: Path, value: object) -> bool:
+    raw = str(value or "").strip()
+    path = Path(raw)
+    if not raw or path.is_absolute() or ".." in path.parts:
+        return False
+    resolved = (project_root / path).resolve(strict=False)
+    try:
+        resolved.relative_to(project_root)
+    except ValueError:
+        return False
+    return resolved.is_file()
+
+
+def _decision_evidence(value: object) -> bool:
+    return bool(HTTP_URL.fullmatch(str(value or "").strip()))
+
+
+def _named_decider(value: object) -> bool:
+    return str(value or "").strip().lower() not in {
+        "",
+        "yes",
+        "approved",
+        "pending",
+        "tbd",
+        "not-required",
+    }
+
+
 def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str]:
     category = normalize_category(work_type)
     work_root = resolve_work_root(project_root, category, work_id)
@@ -110,10 +139,17 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
     checks: list[Check] = []
 
     def record(check_id: str, ok: bool, detail: str, *, blocked: bool = False) -> None:
-        checks.append(Check(check_id, "PASS" if ok else ("BLOCK" if blocked else "FAIL"), detail))
+        checks.append(
+            Check(check_id, "PASS" if ok else ("BLOCK" if blocked else "FAIL"), detail)
+        )
 
     missing = [path.name for path in (spec_path, plan_path) if not path.is_file()]
-    record("ARTIFACTS", not missing, "required artifacts exist" if not missing else f"missing: {', '.join(missing)}", blocked=True)
+    record(
+        "ARTIFACTS",
+        not missing,
+        "required artifacts exist" if not missing else f"missing: {', '.join(missing)}",
+        blocked=True,
+    )
 
     spec_meta: dict[str, Any] = {}
     plan_meta: dict[str, Any] = {}
@@ -130,7 +166,11 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
                     plan_meta, plan_body = metadata, body
             except (OSError, UnicodeError, ValueError, yaml.YAMLError) as exc:
                 parse_errors.append(str(exc))
-    record("FRONTMATTER", not parse_errors and not missing, "front matter parsed" if not parse_errors else "; ".join(parse_errors))
+    record(
+        "FRONTMATTER",
+        not parse_errors and not missing,
+        "front matter parsed" if not parse_errors else "; ".join(parse_errors),
+    )
 
     if not missing and not parse_errors:
         try:
@@ -145,12 +185,36 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             and str(plan_meta.get("work_id", "")) == work_id
             and spec_category == category
             and plan_category == category
-            and bool(str(spec_meta.get("primary_issue", "")).strip())
+            and _decision_evidence(spec_meta.get("primary_issue"))
         )
-        record("IDENTITY", identity_ok, "schema, work ID, type, and primary Issue agree")
+        record(
+            "IDENTITY", identity_ok, "schema, work ID, type, and primary Issue agree"
+        )
 
         accepted = _state(spec_meta.get("issue_state")) in ACCEPTED_STATES
-        record("ISSUE_STATE", accepted, "Issue is accepted for planning" if accepted else "Issue must be state/accepted or state/working", blocked=True)
+        record(
+            "ISSUE_STATE",
+            accepted,
+            "Spec records state/accepted or state/working"
+            if accepted
+            else "Issue must be state/accepted or state/working",
+            blocked=True,
+        )
+        approval = spec_meta.get("approval")
+        approval = approval if isinstance(approval, dict) else {}
+        approval_ok = (
+            accepted
+            and _named_decider(approval.get("decided_by"))
+            and _decision_evidence(approval.get("evidence_url"))
+        )
+        record(
+            "ISSUE_APPROVAL_EVIDENCE",
+            approval_ok,
+            "human decision reference is structurally recorded; remote authenticity is not asserted"
+            if approval_ok
+            else "accepted work requires a named decider and an http(s) decision URL",
+            blocked=True,
+        )
 
         spec_common = {
             "Common Specification",
@@ -174,7 +238,97 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             }
         )
         missing_spec = sorted((spec_common | spec_specific) - _headings(spec_body))
-        record("SPEC_STRUCTURE", not missing_spec, "required common and type-specific Spec sections exist" if not missing_spec else f"missing headings: {', '.join(missing_spec)}")
+        record(
+            "SPEC_STRUCTURE",
+            not missing_spec,
+            "required common and type-specific Spec sections exist"
+            if not missing_spec
+            else f"missing headings: {', '.join(missing_spec)}",
+        )
+        spec_leaf_sections = {
+            "Problem And Goal",
+            "Acceptance Summary",
+            "Scope",
+            "Non-Goals",
+            "Open Questions",
+        } | (
+            {"User Stories", "Feature Acceptance"}
+            if category == "feature"
+            else {
+                "Observed Behavior",
+                "Expected Behavior",
+                "Reproduction",
+                "Environment",
+                "Impact",
+                "Fix Acceptance",
+            }
+        )
+        empty_spec = sorted(
+            heading
+            for heading in spec_leaf_sections
+            if heading in _headings(spec_body)
+            and not _meaningful(_section(spec_body, heading))
+        )
+        record(
+            "SPEC_CONTENT",
+            not empty_spec,
+            "required Spec sections contain non-placeholder content"
+            if not empty_spec
+            else f"empty or placeholder sections: {', '.join(empty_spec)}",
+        )
+
+        if category == "feature":
+            acceptance_rows = _table(spec_body, "Feature Acceptance")
+            acceptance_columns = {"Acceptance ID", "Given", "When", "Then"}
+            story_ids = set(re.findall(r"(?m)^####\s+(US-\d+)\b", spec_body))
+        else:
+            acceptance_rows = _table(spec_body, "Fix Acceptance")
+            acceptance_columns = {
+                "Acceptance ID",
+                "Reproduction ID",
+                "Expected result after fix",
+            }
+            story_ids = set()
+        reproduction_ids = set(
+            re.findall(r"\bBUG-OBS-\d+\b", _section(spec_body, "Reproduction"))
+        )
+        acceptance_shape = (
+            bool(acceptance_rows)
+            and acceptance_columns.issubset(acceptance_rows[0])
+            and all(
+                all(value.strip() for value in row.values())
+                and not PLACEHOLDER.search(" ".join(row.values()))
+                for row in acceptance_rows
+            )
+        )
+        known_acceptance = (
+            {row.get("Acceptance ID", "") for row in acceptance_rows}
+            if acceptance_shape
+            else set()
+        )
+        acceptance_shape = (
+            acceptance_shape
+            and len(known_acceptance) == len(acceptance_rows)
+            and all(re.fullmatch(r"AC-\d+", item) for item in known_acceptance)
+            and (category != "feature" or bool(story_ids))
+            and (
+                category != "bugfix"
+                or (
+                    bool(reproduction_ids)
+                    and all(
+                        row["Reproduction ID"] in reproduction_ids
+                        for row in acceptance_rows
+                    )
+                )
+            )
+        )
+        record(
+            "SPEC_ACCEPTANCE",
+            acceptance_shape,
+            "acceptance rows and type-specific identifiers are parseable"
+            if acceptance_shape
+            else "acceptance table or Feature User Story identifiers are missing or invalid",
+        )
 
         plan_common = {
             "Common Engineering Plan",
@@ -191,10 +345,46 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
         plan_specific = (
             {"Feature Delivery Plan", "User Story Delivery Mapping"}
             if category == "feature"
-            else {"Bugfix Delivery Plan", "Root Cause Evidence", "Reproduction And Regression Mapping"}
+            else {
+                "Bugfix Delivery Plan",
+                "Root Cause Evidence",
+                "Reproduction And Regression Mapping",
+            }
         )
         missing_plan = sorted((plan_common | plan_specific) - _headings(plan_body))
-        record("PLAN_STRUCTURE", not missing_plan, "required common and type-specific Plan sections exist" if not missing_plan else f"missing headings: {', '.join(missing_plan)}")
+        record(
+            "PLAN_STRUCTURE",
+            not missing_plan,
+            "required common and type-specific Plan sections exist"
+            if not missing_plan
+            else f"missing headings: {', '.join(missing_plan)}",
+        )
+        plan_leaf_sections = {
+            "Source And Code Graph Evidence",
+            "Affected Modules And Owners",
+            "Architecture And Contract Impact",
+            "Declared Change Scope",
+            "Implementation Plan",
+            "Compatibility Migration And Rollback",
+            "Risks And Deviations",
+        } | (
+            {"User Story Delivery Mapping"}
+            if category == "feature"
+            else {"Root Cause Evidence", "Reproduction And Regression Mapping"}
+        )
+        empty_plan = sorted(
+            heading
+            for heading in plan_leaf_sections
+            if heading in _headings(plan_body)
+            and not _meaningful(_section(plan_body, heading))
+        )
+        record(
+            "PLAN_CONTENT",
+            not empty_plan,
+            "required Plan sections contain non-placeholder content"
+            if not empty_plan
+            else f"empty or placeholder sections: {', '.join(empty_plan)}",
+        )
 
         declared_paths = _list(plan_meta.get("declared_paths"))
         modules = _list(plan_meta.get("affected_modules"))
@@ -202,21 +392,51 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             not Path(path).is_absolute() and ".." not in Path(path).parts
             for path in declared_paths
         )
-        record("DECLARED_SCOPE", safe_paths and bool(modules), "declared paths and affected modules are non-empty and project-relative")
+        record(
+            "DECLARED_SCOPE",
+            safe_paths and bool(modules),
+            "declared paths and affected modules are non-empty and project-relative",
+        )
 
         impact = plan_meta.get("impact_analysis")
         impact = impact if isinstance(impact, dict) else {}
-        graph = str(impact.get("code_graph_evidence", "")).strip()
+        graph = impact.get("code_graph")
+        graph = graph if isinstance(graph, dict) else {}
         cross_module = impact.get("cross_module") is True
         class_changes = impact.get("class_changes") is True
         contract_change = str(impact.get("public_contract_change", "")).strip().lower()
-        owner_approval = str(impact.get("contract_owner_approval", "")).strip()
-        graph_ok = bool(graph) and not PLACEHOLDER.search(graph)
-        record("IMPACT_EVIDENCE", graph_ok, "Code Graph or source fallback is recorded" if graph_ok else "impact_analysis.code_graph_evidence is required")
-        contract_ok = contract_change == "none" or owner_approval.lower() not in {
-            "", "not-required", "pending", "tbd"
-        }
-        record("CONTRACT_AUTHORITY", contract_ok, "public-contract authority is satisfied" if contract_ok else "public contract change requires recorded owner approval", blocked=True)
+        source_revision = str(plan_meta.get("source_revision", "")).strip()
+        graph_ok = (
+            graph.get("kind") in {"code-graph", "source-fallback"}
+            and _evidence_file(project_root, graph.get("evidence_path"))
+            and _meaningful(source_revision)
+            and str(graph.get("source_revision", "")).strip() == source_revision
+        )
+        record(
+            "IMPACT_EVIDENCE",
+            graph_ok,
+            "versioned Code Graph or source-fallback evidence file exists"
+            if graph_ok
+            else "impact_analysis.code_graph requires kind, existing evidence_path, and matching source_revision",
+            blocked=True,
+        )
+        owner_approval = impact.get("contract_owner_approval")
+        owner_approval = owner_approval if isinstance(owner_approval, dict) else {}
+        contract_ok = bool(contract_change)
+        if contract_change != "none":
+            contract_ok = (
+                contract_ok
+                and _named_decider(owner_approval.get("decided_by"))
+                and _decision_evidence(owner_approval.get("evidence_url"))
+            )
+        record(
+            "CONTRACT_AUTHORITY",
+            contract_ok,
+            "contract impact and required owner decision reference are recorded"
+            if contract_ok
+            else "public contract change requires a named owner and an http(s) decision URL",
+            blocked=True,
+        )
 
         mode = str(plan_meta.get("planning_mode", "")).strip().lower()
         compact_owner = str(plan_meta.get("compact_approved_by", "")).strip().lower()
@@ -228,42 +448,149 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
                 and not class_changes
                 and contract_change == "none"
             )
-        record("PLANNING_MODE", compact_ok, "planning mode and human Compact selection are valid" if compact_ok else "Compact requires a named human and no cross-module, class, or public-contract change", blocked=True)
+        record(
+            "PLANNING_MODE",
+            compact_ok,
+            "planning mode and human Compact selection are valid"
+            if compact_ok
+            else "Compact requires a named human and no cross-module, class, or public-contract change",
+            blocked=True,
+        )
 
         tasks = _table(plan_body, "Ordered Tasks")
         tests = _table(plan_body, "Minimum Self-Tests")
-        task_columns = {"Task ID", "Requirement ID", "Planned paths", "Self-test IDs", "Description"}
+        task_columns = {
+            "Task ID",
+            "Requirement ID",
+            "Planned paths",
+            "Self-test IDs",
+            "Description",
+        }
         test_columns = {"Test ID", "Type", "Command or procedure", "Expected evidence"}
         task_shape = bool(tasks) and task_columns.issubset(tasks[0])
         test_shape = bool(tests) and test_columns.issubset(tests[0])
-        record("TASK_TABLE", task_shape, "ordered Task table is parseable" if task_shape else "Ordered Tasks must use the Team table columns")
-        record("SELF_TEST_TABLE", test_shape, "minimum self-test table is parseable" if test_shape else "Minimum Self-Tests must use the Team table columns")
+        record(
+            "TASK_TABLE",
+            task_shape,
+            "ordered Task table is parseable"
+            if task_shape
+            else "Ordered Tasks must use the Team table columns",
+        )
+        record(
+            "SELF_TEST_TABLE",
+            test_shape,
+            "minimum self-test table is parseable"
+            if test_shape
+            else "Minimum Self-Tests must use the Team table columns",
+        )
 
         if task_shape and test_shape:
             task_ids = [row["Task ID"] for row in tasks]
             test_ids = [row["Test ID"] for row in tests]
-            known_acceptance = set(re.findall(r"\bAC-\d+\b", spec_body))
             mappings_ok = (
                 len(task_ids) == len(set(task_ids))
                 and len(test_ids) == len(set(test_ids))
-                and all(row["Requirement ID"] in known_acceptance for row in tasks)
-                and all(set(_ids(row["Self-test IDs"])).issubset(test_ids) for row in tasks)
-                and all(set(_ids(row["Planned paths"])).issubset(declared_paths) for row in tasks)
+                and all(
+                    bool(_ids(row["Requirement ID"]))
+                    and set(_ids(row["Requirement ID"])).issubset(known_acceptance)
+                    for row in tasks
+                )
+                and all(
+                    set(_ids(row["Self-test IDs"])).issubset(test_ids) for row in tasks
+                )
+                and all(
+                    set(_ids(row["Planned paths"])).issubset(declared_paths)
+                    for row in tasks
+                )
                 and all(
                     not PLACEHOLDER.search(" ".join(row.values()))
                     and all(value.strip() for value in row.values())
                     for row in tasks + tests
                 )
             )
-            record("TRACEABILITY", mappings_ok, "Tasks map to acceptance IDs, declared paths, and defined self-tests" if mappings_ok else "Task/test IDs, acceptance mapping, declared paths, or required values are inconsistent")
+            record(
+                "TRACEABILITY",
+                mappings_ok,
+                "Tasks map to acceptance IDs, declared paths, and defined self-tests"
+                if mappings_ok
+                else "Task/test IDs, acceptance mapping, declared paths, or required values are inconsistent",
+            )
+
+            if category == "feature":
+                delivery = _table(plan_body, "User Story Delivery Mapping")
+                columns = {"User Story ID", "Acceptance IDs", "Task IDs"}
+                delivery_ok = bool(delivery) and columns.issubset(delivery[0])
+                if delivery_ok:
+                    mapped_acceptance = {
+                        item
+                        for row in delivery
+                        for item in _ids(row["Acceptance IDs"])
+                    }
+                    delivery_ok = (
+                        {row["User Story ID"] for row in delivery} == story_ids
+                        and mapped_acceptance == known_acceptance
+                        and all(
+                            set(_ids(row["Task IDs"])).issubset(task_ids)
+                            for row in delivery
+                        )
+                        and set(task_ids)
+                        == {item for row in delivery for item in _ids(row["Task IDs"])}
+                    )
+            else:
+                delivery = _table(plan_body, "Reproduction And Regression Mapping")
+                columns = {
+                    "Reproduction ID",
+                    "Root-cause evidence",
+                    "Task IDs",
+                    "Regression test IDs",
+                }
+                delivery_ok = bool(delivery) and columns.issubset(delivery[0])
+                if delivery_ok:
+                    mapped_tests = {
+                        item
+                        for row in delivery
+                        for item in _ids(row["Regression test IDs"])
+                    }
+                    delivery_ok = (
+                        {row["Reproduction ID"] for row in delivery} == reproduction_ids
+                        and all(
+                            _meaningful(row["Root-cause evidence"]) for row in delivery
+                        )
+                        and all(
+                            set(_ids(row["Task IDs"])).issubset(task_ids)
+                            for row in delivery
+                        )
+                        and all(
+                            set(_ids(row["Regression test IDs"])).issubset(test_ids)
+                            for row in delivery
+                        )
+                        and set(task_ids)
+                        == {item for row in delivery for item in _ids(row["Task IDs"])}
+                        and mapped_tests == set(test_ids)
+                    )
+            record(
+                "DELIVERY_MAPPING",
+                delivery_ok,
+                "type-specific delivery mapping covers the declared work"
+                if delivery_ok
+                else "Feature User Stories or Bugfix reproductions are not fully mapped to Tasks and tests",
+            )
 
         compatibility_ok = _meaningful(
             _section(plan_body, "Compatibility Migration And Rollback")
         )
-        record("COMPATIBILITY_ROLLBACK", compatibility_ok, "compatibility and rollback are explicitly documented" if compatibility_ok else "compatibility and rollback section is missing or contains placeholders")
+        record(
+            "COMPATIBILITY_ROLLBACK",
+            compatibility_ok,
+            "compatibility and rollback are explicitly documented"
+            if compatibility_ok
+            else "compatibility and rollback section is missing or contains placeholders",
+        )
 
-    result = "blocked" if any(item.result == "BLOCK" for item in checks) else (
-        "revise" if any(item.result == "FAIL" for item in checks) else "ready"
+    result = (
+        "blocked"
+        if any(item.result == "BLOCK" for item in checks)
+        else ("revise" if any(item.result == "FAIL" for item in checks) else "ready")
     )
     mode = str(plan_meta.get("planning_mode", "unknown"))
     lines = [
@@ -288,9 +615,7 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
     )
     findings = [item for item in checks if item.result != "PASS"]
     lines.extend(["", "## Required Revisions", ""])
-    lines.extend(
-        [f"- {item.check_id}: {item.detail}" for item in findings] or ["None"]
-    )
+    lines.extend([f"- {item.check_id}: {item.detail}" for item in findings] or ["None"])
     return result, "\n".join(lines) + "\n"
 
 
@@ -299,16 +624,28 @@ def main() -> int:
     parser.add_argument("--project-root", type=Path, default=Path.cwd())
     parser.add_argument("--work-type", required=True)
     parser.add_argument("--work-id", required=True)
-    parser.add_argument("--check", action="store_true", help="fail when the generated check file is stale")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="fail when the generated check file is stale",
+    )
     args = parser.parse_args()
 
     try:
         root = args.project_root.resolve()
         result, rendered = evaluate(root, args.work_type, args.work_id)
-        output = resolve_work_root(root, args.work_type, args.work_id) / "plan-and-task-check.md"
+        output = (
+            resolve_work_root(root, args.work_type, args.work_id)
+            / "plan-and-task-check.md"
+        )
         if args.check:
-            if not output.is_file() or output.read_text(encoding="utf-8").replace("\r\n", "\n") != rendered:
-                print(f"AI Team Plan-and-Task check is stale: {output}", file=sys.stderr)
+            if (
+                not output.is_file()
+                or output.read_text(encoding="utf-8").replace("\r\n", "\n") != rendered
+            ):
+                print(
+                    f"AI Team Plan-and-Task check is stale: {output}", file=sys.stderr
+                )
                 return 2
         else:
             output.parent.mkdir(parents=True, exist_ok=True)

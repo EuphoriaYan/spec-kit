@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
 import yaml
 
 
@@ -133,6 +134,27 @@ def test_context_initializer_repairs_cursor_auto_load(tmp_path: Path) -> None:
     assert "alwaysApply: true" in text
     assert "alwaysApply: false" not in text
     assert "# Existing" in text
+
+
+def test_context_initializer_restores_all_rule_files_on_failure(tmp_path: Path) -> None:
+    _install_bootstrap(tmp_path)
+    agents = tmp_path / "AGENTS.md"
+    claude = tmp_path / "CLAUDE.md"
+    agents.write_text("# Existing agents\n", encoding="utf-8")
+    claude.write_text("<!-- AI TEAM CONTEXT START -->\nbroken\n", encoding="utf-8")
+    specify = tmp_path / ".specify"
+    (specify / "integration.json").write_text(
+        json.dumps({"installed_integrations": ["claude"]}), encoding="utf-8"
+    )
+    module = _load_init_module()
+
+    with pytest.raises(ValueError, match="Unbalanced"):
+        module.initialize(tmp_path)
+
+    assert agents.read_text(encoding="utf-8") == "# Existing agents\n"
+    assert claude.read_text(encoding="utf-8") == (
+        "<!-- AI TEAM CONTEXT START -->\nbroken\n"
+    )
 
 
 def test_specify_role_contract_keeps_issue_and_user_story_model() -> None:
