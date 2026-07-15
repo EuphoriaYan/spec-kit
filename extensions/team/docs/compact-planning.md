@@ -11,7 +11,8 @@ planning allows one user action and one combined human review while preserving
 the two different meanings:
 
 - Plan records technical decisions, boundaries, risks, and verification intent.
-- Tasks record execution order, dependencies, file scope, and completion checks.
+- Tasks record a single module's LLD, dependencies, file scope, and completion
+  checks.
 
 Compact planning is not permission to skip impact analysis, role isolation,
 human accountability, implementation permissions, or evidence.
@@ -44,10 +45,9 @@ compatible:
 ## Compatibility And Risks
 ## Verification Strategy
 
-# Ordered Tasks (inside plan-and-task.md)
+# Tasks (LLD, inside plan-and-task.md)
 
-- [ ] T001 ...
-- [ ] T002 ...
+- T001: one module, declared paths, no dependency, one self-test
 ```
 
 `plan-and-task.md` owns both technical decisions and execution Tasks. Compact

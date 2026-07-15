@@ -35,8 +35,9 @@ their original layout; Team skills do not modify that behavior.
 
 - `spec.md`: observable problem or desired behavior, User Stories or Bugfix
   reproduction, scope, non-goals, and acceptance points.
-- `plan-and-task.md`: architecture impact, implementation approach, ordered
-  Tasks, minimum self-tests, compatibility, migration, and rollback.
+- `plan-and-task.md`: Issue-wide HLD and module change plan, followed by
+  single-module LLD Tasks, their parallel/dependency model, minimum self-tests,
+  compatibility, migration, and rollback.
 - `plan-and-task-check.md`: generated `ready`, `revise`, or `blocked` result
   covering cross-file consistency, scope, Code Graph, ownership, and self-test
   findings. Generate it with `scripts/check_plan_and_task.py`; do not hand-edit

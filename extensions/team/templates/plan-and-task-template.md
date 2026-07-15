@@ -1,5 +1,5 @@
 ---
-schema: ai-team-plan-and-task/v1
+schema: ai-team-plan-and-task/v2
 work_id: ""
 work_type: feature
 planning_mode: standard
@@ -22,14 +22,22 @@ compact_approved_by: not-applicable
 
 # Plan And Task
 
-## Common Engineering Plan
+## Plan (HLD)
 
 ### Source And Code Graph Evidence
 
 Record the Code Graph slice or explicit source-structure fallback and the
 revision it describes.
 
-### Affected Modules And Owners
+### Module Change Plan
+
+Each module must point to its authoritative module `README.md`. Keep ownership,
+responsibility, public contracts, dependencies, and test entry points current in
+that file; use `templates/module-readme-template.md` when creating a module card.
+
+| Module | Ownership source | Owner | Current responsibility | Planned change | Contract impact | Task IDs |
+|---|---|---|---|---|---|---|
+| module-name | path/to/module/README.md | team-or-person |  |  | none | T001 |
 
 ### Architecture And Contract Impact
 
@@ -43,17 +51,48 @@ declared in the front matter.
 
 ### Implementation Plan
 
-### Ordered Tasks
+Describe the issue-wide solution and how the module changes fit together. This
+is the HLD; do not duplicate per-file implementation detail from Tasks.
 
-| Task ID | Requirement ID | Planned paths | Self-test IDs | Description |
+### Parallel Development Strategy
+
+Tasks are parallel by default. Identify independent work groups, shared
+prerequisites, integration points, and how contributors avoid editing the same
+files or public contracts concurrently.
+
+### Development Chain
+
+Use `None. All Tasks are independent.` when no dependency exists. Otherwise
+explain why each declared Task dependency is necessary, what artifact is handed
+off, and what evidence unblocks the dependent Task.
+
+## Tasks (LLD)
+
+Each Task is one small, independently assignable delivery unit owned by exactly
+one module. Do not combine unrelated modules in one Task. Cross-module
+integration may be a dedicated Task, but it still needs one coordinating module
+and explicit dependencies.
+
+### Task Index
+
+Use `none` in `Depends on` only when the Task has no prerequisite. Tasks in the
+same parallel group are intended to be assigned concurrently.
+
+| Task ID | Module | Requirement IDs | Planned paths | Depends on | Parallel group | Self-test IDs | LLD summary |
+|---|---|---|---|---|---|---|---|
+| T001 | module-name | AC-001 | path/to/file | none | P1 | TEST-001 |  |
+
+### Task Details
+
+| Task ID | Goal and non-goals | Design and data flow | Inputs and contracts | Completion criteria |
 |---|---|---|---|---|
-| T001 | AC-001 | path/to/file | TEST-001 |  |
+| T001 |  |  |  |  |
 
 ### Minimum Self-Tests
 
-| Test ID | Type | Command or procedure | Expected evidence |
-|---|---|---|---|
-| TEST-001 | unit |  |  |
+| Test ID | Type | Scenario or fixture | Command or procedure | Expected evidence |
+|---|---|---|---|---|
+| TEST-001 | unit |  |  |  |
 
 ### Compatibility Migration And Rollback
 

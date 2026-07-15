@@ -62,6 +62,22 @@ Team work uses one artifact layout for both Features and Bugfixes:
   plan-and-task-check.md
 ```
 
+### Module Ownership
+
+Keep each module's ownership and architecture boundary in that module's
+`README.md`, close to its source. Start from
+[`extensions/team/templates/module-readme-template.md`](extensions/team/templates/module-readme-template.md)
+and update the module-local copy whenever its owner, responsibility, public
+contracts, dependency direction, or test entry points change. A project root
+README or architecture index should link to these module cards; `CODEOWNERS`
+may automate reviewer selection but does not replace their design context.
+
+During `speckit.team.plan-and-task`, the Issue-wide Plan references those module
+cards and decomposes the change into single-module Tasks. Tasks are parallel by
+default so different contributors or AI coding agents can take independent
+work; unavoidable dependencies and their handoff evidence are recorded in the
+Plan before implementation begins.
+
 The Team extension does not split Feature documents into native `specs/` and
 Bugfix documents into another directory. Native Spec Kit commands retain their
 original behavior when used independently.

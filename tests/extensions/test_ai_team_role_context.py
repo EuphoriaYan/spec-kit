@@ -243,6 +243,8 @@ def test_plan_and_task_has_structured_input_contract() -> None:
     assert "Required Before Planning Can Finish" in text
     assert "Code Graph slice tied to the exact source revision" in text
     assert "architecture guidance and module descriptions" in text
+    assert "Design Tasks for parallel assignment by default" in text
+    assert "exactly one module" in text
     assert "Optional User Guidance" in text
     assert "subset or priority order of User Story" in text
     assert "return to `speckit.team.specify`" in text
@@ -260,6 +262,7 @@ def test_team_work_item_layout_and_templates_are_unified() -> None:
         "spec-template.md",
         "plan-and-task-template.md",
         "plan-and-task-check-template.md",
+        "module-readme-template.md",
         "work-context-template.yml",
     }
     assert {path.name for path in (AI_TEAM / "templates").iterdir() if path.is_file()} == expected

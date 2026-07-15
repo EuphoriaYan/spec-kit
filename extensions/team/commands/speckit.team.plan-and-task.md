@@ -108,20 +108,31 @@ its source revision still matches, and evaluate whether Compact mode is safe.
 4. Generate or attach a Code Graph slice. Fall back to explicit source
    structure evidence when the adapter is unavailable. Persist the evidence
    file and record its kind, project-relative path, and exact source revision.
-5. Record affected modules, owners, reuse candidates, callers/callees,
-   contracts, dependencies, tests, and declared file scope.
+5. Resolve every affected module through its module `README.md` or equivalent
+   repository-owned module card. Record the ownership source, named owner,
+   responsibility, contracts, dependencies, tests, and declared file scope.
+   Stop when an affected module has no discoverable ownership source; do not
+   infer an accountable owner from code authorship alone.
 6. Read `.specify/<category>/<work_id>/spec.md`. Verify its Issue is already
    `state/accepted` or `state/working`; this decision must exist before the
    skill starts and cannot be granted inside the skill. Require a named human
    decision maker and the exact Issue/comment URL; the local checker validates
    that reference shape but does not claim remote authenticity. Create or update
-   `plan-and-task.md` in that same directory. It combines architecture Plan,
-   change scope, ordered Tasks, minimum self-tests, compatibility, and rollback.
+   `plan-and-task.md` in that same directory. Its Plan is an Issue-wide HLD:
+   architecture before/after, contract impact, change scope, and a per-module
+   change plan. Its Tasks are single-module LLD delivery units with explicit
+   paths, inputs/contracts, completion criteria, and minimum self-tests.
 7. For Bugfix work, include root-cause evidence and regression Tasks. For
    Feature/new-project work, map each Task to a User Story and acceptance point.
-8. Tasks may include LLD-level files, classes, functions, data flow, migration,
-   and tests, but may not invent decisions absent from the Plan.
-9. Map every Task to a minimum self-test/evidence ID and acceptance point.
+8. Design Tasks for parallel assignment by default. Every Task belongs to
+   exactly one module and must be small enough to assign to one contributor
+   without reopening architecture decisions. Record dependency edges only when
+   parallel execution is unsafe or impossible. When dependencies exist, the
+   Plan must explain the development chain, handoff artifact, reason for
+   serialization, and unblock evidence. Reject cyclic dependencies.
+9. Give every Task LLD-level design and at least one concrete self-verification
+   scenario with fixture or precondition, command or procedure, and expected
+   evidence. Map each through a test/evidence ID to an acceptance point.
 10. Run `python .specify/extensions/team/scripts/check_plan_and_task.py
     --work-type <feature|bugfix> --work-id <work_id>`. The script owns
     `plan-and-task-check.md`; never hand-write a passing result. Revise the Plan
@@ -145,6 +156,7 @@ Team Plan And Task:
 - plan and task: .specify/<feature|bugfix>/<work_id>/plan-and-task.md
 - check: .specify/<feature|bugfix>/<work_id>/plan-and-task-check.md
 - minimum self-test mapping:
+- parallel groups and development chain:
 - compatibility and rollback:
 - unresolved findings:
 - human decision required:

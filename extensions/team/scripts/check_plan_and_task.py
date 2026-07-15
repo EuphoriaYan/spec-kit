@@ -16,13 +16,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from work_item_paths import normalize_category, resolve_work_root
 
 
-VALIDATOR = "ai-team-plan-and-task-check/v1"
+VALIDATOR = "ai-team-plan-and-task-check/v2"
 SPEC_SCHEMA = "ai-team-spec/v1"
-PLAN_SCHEMA = "ai-team-plan-and-task/v1"
+PLAN_SCHEMA = "ai-team-plan-and-task/v2"
 ACCEPTED_STATES = {"accepted", "working"}
 PLACEHOLDER = re.compile(r"(?i)\b(?:TBD|TODO|FIXME)\b|<[^>]+>|path/to/file")
 ID_SPLIT = re.compile(r"\s*(?:,|;|<br\s*/?>)\s*", re.IGNORECASE)
 HTTP_URL = re.compile(r"^https?://\S+$", re.IGNORECASE)
+EMPTY_REFERENCES = {"", "-", "none", "n/a", "not-applicable"}
 
 
 @dataclass(frozen=True)
@@ -86,6 +87,24 @@ def _table(body: str, heading: str) -> list[dict[str, str]]:
 
 def _ids(value: str) -> list[str]:
     return [part.strip() for part in ID_SPLIT.split(value) if part.strip()]
+
+
+def _references(value: str) -> list[str]:
+    return [item for item in _ids(value) if item.lower() not in EMPTY_REFERENCES]
+
+
+def _acyclic(task_ids: list[str], dependencies: dict[str, list[str]]) -> bool:
+    pending = {task_id: set(dependencies.get(task_id, [])) for task_id in task_ids}
+    while pending:
+        ready = {task_id for task_id, required in pending.items() if not required}
+        if not ready:
+            return False
+        pending = {
+            task_id: required - ready
+            for task_id, required in pending.items()
+            if task_id not in ready
+        }
+    return True
 
 
 def _state(value: object) -> str:
@@ -331,13 +350,17 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
         )
 
         plan_common = {
-            "Common Engineering Plan",
+            "Plan (HLD)",
             "Source And Code Graph Evidence",
-            "Affected Modules And Owners",
+            "Module Change Plan",
             "Architecture And Contract Impact",
             "Declared Change Scope",
             "Implementation Plan",
-            "Ordered Tasks",
+            "Parallel Development Strategy",
+            "Development Chain",
+            "Tasks (LLD)",
+            "Task Index",
+            "Task Details",
             "Minimum Self-Tests",
             "Compatibility Migration And Rollback",
             "Risks And Deviations",
@@ -361,10 +384,11 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
         )
         plan_leaf_sections = {
             "Source And Code Graph Evidence",
-            "Affected Modules And Owners",
             "Architecture And Contract Impact",
             "Declared Change Scope",
             "Implementation Plan",
+            "Parallel Development Strategy",
+            "Development Chain",
             "Compatibility Migration And Rollback",
             "Risks And Deviations",
         } | (
@@ -457,24 +481,67 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             blocked=True,
         )
 
-        tasks = _table(plan_body, "Ordered Tasks")
+        module_plan = _table(plan_body, "Module Change Plan")
+        tasks = _table(plan_body, "Task Index")
+        task_details = _table(plan_body, "Task Details")
         tests = _table(plan_body, "Minimum Self-Tests")
+        module_columns = {
+            "Module",
+            "Ownership source",
+            "Owner",
+            "Current responsibility",
+            "Planned change",
+            "Contract impact",
+            "Task IDs",
+        }
         task_columns = {
             "Task ID",
-            "Requirement ID",
+            "Module",
+            "Requirement IDs",
             "Planned paths",
+            "Depends on",
+            "Parallel group",
             "Self-test IDs",
-            "Description",
+            "LLD summary",
         }
-        test_columns = {"Test ID", "Type", "Command or procedure", "Expected evidence"}
+        detail_columns = {
+            "Task ID",
+            "Goal and non-goals",
+            "Design and data flow",
+            "Inputs and contracts",
+            "Completion criteria",
+        }
+        test_columns = {
+            "Test ID",
+            "Type",
+            "Scenario or fixture",
+            "Command or procedure",
+            "Expected evidence",
+        }
+        module_shape = bool(module_plan) and module_columns.issubset(module_plan[0])
         task_shape = bool(tasks) and task_columns.issubset(tasks[0])
+        detail_shape = bool(task_details) and detail_columns.issubset(task_details[0])
         test_shape = bool(tests) and test_columns.issubset(tests[0])
+        record(
+            "MODULE_PLAN",
+            module_shape,
+            "per-module HLD table is parseable"
+            if module_shape
+            else "Module Change Plan must use the Team table columns",
+        )
         record(
             "TASK_TABLE",
             task_shape,
-            "ordered Task table is parseable"
+            "single-module Task index is parseable"
             if task_shape
-            else "Ordered Tasks must use the Team table columns",
+            else "Task Index must use the Team table columns",
+        )
+        record(
+            "TASK_DETAILS",
+            detail_shape,
+            "Task LLD detail table is parseable"
+            if detail_shape
+            else "Task Details must use the Team table columns",
         )
         record(
             "SELF_TEST_TABLE",
@@ -484,28 +551,70 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             else "Minimum Self-Tests must use the Team table columns",
         )
 
-        if task_shape and test_shape:
+        if module_shape and task_shape and detail_shape and test_shape:
             task_ids = [row["Task ID"] for row in tasks]
             test_ids = [row["Test ID"] for row in tests]
-            mappings_ok = (
-                len(task_ids) == len(set(task_ids))
-                and len(test_ids) == len(set(test_ids))
-                and all(
-                    bool(_ids(row["Requirement ID"]))
-                    and set(_ids(row["Requirement ID"])).issubset(known_acceptance)
-                    for row in tasks
-                )
-                and all(
-                    set(_ids(row["Self-test IDs"])).issubset(test_ids) for row in tasks
-                )
-                and all(
-                    set(_ids(row["Planned paths"])).issubset(declared_paths)
-                    for row in tasks
-                )
+            module_ids = [row["Module"] for row in module_plan]
+            detail_ids = [row["Task ID"] for row in task_details]
+            task_modules = {row["Task ID"]: row["Module"] for row in tasks}
+            dependencies = {
+                row["Task ID"]: _references(row["Depends on"]) for row in tasks
+            }
+
+            module_plan_ok = (
+                len(module_ids) == len(set(module_ids))
+                and set(module_ids) == set(modules)
+                and all(_evidence_file(project_root, row["Ownership source"]) for row in module_plan)
+                and all(_named_decider(row["Owner"]) for row in module_plan)
                 and all(
                     not PLACEHOLDER.search(" ".join(row.values()))
                     and all(value.strip() for value in row.values())
-                    for row in tasks + tests
+                    for row in module_plan
+                )
+                and all(
+                    set(_references(row["Task IDs"]))
+                    == {
+                        task_id
+                        for task_id, module_id in task_modules.items()
+                        if module_id == row["Module"]
+                    }
+                    for row in module_plan
+                )
+            )
+            record(
+                "MODULE_OWNERSHIP",
+                module_plan_ok,
+                "affected modules map to existing ownership cards, owners, and Tasks"
+                if module_plan_ok
+                else "each affected module needs one existing ownership source, named owner, and exact Task mapping",
+                blocked=True,
+            )
+
+            mappings_ok = (
+                len(task_ids) == len(set(task_ids))
+                and len(test_ids) == len(set(test_ids))
+                and len(detail_ids) == len(set(detail_ids))
+                and set(detail_ids) == set(task_ids)
+                and all(
+                    bool(_references(row["Requirement IDs"]))
+                    and set(_references(row["Requirement IDs"])).issubset(known_acceptance)
+                    for row in tasks
+                )
+                and all(
+                    bool(_references(row["Self-test IDs"]))
+                    and set(_references(row["Self-test IDs"])).issubset(test_ids)
+                    for row in tasks
+                )
+                and all(
+                    bool(_references(row["Planned paths"]))
+                    and set(_references(row["Planned paths"])).issubset(declared_paths)
+                    for row in tasks
+                )
+                and all(row["Module"] in modules for row in tasks)
+                and all(
+                    not PLACEHOLDER.search(" ".join(row.values()))
+                    and all(value.strip() for value in row.values())
+                    for row in tasks + task_details + tests
                 )
             )
             record(
@@ -514,6 +623,43 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
                 "Tasks map to acceptance IDs, declared paths, and defined self-tests"
                 if mappings_ok
                 else "Task/test IDs, acceptance mapping, declared paths, or required values are inconsistent",
+            )
+
+            dependency_refs_ok = all(
+                task_id not in required and set(required).issubset(task_ids)
+                for task_id, required in dependencies.items()
+            )
+            dependency_graph_ok = dependency_refs_ok and _acyclic(task_ids, dependencies)
+            chain = _section(plan_body, "Development Chain")
+            dependency_ids = {
+                item
+                for task_id, required in dependencies.items()
+                for item in [task_id, *required]
+                if required
+            }
+            chain_ok = not dependency_ids or all(item in chain for item in dependency_ids)
+            record(
+                "TASK_DEPENDENCIES",
+                dependency_graph_ok and chain_ok,
+                "Task dependency graph is acyclic and its serial chain is explained"
+                if dependency_graph_ok and chain_ok
+                else "dependencies must reference Tasks, remain acyclic, and be explained in Development Chain",
+            )
+
+            parallel_paths: dict[tuple[str, str], str] = {}
+            parallel_conflict = False
+            for row in tasks:
+                for path in _references(row["Planned paths"]):
+                    key = (row["Parallel group"], path)
+                    if key in parallel_paths:
+                        parallel_conflict = True
+                    parallel_paths[key] = row["Task ID"]
+            record(
+                "PARALLEL_SCOPE",
+                not parallel_conflict,
+                "Tasks in the same parallel group do not claim the same path"
+                if not parallel_conflict
+                else "Tasks in one parallel group must not edit the same declared path",
             )
 
             if category == "feature":

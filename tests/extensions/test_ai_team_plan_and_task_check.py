@@ -110,9 +110,12 @@ def _plan(
     owner_evidence: str = "https://example.com/org/repo/issues/approval",
     compact_owner: str = "not-applicable",
     task_test: str = "TEST-001",
+    task_dependency: str = "none",
+    development_chain: str = "None. All Tasks are independent.",
+    ownership_source: str = "src/export/README.md",
 ) -> str:
     common = f"""---
-schema: ai-team-plan-and-task/v1
+schema: ai-team-plan-and-task/v2
 work_id: "{work_id}"
 work_type: {work_type}
 planning_mode: {mode}
@@ -138,13 +141,15 @@ compact_approved_by: {compact_owner}
 
 # Plan And Task
 
-## Common Engineering Plan
+## Plan (HLD)
 
 ### Source And Code Graph Evidence
 The export service and its test are the complete affected slice.
 
-### Affected Modules And Owners
-The export module owner reviews this change.
+### Module Change Plan
+| Module | Ownership source | Owner | Current responsibility | Planned change | Contract impact | Task IDs |
+|---|---|---|---|---|---|---|
+| export | {ownership_source} | module-owner@example.com | export result production | preserve all result rows | none | T001 |
 
 ### Architecture And Contract Impact
 The existing export path is reused and public behavior is compatible.
@@ -155,15 +160,28 @@ Implementation and regression test only.
 ### Implementation Plan
 Adjust selection and verify the result.
 
-### Ordered Tasks
-| Task ID | Requirement ID | Planned paths | Self-test IDs | Description |
+### Parallel Development Strategy
+T001 is independently assignable in parallel group P1.
+
+### Development Chain
+{development_chain}
+
+## Tasks (LLD)
+
+### Task Index
+| Task ID | Module | Requirement IDs | Planned paths | Depends on | Parallel group | Self-test IDs | LLD summary |
+|---|---|---|---|---|---|---|---|
+| T001 | export | AC-001 | src/export.py | {task_dependency} | P1 | {task_test} | preserve every selected result row |
+
+### Task Details
+| Task ID | Goal and non-goals | Design and data flow | Inputs and contracts | Completion criteria |
 |---|---|---|---|---|
-| T001 | AC-001 | src/export.py | {task_test} | implement the accepted behavior |
+| T001 | include all rows; no format change | advance the cursor after copying | existing export result contract | regression test passes |
 
 ### Minimum Self-Tests
-| Test ID | Type | Command or procedure | Expected evidence |
-|---|---|---|---|
-| TEST-001 | unit | pytest tests/test_export.py | passing regression output |
+| Test ID | Type | Scenario or fixture | Command or procedure | Expected evidence |
+|---|---|---|---|---|
+| TEST-001 | unit | multi-page export fixture | pytest tests/test_export.py | passing regression output |
 
 ### Compatibility Migration And Rollback
 Existing callers remain compatible. Revert src/export.py to roll back.
@@ -208,11 +226,50 @@ def _write_package(tmp_path: Path, work_id: str, work_type: str, **plan_kwargs) 
     graph = root / "codegraph" / "summary.md"
     graph.parent.mkdir()
     graph.write_text("source revision abc123 impact slice\n", encoding="utf-8")
+    module_readme = tmp_path / "src" / "export" / "README.md"
+    module_readme.parent.mkdir(parents=True, exist_ok=True)
+    module_readme.write_text(
+        "# Export\n\nOwner: module-owner@example.com\n", encoding="utf-8"
+    )
     (root / "spec.md").write_text(_spec(work_id, work_type), encoding="utf-8")
     (root / "plan-and-task.md").write_text(
         _plan(work_id, work_type, **plan_kwargs), encoding="utf-8"
     )
     return root
+
+
+def _add_parallel_report_task(tmp_path: Path, root: Path) -> None:
+    report_readme = tmp_path / "src" / "report" / "README.md"
+    report_readme.parent.mkdir(parents=True, exist_ok=True)
+    report_readme.write_text(
+        "# Report\n\nOwner: report-owner@example.com\n", encoding="utf-8"
+    )
+    plan_path = root / "plan-and-task.md"
+    plan = plan_path.read_text(encoding="utf-8")
+    plan = plan.replace(
+        "  - src/export.py\n  - tests/test_export.py\n",
+        "  - src/export.py\n  - src/report.py\n  - tests/test_export.py\n",
+    ).replace(
+        "affected_modules:\n  - export\n",
+        "affected_modules:\n  - export\n  - report\n",
+    ).replace(
+        "| export | src/export/README.md | module-owner@example.com | export result production | preserve all result rows | none | T001 |",
+        "| export | src/export/README.md | module-owner@example.com | export result production | preserve all result rows | none | T001 |\n"
+        "| report | src/report/README.md | report-owner@example.com | report rendering | add export summary | none | T002 |",
+    ).replace(
+        "| T001 | export | AC-001 | src/export.py | none | P1 | TEST-001 | preserve every selected result row |",
+        "| T001 | export | AC-001 | src/export.py | none | P1 | TEST-001 | preserve every selected result row |\n"
+        "| T002 | report | AC-001 | src/report.py | none | P1 | TEST-002 | render the export summary |",
+    ).replace(
+        "| T001 | include all rows; no format change | advance the cursor after copying | existing export result contract | regression test passes |",
+        "| T001 | include all rows; no format change | advance the cursor after copying | existing export result contract | regression test passes |\n"
+        "| T002 | render summary; no export mutation | consume export result | existing export result contract | report self-test passes |",
+    ).replace(
+        "| TEST-001 | unit | multi-page export fixture | pytest tests/test_export.py | passing regression output |",
+        "| TEST-001 | unit | multi-page export fixture | pytest tests/test_export.py | passing regression output |\n"
+        "| TEST-002 | unit | export result fixture | pytest tests/test_report.py | passing report output |",
+    ).replace("| US-001 | AC-001 | T001 |", "| US-001 | AC-001 | T001, T002 |")
+    plan_path.write_text(plan, encoding="utf-8")
 
 
 def test_feature_and_bugfix_packages_can_be_ready(tmp_path: Path) -> None:
@@ -223,6 +280,36 @@ def test_feature_and_bugfix_packages_can_be_ready(tmp_path: Path) -> None:
         assert result == "ready", rendered
         assert "| TRACEABILITY | PASS |" in rendered
         assert "| ISSUE_STATE | PASS |" in rendered
+
+
+def test_independent_module_tasks_can_share_a_parallel_group(tmp_path: Path) -> None:
+    module = _module()
+    root = _write_package(tmp_path, "113", "feature")
+    _add_parallel_report_task(tmp_path, root)
+
+    result, rendered = module.evaluate(tmp_path, "feature", "113")
+
+    assert result == "ready", rendered
+    assert "| MODULE_OWNERSHIP | PASS |" in rendered
+    assert "| TASK_DEPENDENCIES | PASS |" in rendered
+    assert "| PARALLEL_SCOPE | PASS |" in rendered
+
+
+def test_parallel_tasks_cannot_claim_the_same_path(tmp_path: Path) -> None:
+    module = _module()
+    root = _write_package(tmp_path, "114", "feature")
+    _add_parallel_report_task(tmp_path, root)
+    plan_path = root / "plan-and-task.md"
+    plan = plan_path.read_text(encoding="utf-8").replace(
+        "| T002 | report | AC-001 | src/report.py |",
+        "| T002 | report | AC-001 | src/export.py |",
+    )
+    plan_path.write_text(plan, encoding="utf-8")
+
+    result, rendered = module.evaluate(tmp_path, "feature", "114")
+
+    assert result == "revise"
+    assert "| PARALLEL_SCOPE | FAIL |" in rendered
 
 
 def test_check_is_deterministic_and_cli_detects_stale_output(tmp_path: Path) -> None:
@@ -343,5 +430,46 @@ def test_missing_self_test_mapping_requires_revision(tmp_path: Path) -> None:
     module = _module()
     _write_package(tmp_path, "106", "bugfix", task_test="TEST-404")
     result, rendered = module.evaluate(tmp_path, "bugfix", "106")
+    assert result == "revise"
+    assert "| TRACEABILITY | FAIL |" in rendered
+
+
+def test_missing_module_ownership_source_blocks_planning(tmp_path: Path) -> None:
+    module = _module()
+    _write_package(
+        tmp_path,
+        "110",
+        "feature",
+        ownership_source="src/missing/README.md",
+    )
+
+    result, rendered = module.evaluate(tmp_path, "feature", "110")
+
+    assert result == "blocked"
+    assert "| MODULE_OWNERSHIP | BLOCK |" in rendered
+
+
+def test_cyclic_task_dependency_requires_revision(tmp_path: Path) -> None:
+    module = _module()
+    _write_package(
+        tmp_path,
+        "111",
+        "feature",
+        task_dependency="T001",
+        development_chain="T001 waits for T001.",
+    )
+
+    result, rendered = module.evaluate(tmp_path, "feature", "111")
+
+    assert result == "revise"
+    assert "| TASK_DEPENDENCIES | FAIL |" in rendered
+
+
+def test_task_without_a_self_test_requires_revision(tmp_path: Path) -> None:
+    module = _module()
+    _write_package(tmp_path, "112", "feature", task_test="none")
+
+    result, rendered = module.evaluate(tmp_path, "feature", "112")
+
     assert result == "revise"
     assert "| TRACEABILITY | FAIL |" in rendered

@@ -36,6 +36,20 @@ Tasks are engineering decomposition and may contain LLD-level file, class,
 function, data-flow, migration, and test details. Native
 `speckit.taskstoissues` is never the source of the primary Feature Issue.
 
+## Module Ownership And Parallel Tasks
+
+The authoritative module card lives in each code module's `README.md`. Copy
+[`templates/module-readme-template.md`](templates/module-readme-template.md)
+into a module root and maintain the owner, review route, responsibility, public
+contracts, dependency direction, and test entry points there. The project root
+README may index module cards. `CODEOWNERS` is useful for review automation but
+is not a substitute for module architecture documentation.
+
+`speckit.team.plan-and-task` uses those cards to write an Issue-wide Plan (HLD)
+and single-module Tasks (LLD). Tasks are parallel by default and can be assigned
+to different contributors. When a Task must wait for another, the Plan records
+the dependency, handoff artifact, serialization reason, and unblock evidence.
+
 ## Feature Flow
 
 ```text
