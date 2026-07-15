@@ -22,18 +22,86 @@ editing product source.
    Resolve them under `.specify/extensions/team/`. They are internal
    capabilities, not separate user skills.
 
-## Input
+## Input Contract
+
+Users may invoke this skill with a natural-language sentence. `$ARGUMENTS` is
+the transport for that sentence, not the complete input model.
 
 ```text
 $ARGUMENTS
 ```
 
+### Required To Locate The Work
+
+Provide the primary Issue URL. As a resume convenience, a canonical `work_id`
+or `spec.md` path is also accepted only when it resolves to exactly one primary
+Issue URL recorded in `spec.md`. The effective input must contain all of:
+
+- one primary Issue URL for the Feature or Bugfix;
+- one canonical `.specify/<feature|bugfix>/<work_id>/spec.md`;
+- Issue state `accepted` or `working`, with named human decision maker and the
+  exact acceptance Issue/comment URL;
+- one coding repository, current branch, and source revision.
+
+Stop when the Issue URL is absent, two locators disagree, the Spec is not
+accepted, or the selected repository/revision is ambiguous. Do not choose the
+newest Issue or work directory as a fallback.
+
+### Required Before Planning Can Finish
+
+The following evidence is mandatory, but the user does not have to supply it
+in the opening sentence. Discover or generate it during this skill:
+
+- Feature User Stories and acceptance IDs from the accepted `spec.md`, or
+  Bugfix observations, reproduction IDs, and fix acceptance IDs;
+- relevant project architecture guidance and module descriptions from source,
+  module `README.md` files, architecture docs, ownership files, and build
+  metadata;
+- a Code Graph slice tied to the exact source revision, or an explicit
+  source-structure fallback when no adapter is available;
+- affected and adjacent modules, owners, reuse candidates, callers/callees,
+  public contracts, dependencies, existing tests, and likely change paths.
+
+The Code Graph and module context are inputs to the final Plan even when this
+skill creates them as intermediate evidence.
+
+### Optional User Guidance
+
+The opening request may additionally provide:
+
+- a subset or priority order of User Story, acceptance, or reproduction IDs
+  already present in `spec.md`;
+- suspected modules, relevant architecture/module-document paths, or an
+  existing Code Graph artifact path;
+- planning constraints, non-goals, compatibility concerns, or required test
+  environments;
+- a request to evaluate Compact planning.
+
+Optional guidance never overrides the accepted Spec, source evidence, module
+owners, or public contracts. A new or materially changed User Story is not a
+planning hint: return to `speckit.team.specify`, revise the Spec and Issue, and
+obtain the required acceptance before planning it.
+
+Example minimal request:
+
+```text
+Plan the accepted work at https://github.com/acme/project/issues/123.
+```
+
+Example request with optional guidance:
+
+```text
+Plan https://github.com/acme/project/issues/123 for US-002 first. Inspect the
+export and storage modules, reuse .specify/feature/123/codegraph/summary.md if
+its source revision still matches, and evaluate whether Compact mode is safe.
+```
+
 ## Flow
 
-1. Resolve the canonical category and `work_id` from the arguments, primary
-   Issue, or existing `spec.md` path. Stop when the result is missing or
-   ambiguous. Never pick the newest directory as a fallback. Open or resume
-   that Work Context Package.
+1. Resolve the canonical category and `work_id` from the primary Issue URL. A
+   supplied `work_id` or `spec.md` path is only a locator for that same Issue;
+   compare every supplied locator and stop on mismatch. Never pick the newest
+   directory as a fallback. Open or resume that Work Context Package.
 2. Fetch an authorized confidential handoff and prefer gitignored
    `spec.override.md` when present.
 3. Create the analysis Permission Envelope.

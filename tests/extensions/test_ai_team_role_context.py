@@ -232,6 +232,23 @@ def test_plan_and_task_role_uses_core_artifact_scripts_without_prompt_chain() ->
     assert "Produce the technical Plan and executable Tasks without" in text
 
 
+def test_plan_and_task_has_structured_input_contract() -> None:
+    text = (AI_TEAM / "commands/speckit.team.plan-and-task.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Required To Locate The Work" in text
+    assert "Provide the primary Issue URL" in text
+    assert "accepted` or `working" in text
+    assert "Required Before Planning Can Finish" in text
+    assert "Code Graph slice tied to the exact source revision" in text
+    assert "architecture guidance and module descriptions" in text
+    assert "Optional User Guidance" in text
+    assert "subset or priority order of User Story" in text
+    assert "return to `speckit.team.specify`" in text
+    assert "two locators disagree" in text
+
+
 def test_team_work_item_layout_and_templates_are_unified() -> None:
     layout = (AI_TEAM / "docs/work-item-layout.md").read_text(encoding="utf-8")
     assert ".specify/" in layout
