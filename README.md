@@ -26,57 +26,53 @@ under [`extensions/team/`](extensions/team/).
 
 ### Role Skills
 
-AI Team is designed as four large, role-isolated skills rather than one
-workflow. This iteration implements the first two; the installer advertises a
-role only when its command is present, so planned roles never become dangling
-agent choices.
+AI Team currently provides two large, role-isolated skills rather than one
+workflow. Later delivery roles are intentionally unnamed until their contracts
+are agreed; the installer advertises only commands that this distribution
+actually provides.
 
 | Skill | Responsibility |
 |---|---|
-| `speckit.team.specify` | turn one sentence into a primary Issue and behavior Spec or Bug reproduction |
+| `speckit.team.specify` | clarify a Feature through User Stories, then publish or print the primary Issue |
 | `speckit.team.plan-and-task` | produce Code Graph grounded Plan, LLD-capable Tasks, and self-test design |
-| `speckit.team.implement` *(planned)* | implement an approved Plan and collect evidence |
-| `speckit.team.review` *(planned)* | support the human architecture, quality, and merge decision |
 
 ```text
-Feature: Specify publication -> Technical Committee acceptance -> Plan-and-Task -> Implement -> Review
-Bugfix: Specify publication -> maintainer triage -> Plan-and-Task -> Implement -> Review
+Feature: Specify -> status/new-issue -> Technical Committee acceptance -> Plan-and-Task
+Bugfix: separate preceding intake -> reviewed coding Issue -> Plan-and-Task
 ```
 
-Issue creation belongs to Specify, where User Stories, value, scope, and
-acceptance are established. Tasks are later engineering decomposition and may
-reach LLD detail. The native `speckit.taskstoissues` command is not used to
-create the primary work item.
+Feature Issue creation belongs to Specify, where User Stories and their
+verifiable outcomes are established. Bugfix intake is a separate preceding
+capability and is not defined by these two skills. Tasks are later engineering
+decomposition and may reach LLD detail. The native `speckit.taskstoissues`
+command is not used to create the primary work item.
 
 Supporting context, permissions, private-requirement synchronization, Code
 Graph, impact, evidence, memory, and release knowledge remain internal
 extension capabilities. They are loaded progressively by the two skills and
 do not clutter the AI tool with additional user-facing skills.
 
-Team work uses one artifact layout for both Features and Bugfixes:
+Team work uses one directory convention with type-specific artifacts:
 
 ```text
-.specify/<feature|bugfix>/<work_id>/
-  spec.md
+.specify/feature/<work_id>/
+  spec.md                    # generated from the accepted Feature Issue
   plan-and-task.md
+  plan-and-task-check.md
+
+.specify/bugfix/<work_id>/
+  plan-and-task.md           # no Feature spec.md
   plan-and-task-check.md
 ```
 
-### Module Ownership
+### Module Context
 
-Keep each module's ownership and architecture boundary in that module's
-`README.md`, close to its source. Start from
-[`extensions/team/templates/module-readme-template.md`](extensions/team/templates/module-readme-template.md)
-and update the module-local copy whenever its owner, responsibility, public
-contracts, dependency direction, or test entry points change. A project root
-README or architecture index should link to these module cards; `CODEOWNERS`
-may automate reviewer selection but does not replace their design context.
-
-During `speckit.team.plan-and-task`, the Issue-wide Plan references those module
-cards and decomposes the change into single-module Tasks. Tasks are parallel by
-default so different contributors or AI coding agents can take independent
-work; unavoidable dependencies and their handoff evidence are recorded in the
-Plan before implementation begins.
+During `speckit.team.plan-and-task`, the Issue-wide Plan identifies modules from
+the repository's source layout, build metadata, architecture guidance, and Code
+Graph. A repository may document owners or review routes, but they are not
+required for Task decomposition. Tasks are single-module and parallel by
+default; unavoidable dependencies and their handoff evidence are recorded in
+the Plan before implementation begins.
 
 The Team extension does not split Feature documents into native `specs/` and
 Bugfix documents into another directory. Native Spec Kit commands retain their
