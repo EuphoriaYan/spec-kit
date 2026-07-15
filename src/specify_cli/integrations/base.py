@@ -696,6 +696,12 @@ class IntegrationBase(ABC):
         and call ``process_template()`` in their own loop — see
         ``CopilotIntegration`` for an example.
         """
+        # AI Team installations keep the complete Spec Kit engine available
+        # while exposing only extension-owned role skills to the agent.  Full
+        # mode preserves the upstream command surface for advanced users.
+        if not opts.get("install_core_skills", True):
+            return []
+
         templates = self.list_command_templates()
         if not templates:
             return []
@@ -1387,6 +1393,9 @@ class SkillsIntegration(IntegrationBase):
         template.  Each SKILL.md has normalised frontmatter containing
         ``name``, ``description``, ``compatibility``, and ``metadata``.
         """
+
+        if not opts.get("install_core_skills", True):
+            return []
 
         templates = self.list_command_templates()
         if not templates:

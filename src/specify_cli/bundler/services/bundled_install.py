@@ -11,7 +11,6 @@ from ..models.manifest import BundleManifest
 from .adapters import DefaultPrimitiveInstaller
 from .installer import InstallResult, install_bundle
 from .resolver import resolve_install_plan
-from .team_context import initialize_bundled_team_context
 
 
 def _bundled_catalog_path() -> Path:
@@ -107,9 +106,6 @@ def install_bundled_catalog(
                 plan,
                 installer,
                 manifest=manifest,
-                finalize=lambda manifest=manifest: initialize_bundled_team_context(
-                    project_root, manifest
-                ),
             )
         )
 

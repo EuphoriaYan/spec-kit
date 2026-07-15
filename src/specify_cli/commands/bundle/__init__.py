@@ -69,18 +69,6 @@ def _speckit_version() -> str:
     return get_speckit_version()
 
 
-def _initialize_bundled_ai_team_context(project_root: Path, manifest) -> list[str]:
-    """Install AI Team rule pointers from trusted package assets only."""
-    from ...bundler.services.team_context import initialize_bundled_team_context
-
-    targets = initialize_bundled_team_context(project_root, manifest)
-    if targets:
-        console.print(
-            "[green]OK[/green] AI Team rules initialized: " + ", ".join(targets)
-        )
-    return targets
-
-
 def _trust_level(verified: bool) -> str:
     """Trust framing for a catalog entry (FR-010): org-curated vs community."""
     return "verified" if verified else "community"
@@ -129,6 +117,7 @@ def _run_init(integration: str, *, script_type: str, offline: bool = False) -> N
             preset=None,
             integration=integration,
             integration_options=None,
+            skill_profile="team",
         )
     except typer.Exit as exc:
         if exc.exit_code:
@@ -392,9 +381,6 @@ def bundle_install(
             plan,
             DefaultPrimitiveInstaller(allow_network=not offline),
             manifest=manifest,
-            finalize=lambda: _initialize_bundled_ai_team_context(
-                project_root, manifest
-            ),
         )
     except BundlerError as exc:
         _fail(str(exc))
@@ -458,9 +444,6 @@ def bundle_update(
                 installer,
                 manifest=manifest,
                 refresh=True,
-                finalize=lambda: _initialize_bundled_ai_team_context(
-                    project_root, manifest
-                ),
             )
             console.print(f"[green]✓[/green] Updated '{target}' to v{plan.version}.")
     except BundlerError as exc:

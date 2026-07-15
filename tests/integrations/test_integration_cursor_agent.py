@@ -27,7 +27,14 @@ class TestCursorAgentInitFlow:
         result = runner.invoke(app, ["init", str(target), "--integration", "cursor-agent", "--ignore-agent-tools", "--script", "sh"])
 
         assert result.exit_code == 0, f"init --integration cursor-agent failed: {result.output}"
-        assert (target / ".cursor" / "skills" / "speckit-plan" / "SKILL.md").exists()
+        assert not (target / ".cursor" / "skills" / "speckit-plan").exists()
+        assert (
+            target
+            / ".cursor"
+            / "skills"
+            / "speckit-team-plan-and-task"
+            / "SKILL.md"
+        ).exists()
 
 
 class TestCursorAgentCliDispatch:
@@ -231,4 +238,3 @@ class TestCursorAgentCliDispatch:
 
         argv = mock_run.call_args[0][0]
         assert argv[0] == "cursor-agent"
-

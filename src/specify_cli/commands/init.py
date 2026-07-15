@@ -133,6 +133,11 @@ def register(app: typer.Typer) -> None:
             "--integration-options",
             help='Options for the integration (e.g. --integration-options="--commands-dir .myagent/cmds")',
         ),
+        skill_profile: str = typer.Option(
+            "team",
+            "--skill-profile",
+            help="Agent skill surface: team (default) or full Spec Kit commands",
+        ),
     ):
         """
         Initialize a new Specify project.
@@ -148,7 +153,7 @@ def register(app: typer.Typer) -> None:
         3. Install bundled Spec Kit templates, scripts, workflow, and shared
            project infrastructure
         4. Set up coding agent integration commands and optional presets
-        5. Install every bundle in this distribution's packaged catalog
+        5. Install the built-in AI Team extension and managed agent rules
 
         Examples:
             specify init my-project
@@ -183,6 +188,12 @@ def register(app: typer.Typer) -> None:
         )
 
         show_banner()
+
+        if skill_profile not in {"team", "full"}:
+            console.print(
+                "[red]Error:[/red] --skill-profile must be either 'team' or 'full'"
+            )
+            raise typer.Exit(1)
 
         from ..integrations import INTEGRATION_REGISTRY, get_integration
 
@@ -358,6 +369,7 @@ def register(app: typer.Typer) -> None:
 
         console.print(f"[cyan]Selected coding agent integration:[/cyan] {selected_ai}")
         console.print(f"[cyan]Selected script type:[/cyan] {selected_script}")
+        console.print(f"[cyan]Selected skill profile:[/cyan] {skill_profile}")
 
         tracker = StepTracker("Initialize Specify Project")
 
@@ -391,6 +403,11 @@ def register(app: typer.Typer) -> None:
                 from ..integrations.manifest import IntegrationManifest
 
                 tracker.start("integration")
+                # Some integrations previously created the target directory as
+                # a side effect of writing core commands. Team-minimal mode may
+                # intentionally write none, so project creation is an explicit
+                # init responsibility.
+                project_path.mkdir(parents=True, exist_ok=True)
                 manifest = IntegrationManifest(
                     resolved_integration.key,
                     project_path,
@@ -411,6 +428,7 @@ def register(app: typer.Typer) -> None:
                     parsed_options=integration_parsed_options or None,
                     script_type=selected_script,
                     raw_options=integration_options,
+                    install_core_skills=skill_profile == "full",
                 )
                 manifest.save()
 
@@ -450,44 +468,47 @@ def register(app: typer.Typer) -> None:
 
                 ensure_constitution_from_template(project_path, tracker=tracker)
 
-                try:
-                    bundled_wf = _locate_bundled_workflow("speckit")
-                    if bundled_wf:
-                        from ..workflows.catalog import WorkflowRegistry
-                        from ..workflows.engine import WorkflowDefinition
+                if skill_profile == "team":
+                    tracker.skip("workflow", "Team profile uses role skills")
+                else:
+                    try:
+                        bundled_wf = _locate_bundled_workflow("speckit")
+                        if bundled_wf:
+                            from ..workflows.catalog import WorkflowRegistry
+                            from ..workflows.engine import WorkflowDefinition
 
-                        wf_registry = WorkflowRegistry(project_path)
-                        if wf_registry.is_installed("speckit"):
-                            tracker.complete("workflow", "already installed")
+                            wf_registry = WorkflowRegistry(project_path)
+                            if wf_registry.is_installed("speckit"):
+                                tracker.complete("workflow", "already installed")
+                            else:
+                                import shutil as _shutil
+
+                                dest_wf = (
+                                    project_path / ".specify" / "workflows" / "speckit"
+                                )
+                                dest_wf.mkdir(parents=True, exist_ok=True)
+                                _shutil.copy2(
+                                    bundled_wf / "workflow.yml",
+                                    dest_wf / "workflow.yml",
+                                )
+                                definition = WorkflowDefinition.from_yaml(
+                                    dest_wf / "workflow.yml"
+                                )
+                                wf_registry.add(
+                                    "speckit",
+                                    {
+                                        "name": definition.name,
+                                        "version": definition.version,
+                                        "description": definition.description,
+                                        "source": "bundled",
+                                    },
+                                )
+                                tracker.complete("workflow", "speckit installed")
                         else:
-                            import shutil as _shutil
-
-                            dest_wf = (
-                                project_path / ".specify" / "workflows" / "speckit"
-                            )
-                            dest_wf.mkdir(parents=True, exist_ok=True)
-                            _shutil.copy2(
-                                bundled_wf / "workflow.yml",
-                                dest_wf / "workflow.yml",
-                            )
-                            definition = WorkflowDefinition.from_yaml(
-                                dest_wf / "workflow.yml"
-                            )
-                            wf_registry.add(
-                                "speckit",
-                                {
-                                    "name": definition.name,
-                                    "version": definition.version,
-                                    "description": definition.description,
-                                    "source": "bundled",
-                                },
-                            )
-                            tracker.complete("workflow", "speckit installed")
-                    else:
-                        tracker.skip("workflow", "bundled workflow not found")
-                except Exception as wf_err:
-                    sanitized_wf = str(wf_err).replace("\n", " ").strip()
-                    tracker.error("workflow", f"install failed: {sanitized_wf[:120]}")
+                            tracker.skip("workflow", "bundled workflow not found")
+                    except Exception as wf_err:
+                        sanitized_wf = str(wf_err).replace("\n", " ").strip()
+                        tracker.error("workflow", f"install failed: {sanitized_wf[:120]}")
 
                 init_opts = {
                     "ai": selected_ai,
@@ -496,6 +517,7 @@ def register(app: typer.Typer) -> None:
                     "script": selected_script,
                     "feature_numbering": "sequential",
                     "speckit_version": get_speckit_version(),
+                    "skill_profile": skill_profile,
                 }
                 from ..integrations.base import SkillsIntegration as _SkillsPersist
 
@@ -577,28 +599,18 @@ def register(app: typer.Typer) -> None:
                             continuing="Continuing without the optional preset.",
                         )
 
-                tracker.add("bundles", "Install distribution bundles")
+                tracker.add("team", "Install AI Team skills and rules")
                 try:
-                    from ..bundler.services.bundled_install import (
-                        install_bundled_catalog,
-                    )
+                    from ..team_setup import install_bundled_team
 
-                    bundle_results = install_bundled_catalog(
-                        project_path,
-                        active_integration_key=resolved_integration.key,
+                    team_result = install_bundled_team(project_path)
+                    action = "installed" if team_result.installed else "already present"
+                    tracker.complete(
+                        "team",
+                        f"extension {action}; {len(team_result.rule_files)} rule files",
                     )
-                    if bundle_results:
-                        added = sum(len(result.installed) for result in bundle_results)
-                        skipped = sum(len(result.skipped) for result in bundle_results)
-                        tracker.complete(
-                            "bundles",
-                            f"{len(bundle_results)} bundles, {added} added, "
-                            f"{skipped} already present",
-                        )
-                    else:
-                        tracker.skip("bundles", "catalog contains no bundles")
                 except Exception as bundle_err:
-                    tracker.error("bundles", str(bundle_err)[:120])
+                    tracker.error("team", str(bundle_err)[:120])
                     raise
 
                 tracker.complete("final", "project ready")

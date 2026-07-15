@@ -1,33 +1,6 @@
 {
   "schema_version": "1.0",
-  "updated_at": "2026-07-13T00:00:00Z",
+  "updated_at": "2026-07-15T00:00:00Z",
   "catalog_url": "bundled://distribution",
-  "bundles": {
-    "ai-team": {
-      "id": "ai-team",
-      "name": "AI Team SDD Stack",
-      "version": "0.2.0",
-      "role": "ai-team",
-      "description": "Enterprise AI Team stack with Specify and Plan-and-Task skills.",
-      "author": "AI Team Template",
-      "repository": "https://github.com/EuphoriaYan/spec-kit",
-      "license": "MIT",
-      "download_url": "ai-team/bundle.yml",
-      "requires": {
-        "speckit_version": ">=0.12.4"
-      },
-      "provides": {
-        "extensions": 3,
-        "presets": 0,
-        "workflows": 0
-      },
-      "tags": [
-        "ai-team",
-        "sdd",
-        "enterprise",
-        "governance"
-      ],
-      "verified": false
-    }
-  }
+  "bundles": {}
 }

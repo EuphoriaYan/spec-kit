@@ -19,6 +19,28 @@ AGENT_FILES = {
     "cursor": ".cursor/rules/specify-rules.mdc",
     "trae": ".trae/rules/project_rules.md",
 }
+ROUTES = (
+    (
+        "speckit.team.specify",
+        "A new idea, requirement, defect symptom, or missing work item",
+        "create the primary Issue and `spec.md`",
+    ),
+    (
+        "speckit.team.plan-and-task",
+        "An accepted work item needs architecture, scope, tasks, and self-tests",
+        "create and check `plan-and-task.md`",
+    ),
+    (
+        "speckit.team.implement",
+        "The checked plan has human implementation permission",
+        "implement the approved tasks and collect evidence",
+    ),
+    (
+        "speckit.team.review",
+        "A change or PR needs a human merge decision",
+        "review architecture fit, scope, tests, evidence, and risk",
+    ),
+)
 
 
 def _read_json(path: Path) -> dict:
@@ -54,15 +76,34 @@ def _integrations(root: Path) -> list[str]:
     return result
 
 
+def _installed_routes() -> list[tuple[str, str, str]]:
+    commands = Path(__file__).resolve().parent.parent / "commands"
+    return [
+        route
+        for route in ROUTES
+        if (commands / f"{route[0]}.md").is_file()
+    ]
+
+
 def _managed_section(target: str) -> str:
     if target == "CLAUDE.md":
         return f"{START}\n@AGENTS.md\n{END}\n"
+    routes = "\n".join(
+        f"- {when}: use `{name}` to {outcome}."
+        for name, when, outcome in _installed_routes()
+    )
     return (
         f"{START}\n"
         "Before any AI Team role work, read and follow "
         f"`{BOOTSTRAP}`. Re-run its bootstrap after resume or context "
         "compression and before each phase artifact or gate. Repository files "
-        "and approved artifacts override remembered chat context.\n"
+        "and approved artifacts override remembered chat context.\n\n"
+        "Users may describe work naturally; do not require a skill name. Route "
+        "the request by its current phase:\n"
+        f"{routes}\n"
+        "If a required artifact or human decision is missing, stop and return "
+        "to the preceding role. Canonical work artifacts live under "
+        "`.specify/<feature|bugfix>/<work_id>/`.\n"
         f"{END}\n"
     )
 
@@ -122,7 +163,7 @@ def initialize(root: Path) -> list[str]:
         raise ValueError("AI Team bootstrap path escapes the project root") from exc
     if not bootstrap.is_file():
         raise FileNotFoundError(
-            f"AI Team bootstrap is not installed: {bootstrap}. Install the ai-team bundle first."
+            f"AI Team bootstrap is not installed: {bootstrap}. Install the team extension first."
         )
 
     targets = ["AGENTS.md"]

@@ -22,14 +22,14 @@ Both skills use the same work directory:
 `-- plan-and-task-check.md
 ```
 
-## Why Only Two Are Implemented Here
+## Four-Skill Target
 
-The target model contains four large role skills. This iteration implements only
-the two whose contracts and names have been agreed. Roles intentionally do not
+The target model contains four large role skills. This iteration implements
+`specify` and `plan-and-task`; `implement` and `review` are planned and are not
+advertised until their command files are installed. Roles intentionally do not
 share hidden chat context. They communicate
 through an Issue and `spec.md`, then `plan-and-task.md`, its check, and the Work
-Context Package. Later decision, implementation, test, and review skills remain
-uncommitted until their ownership and names are agreed.
+Context Package.
 
 The primary Issue is created during Specify. It is not deferred until Tasks.
 Tasks are engineering decomposition and may contain LLD-level file, class,
@@ -47,7 +47,8 @@ plain-language demand
 -> speckit.team.plan-and-task
 -> deterministic plan-and-task-check.md
 -> architecture/module-owner review
--> later role skill (outside this extension iteration)
+-> speckit.team.implement (planned)
+-> speckit.team.review (planned)
 ```
 
 There is no AI Team workflow runner. The human starts each role skill from chat,
@@ -65,7 +66,8 @@ observed defect
 -> speckit.team.plan-and-task
 -> deterministic plan-and-task-check.md
 -> reviewed root cause, scope, regression tests, and rollback
--> later role skill (outside this extension iteration)
+-> speckit.team.implement (planned)
+-> speckit.team.review (planned)
 ```
 
 Several same-root-cause Issues may map to one change
@@ -108,29 +110,24 @@ initializer after a new chat, resume, or context compression.
 
 ## Installation
 
-The recommended installation is the bundle:
+The recommended installation is the Team-minimal profile:
 
 ```bash
-specify init . --integration codex --integration-options="--skills"
-specify bundle catalog add https://raw.githubusercontent.com/EuphoriaYan/spec-kit/main/bundles/catalog.json --id ai-team --policy install-allowed
-specify bundle install ai-team
+specify init . --integration codex
 ```
 
-Manual installation:
+This keeps the full Spec Kit engine while registering only the skills declared
+by this extension; the native Spec Kit workflow is also omitted. To expose the
+native Spec Kit skills and workflow as well, use:
 
 ```bash
-specify extension add team
-specify extension add bug
-specify extension add agent-context
+specify init . --integration codex --skill-profile full
 ```
 
-The recommended bundle initializes AI rule files during installation. A manual
-extension-only install must run the idempotent initializer once before the first
-chat:
-
-```bash
-python .specify/extensions/team/scripts/init_role_context.py
-```
+Initialization installs `team` directly and atomically refreshes `AGENTS.md`,
+`CLAUDE.md`, Cursor rules, or Trae rules for the detected integrations. The
+generic bundle system remains available for unrelated multi-component stacks,
+but AI Team no longer depends on a bundle, `bug`, or `agent-context`.
 
 ## Chat Entry
 

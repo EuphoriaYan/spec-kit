@@ -522,12 +522,12 @@ def test_ai_team_role_skills_do_not_register_workflows():
         (REPO_ROOT / "workflows" / "catalog.json").read_text(encoding="utf-8")
     )
     pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    bundle = yaml.safe_load(
-        (REPO_ROOT / "bundles" / "ai-team" / "bundle.yml").read_text(encoding="utf-8")
+    bundle_catalog = json.loads(
+        (REPO_ROOT / "bundles" / "catalog.json").read_text(encoding="utf-8")
     )
 
     assert "ai-team-sdd" not in catalog["workflows"]
     assert "ai-team-bugfix" not in catalog["workflows"]
     assert "workflows/ai-team-sdd" not in pyproject
     assert "workflows/ai-team-bugfix" not in pyproject
-    assert "workflows" not in bundle["provides"]
+    assert bundle_catalog["bundles"] == {}

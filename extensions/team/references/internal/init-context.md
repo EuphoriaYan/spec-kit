@@ -16,7 +16,7 @@ not need to invoke it manually.
 2. Read and execute
    `.specify/extensions/team/docs/context-bootstrap.md` through the level
    required by the active role.
-3. If the script reports that the AI Team bundle is absent, stop and repair the
+3. If the script reports that the Team extension is absent, stop and repair the
    installation. Do not continue with an ungoverned role prompt.
 
 The script merges a short managed pointer into `AGENTS.md` and the rule file of

@@ -39,16 +39,12 @@ Recommended commands:
 
 ```bash
 specify init --here --integration <codex|claude|cursor-agent|trae>
-specify extension add team
-specify extension add agent-context
-specify extension add bug
 ```
 
 Use `--force` only when the user has explicitly accepted merging Spec Kit files
 into a non-empty repository.
 
-After extension installation, run this command and then run
-`speckit.agent-context.update` when agent context files should be refreshed.
+Initialization installs the Team extension and refreshes managed agent rules.
 
 ## Steps
 
@@ -85,10 +81,8 @@ After extension installation, run this command and then run
    - the developer reads approved spec, plan, tasks, gates, and allowed work
      item context, not hidden architect or private requirement chat;
    - roles pass information through documents.
-9. Confirm related extensions:
-   - `ai-team` for enterprise gates and evidence;
-   - `agent-context` for managed AGENTS/CLAUDE/Cursor/Trae context sections;
-   - `bug` for bug assess/fix/test stages.
+9. Confirm the `team` extension is installed. It owns the role skills, unified
+   Feature/Bugfix artifacts, gates, evidence, and managed agent-rule pointers.
 10. Output the workspace contract summary.
 
 ## Output Shape
@@ -103,7 +97,7 @@ AI Team workspace:
 - raw customer demand public: yes / no
 - public plan allowed: yes / no
 - active AI integration:
-- related extensions: ai-team / agent-context / bug
+- installed extension: team
 - role isolation: enabled / missing
 - next command:
 ```

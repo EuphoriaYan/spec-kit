@@ -20,24 +20,27 @@
 ## AI Team Independent Distribution
 
 This repository is pinned to the Spec Kit `v0.12.5` base and adds an
-enterprise Team extension. Native Spec Kit commands remain available and
-unchanged; Team collaboration is implemented entirely under
-[`extensions/team/`](extensions/team/).
+enterprise Team extension. Native Spec Kit commands remain unchanged and are
+available through the optional `full` skill profile; Team collaboration lives
+under [`extensions/team/`](extensions/team/).
 
 ### Role Skills
 
 AI Team is designed as four large, role-isolated skills rather than one
-workflow. This iteration implements only the first two agreed skills; the other
-two remain unnamed until their responsibilities are agreed.
+workflow. This iteration implements the first two; the installer advertises a
+role only when its command is present, so planned roles never become dangling
+agent choices.
 
 | Skill | Responsibility |
 |---|---|
 | `speckit.team.specify` | turn one sentence into a primary Issue and behavior Spec or Bug reproduction |
 | `speckit.team.plan-and-task` | produce Code Graph grounded Plan, LLD-capable Tasks, and self-test design |
+| `speckit.team.implement` *(planned)* | implement an approved Plan and collect evidence |
+| `speckit.team.review` *(planned)* | support the human architecture, quality, and merge decision |
 
 ```text
-Feature: Specify publication -> Technical Committee acceptance -> Plan-and-Task -> later role skills
-Bugfix: Specify publication -> maintainer triage -> Plan-and-Task -> later role skills
+Feature: Specify publication -> Technical Committee acceptance -> Plan-and-Task -> Implement -> Review
+Bugfix: Specify publication -> maintainer triage -> Plan-and-Task -> Implement -> Review
 ```
 
 Issue creation belongs to Specify, where User Stories, value, scope, and
@@ -66,17 +69,16 @@ original behavior when used independently.
 ### Install
 
 ```bash
-specify init . --integration codex --integration-options="--skills"
-specify bundle catalog add https://raw.githubusercontent.com/EuphoriaYan/spec-kit/main/bundles/catalog.json --id ai-team --policy install-allowed
-specify bundle install ai-team
+specify init . --integration codex
 ```
 
-The bundle initializes the active AI tools' short rule pointers before the first
-chat. Every role skill refreshes them again after resume or context compression.
-
-Manual installation uses `specify extension add team`, `specify extension add
-bug`, and `specify extension add agent-context`. AI Team does not install a
-workflow; users invoke the role skills from chat.
+The default `team` skill profile keeps the complete Spec Kit engine but exposes
+only the role skills supplied by the built-in `team` extension and does not
+install the native workflow. Advanced users may add `--skill-profile full` to
+also register the native Spec Kit skills and workflow.
+Initialization writes a short natural-language router into the active AI tools'
+rule files before the first chat. AI Team does not install a workflow; users
+invoke the role skills naturally from chat.
 
 After installation, users can remain in chat:
 
@@ -89,6 +91,12 @@ The AI tool starts with `speckit.team.specify` and stops at each human
 decision boundary. See
 [the Team extension guide](extensions/team/README.md) for artifacts, repository
 boundaries, resume behavior, and the complete Feature/Bugfix journeys.
+
+> [!NOTE]
+> The upstream walkthrough below uses native Spec Kit commands and therefore
+> applies to `--skill-profile full`. The default AI Team experience starts from
+> natural language and the `speckit.team.*` role skills described above.
+
 ## Table of Contents
 
 - [🤔 What is Spec-Driven Development?](#-what-is-spec-driven-development)

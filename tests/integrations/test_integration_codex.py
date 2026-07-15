@@ -26,7 +26,14 @@ class TestCodexInitFlow:
         result = runner.invoke(app, ["init", str(target), "--integration", "codex", "--ignore-agent-tools", "--script", "sh"])
 
         assert result.exit_code == 0, f"init --integration codex failed: {result.output}"
-        assert (target / ".agents" / "skills" / "speckit-plan" / "SKILL.md").exists()
+        assert not (target / ".agents" / "skills" / "speckit-plan").exists()
+        assert (
+            target
+            / ".agents"
+            / "skills"
+            / "speckit-team-plan-and-task"
+            / "SKILL.md"
+        ).exists()
 
     def test_plan_skill_has_no_context_placeholder(self, tmp_path):
         """The core plan skill must not carry a context-file placeholder —

@@ -3,7 +3,6 @@ from __future__ import annotations
 import importlib.util
 import json
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 import yaml
@@ -84,37 +83,65 @@ def test_context_initializer_always_writes_agents_without_detected_tool(tmp_path
     assert module.BOOTSTRAP in (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
 
 
-def test_ai_team_bundle_initializes_rules_before_first_skill(
-    tmp_path: Path, monkeypatch
-) -> None:
-    from specify_cli import _assets
-    from specify_cli.commands.bundle import _initialize_bundled_ai_team_context
-
+def test_context_initializer_writes_natural_language_skill_router(tmp_path: Path) -> None:
     _install_bootstrap(tmp_path)
+    module = _load_init_module()
+
+    module.initialize(tmp_path)
+
+    agents = (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
+    assert "Users may describe work naturally" in agents
+    assert "speckit.team.specify" in agents
+    assert "speckit.team.plan-and-task" in agents
+    assert "speckit.team.implement" not in agents
+    assert "speckit.team.review" not in agents
+    assert ".specify/<feature|bugfix>/<work_id>/" in agents
+
+
+def test_router_automatically_includes_later_role_skills(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module = _load_init_module()
+    installed = tmp_path / "team"
+    scripts = installed / "scripts"
+    commands = installed / "commands"
+    scripts.mkdir(parents=True)
+    commands.mkdir()
+    fake_script = scripts / "init_role_context.py"
+    fake_script.write_text("# location marker\n", encoding="utf-8")
+    for name, _, _ in module.ROUTES:
+        (commands / f"{name}.md").write_text("# role\n", encoding="utf-8")
+    monkeypatch.setattr(module, "__file__", str(fake_script))
+
+    section = module._managed_section("AGENTS.md")
+
+    for name, _, _ in module.ROUTES:
+        assert name in section
+
+
+def test_direct_team_setup_rolls_back_extension_when_rules_fail(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from specify_cli import team_setup
+
     specify = tmp_path / ".specify"
-    (specify / "integration.json").write_text(
-        json.dumps({"installed_integrations": ["codex", "claude"]}),
-        encoding="utf-8",
+    specify.mkdir()
+    (specify / "init-options.json").write_text(
+        json.dumps({"ai": "codex", "ai_skills": True}), encoding="utf-8"
     )
-    monkeypatch.setattr(_assets, "_locate_bundled_extension", lambda _id: AI_TEAM)
-    manifest = SimpleNamespace(bundle=SimpleNamespace(id="ai-team"))
-    context_module = _load_init_module()
+    monkeypatch.setattr(team_setup, "_locate_bundled_extension", lambda _id: AI_TEAM)
 
-    targets = _initialize_bundled_ai_team_context(tmp_path, manifest)
+    def fail_rules(_root: Path) -> list[str]:
+        raise RuntimeError("rule failure")
 
-    assert targets == ["AGENTS.md", "CLAUDE.md"]
-    assert context_module.BOOTSTRAP in (tmp_path / "AGENTS.md").read_text(
-        encoding="utf-8"
-    )
-    assert "@AGENTS.md" in (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
+    monkeypatch.setattr(team_setup, "_initialize_rules", fail_rules)
 
+    with pytest.raises(RuntimeError, match="rule failure"):
+        team_setup.install_bundled_team(tmp_path)
 
-def test_non_ai_team_bundle_does_not_write_agent_rules(tmp_path: Path) -> None:
-    from specify_cli.commands.bundle import _initialize_bundled_ai_team_context
-
-    manifest = SimpleNamespace(bundle=SimpleNamespace(id="other"))
-    assert _initialize_bundled_ai_team_context(tmp_path, manifest) == []
-    assert not (tmp_path / "AGENTS.md").exists()
+    assert not (specify / "extensions" / "team").exists()
+    assert not (specify / "extensions" / ".backup" / "team").exists()
+    assert not (tmp_path / ".agents" / "skills" / "speckit-team-specify").exists()
 
 
 def test_context_initializer_repairs_cursor_auto_load(tmp_path: Path) -> None:

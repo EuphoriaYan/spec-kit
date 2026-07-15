@@ -5,10 +5,8 @@ bootstrap:
   # Workspace creation must reuse Spec Kit init instead of copying template
   # repositories into a product workspace.
   use_specify_init: true
-  recommended_extensions:
-    - team
-    - agent-context
-    - bug
+  required_extension: team
+  skill_profile: team
 
 agent_tools:
   # AI Team defaults to the agent integrations already supported by Spec Kit.

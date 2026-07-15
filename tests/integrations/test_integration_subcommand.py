@@ -15,7 +15,9 @@ from tests.conftest import strip_ansi
 runner = CliRunner()
 
 
-def _init_project(tmp_path, integration="copilot", integration_options=None):
+def _init_project(
+    tmp_path, integration="copilot", integration_options=None, skill_profile="full"
+):
     """Helper: init a spec-kit project with the given integration."""
     project = tmp_path / "proj"
     project.mkdir()
@@ -24,6 +26,7 @@ def _init_project(tmp_path, integration="copilot", integration_options=None):
         "--integration", integration,
         "--script", "sh",
         "--ignore-agent-tools",
+        "--skill-profile", skill_profile,
     ]
     if integration_options:
         args += ["--integration-options", integration_options]
@@ -1803,6 +1806,22 @@ class TestIntegrationSwitch:
         data = json.loads((project / ".specify" / "integration.json").read_text(encoding="utf-8"))
         assert data["integration"] == "copilot"
 
+    def test_switch_preserves_team_minimal_skill_surface(self, tmp_path):
+        project = _init_project(tmp_path, "claude", skill_profile="team")
+        claude_skills = project / ".claude" / "skills"
+        assert (claude_skills / "speckit-team-specify" / "SKILL.md").exists()
+        assert not (claude_skills / "speckit-plan").exists()
+
+        result = _run_in_project(
+            project,
+            ["integration", "switch", "codex", "--script", "sh"],
+        )
+
+        assert result.exit_code == 0, result.output
+        codex_skills = project / ".agents" / "skills"
+        assert (codex_skills / "speckit-team-specify" / "SKILL.md").exists()
+        assert not (codex_skills / "speckit-plan").exists()
+
     def test_switch_migrates_extension_commands(self, tmp_path):
         """Switching should migrate extension commands to the new agent directory."""
         project = _init_project(tmp_path, "kimi")
@@ -2433,7 +2452,7 @@ class TestIntegrationUpgrade:
         # core command stems that should have been migrated).
         core_remaining = [
             f for f in legacy.glob("speckit.*.md")
-            if "agent-context" not in f.name
+            if "agent-context" not in f.name and not f.name.startswith("speckit.team.")
         ]
         assert len(core_remaining) == 0, (
             f"Legacy .opencode/command/ should have no core speckit files after upgrade, "

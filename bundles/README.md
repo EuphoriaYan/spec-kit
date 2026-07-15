@@ -1,36 +1,21 @@
-# Bundle catalogs (AI Team distribution)
+# Bundle catalogs
 
-This directory defines the **distribution bundle catalog** consumed
-automatically by `specify init`. The catalog and manifests are packaged under
-`specify_cli/core_pack/bundles/`, so initialization is fully offline.
+This directory keeps the generic Spec Kit bundle catalog format available for
+teams that need to compose several independent extensions, presets, or
+workflows. AI Team itself no longer needs a bundle: `specify init` installs the
+single built-in `team` extension directly.
 
 ## Layout
 
 | Path | Purpose |
-|------|---------|
-| [`catalog.json`](catalog.json) | Bundle catalog entries (`ai-team`, …) |
-| [`ai-team/bundle.yml`](ai-team/bundle.yml) | Manifest: pinned extensions, preset, workflows |
-| [`ai-team/README.md`](ai-team/README.md) | Bundle-specific usage |
+|---|---|
+| [`catalog.json`](catalog.json) | Optional distribution bundle entries |
 
-## Consumer flow
+## Maintainer Notes
 
-Users install the CLI from this fork, then initialize each coding repository:
-
-```bash
-specify init . --integration cursor-agent
-```
-
-`specify init` reads `catalog.json`, resolves each entry's package-relative
-`download_url`, and installs every listed bundle. Users do not register a
-catalog or run `specify bundle install` separately.
-
-## Maintainer notes
-
-- Add every distribution bundle to `catalog.json`; init installs all entries.
-- Keep each `download_url` relative to this directory, for example
-  `ai-team/bundle.yml`.
+- Add a bundle only when one product installation genuinely composes multiple
+  independently useful components.
+- Keep each `download_url` relative to this directory.
 - Keep catalog and manifest versions aligned.
-- Set `verified: true` only after the packaged CLI and clean-project init
-  install test pass for that catalog revision.
-- Authoring: `specify bundle validate --path bundles/ai-team` and
-  `specify bundle build --path bundles/ai-team --output dist/`.
+- Set `verified: true` only after packaged CLI and clean-project installation
+  tests pass for that catalog revision.
