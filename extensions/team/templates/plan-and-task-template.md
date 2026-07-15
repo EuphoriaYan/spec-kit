@@ -1,8 +1,11 @@
 ---
-schema: ai-team-plan-and-task/v2
+schema: ai-team-plan-and-task/v3
 work_id: ""
 work_type: feature
-planning_mode: standard
+planning_stage: plan-review
+plan_review:
+  decision: pending
+  decided_by: ""
 source_revision: ""
 declared_paths: []
 affected_modules: []
@@ -17,7 +20,6 @@ impact_analysis:
   contract_owner_approval:
     decided_by: not-required
     evidence_url: not-required
-compact_approved_by: not-applicable
 ---
 
 # Plan And Task
@@ -35,9 +37,9 @@ Each module must point to its authoritative module `README.md`. Keep ownership,
 responsibility, public contracts, dependencies, and test entry points current in
 that file; use `templates/module-readme-template.md` when creating a module card.
 
-| Module | Ownership source | Owner | Current responsibility | Planned change | Contract impact | Task IDs |
-|---|---|---|---|---|---|---|
-| module-name | path/to/module/README.md | team-or-person |  |  | none | T001 |
+| Module | Ownership source | Owner | Current responsibility | Planned change | Contract impact |
+|---|---|---|---|---|---|
+| module-name | path/to/module/README.md | team-or-person |  |  | none |
 
 ### Architecture And Contract Impact
 
@@ -62,9 +64,17 @@ files or public contracts concurrently.
 
 ### Development Chain
 
-Use `None. All Tasks are independent.` when no dependency exists. Otherwise
-explain why each declared Task dependency is necessary, what artifact is handed
-off, and what evidence unblocks the dependent Task.
+At Plan review, describe module-level sequencing constraints without inventing
+Task IDs. After Task decomposition, update this section with the concrete Task
+dependency, handoff artifact, serialization reason, and unblock evidence. Use
+`None. All Tasks are independent.` when no dependency exists.
+
+### Plan Review Decision
+
+Stop here before Task decomposition. Present the HLD for human discussion and
+record one decision in front matter: `continue-to-tasks`,
+`pause-for-discussion`, or `revise-plan`. Record the named human in
+`plan_review.decided_by`. Any material Plan change returns to this gate.
 
 ## Tasks (LLD)
 

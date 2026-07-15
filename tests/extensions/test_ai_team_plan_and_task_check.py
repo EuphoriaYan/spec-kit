@@ -102,23 +102,27 @@ def _plan(
     work_id: str,
     work_type: str,
     *,
-    mode: str = "standard",
+    stage: str = "ready-for-check",
+    plan_decision: str = "continue-to-tasks",
+    plan_decider: str = "architect@example.com",
     cross_module: bool = False,
     class_changes: bool = False,
     contract_change: str = "none",
     owner: str = "module-owner@example.com",
     owner_evidence: str = "https://example.com/org/repo/issues/approval",
-    compact_owner: str = "not-applicable",
     task_test: str = "TEST-001",
     task_dependency: str = "none",
     development_chain: str = "None. All Tasks are independent.",
     ownership_source: str = "src/export/README.md",
 ) -> str:
     common = f"""---
-schema: ai-team-plan-and-task/v2
+schema: ai-team-plan-and-task/v3
 work_id: "{work_id}"
 work_type: {work_type}
-planning_mode: {mode}
+planning_stage: {stage}
+plan_review:
+  decision: {plan_decision}
+  decided_by: {plan_decider}
 source_revision: abc123
 declared_paths:
   - src/export.py
@@ -136,7 +140,6 @@ impact_analysis:
   contract_owner_approval:
     decided_by: {owner}
     evidence_url: {owner_evidence}
-compact_approved_by: {compact_owner}
 ---
 
 # Plan And Task
@@ -147,9 +150,9 @@ compact_approved_by: {compact_owner}
 The export service and its test are the complete affected slice.
 
 ### Module Change Plan
-| Module | Ownership source | Owner | Current responsibility | Planned change | Contract impact | Task IDs |
-|---|---|---|---|---|---|---|
-| export | {ownership_source} | module-owner@example.com | export result production | preserve all result rows | none | T001 |
+| Module | Ownership source | Owner | Current responsibility | Planned change | Contract impact |
+|---|---|---|---|---|---|
+| export | {ownership_source} | module-owner@example.com | export result production | preserve all result rows | none |
 
 ### Architecture And Contract Impact
 The existing export path is reused and public behavior is compatible.
@@ -165,6 +168,9 @@ T001 is independently assignable in parallel group P1.
 
 ### Development Chain
 {development_chain}
+
+### Plan Review Decision
+The architect approved immediate Task decomposition.
 
 ## Tasks (LLD)
 
@@ -253,9 +259,9 @@ def _add_parallel_report_task(tmp_path: Path, root: Path) -> None:
         "affected_modules:\n  - export\n",
         "affected_modules:\n  - export\n  - report\n",
     ).replace(
-        "| export | src/export/README.md | module-owner@example.com | export result production | preserve all result rows | none | T001 |",
-        "| export | src/export/README.md | module-owner@example.com | export result production | preserve all result rows | none | T001 |\n"
-        "| report | src/report/README.md | report-owner@example.com | report rendering | add export summary | none | T002 |",
+        "| export | src/export/README.md | module-owner@example.com | export result production | preserve all result rows | none |",
+        "| export | src/export/README.md | module-owner@example.com | export result production | preserve all result rows | none |\n"
+        "| report | src/report/README.md | report-owner@example.com | report rendering | add export summary | none |",
     ).replace(
         "| T001 | export | AC-001 | src/export.py | none | P1 | TEST-001 | preserve every selected result row |",
         "| T001 | export | AC-001 | src/export.py | none | P1 | TEST-001 | preserve every selected result row |\n"
@@ -356,7 +362,7 @@ def test_draft_issue_blocks_planning(tmp_path: Path) -> None:
     assert "| ISSUE_STATE | BLOCK |" in rendered
 
 
-def test_public_contract_and_unsafe_compact_require_human_authority(
+def test_public_contract_requires_human_authority(
     tmp_path: Path,
 ) -> None:
     module = _module()
@@ -364,18 +370,31 @@ def test_public_contract_and_unsafe_compact_require_human_authority(
         tmp_path,
         "105",
         "feature",
-        mode="compact",
         cross_module=True,
         class_changes=True,
         contract_change="spi",
         owner="pending",
         owner_evidence="pending",
-        compact_owner="maintainer@example.com",
     )
     result, rendered = module.evaluate(tmp_path, "feature", "105")
     assert result == "blocked"
     assert "| CONTRACT_AUTHORITY | BLOCK |" in rendered
-    assert "| PLANNING_MODE | BLOCK |" in rendered
+
+
+def test_final_check_blocks_until_human_continues_to_tasks(tmp_path: Path) -> None:
+    module = _module()
+    _write_package(
+        tmp_path,
+        "115",
+        "feature",
+        stage="plan-review",
+        plan_decision="pause-for-discussion",
+    )
+
+    result, rendered = module.evaluate(tmp_path, "feature", "115")
+
+    assert result == "blocked"
+    assert "| PLAN_TASK_HANDOFF | BLOCK |" in rendered
 
 
 def test_acceptance_requires_human_decision_reference(tmp_path: Path) -> None:

@@ -16,9 +16,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from work_item_paths import normalize_category, resolve_work_root
 
 
-VALIDATOR = "ai-team-plan-and-task-check/v2"
+VALIDATOR = "ai-team-plan-and-task-check/v3"
 SPEC_SCHEMA = "ai-team-spec/v1"
-PLAN_SCHEMA = "ai-team-plan-and-task/v2"
+PLAN_SCHEMA = "ai-team-plan-and-task/v3"
 ACCEPTED_STATES = {"accepted", "working"}
 PLACEHOLDER = re.compile(r"(?i)\b(?:TBD|TODO|FIXME)\b|<[^>]+>|path/to/file")
 ID_SPLIT = re.compile(r"\s*(?:,|;|<br\s*/?>)\s*", re.IGNORECASE)
@@ -358,6 +358,7 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             "Implementation Plan",
             "Parallel Development Strategy",
             "Development Chain",
+            "Plan Review Decision",
             "Tasks (LLD)",
             "Task Index",
             "Task Details",
@@ -389,6 +390,7 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             "Implementation Plan",
             "Parallel Development Strategy",
             "Development Chain",
+            "Plan Review Decision",
             "Compatibility Migration And Rollback",
             "Risks And Deviations",
         } | (
@@ -426,8 +428,16 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
         impact = impact if isinstance(impact, dict) else {}
         graph = impact.get("code_graph")
         graph = graph if isinstance(graph, dict) else {}
-        cross_module = impact.get("cross_module") is True
-        class_changes = impact.get("class_changes") is True
+        impact_flags_ok = isinstance(impact.get("cross_module"), bool) and isinstance(
+            impact.get("class_changes"), bool
+        )
+        record(
+            "IMPACT_FLAGS",
+            impact_flags_ok,
+            "cross-module and class-change impact are explicitly declared"
+            if impact_flags_ok
+            else "impact_analysis must declare boolean cross_module and class_changes flags",
+        )
         contract_change = str(impact.get("public_contract_change", "")).strip().lower()
         source_revision = str(plan_meta.get("source_revision", "")).strip()
         graph_ok = (
@@ -462,22 +472,20 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             blocked=True,
         )
 
-        mode = str(plan_meta.get("planning_mode", "")).strip().lower()
-        compact_owner = str(plan_meta.get("compact_approved_by", "")).strip().lower()
-        compact_ok = mode in {"standard", "compact"}
-        if mode == "compact":
-            compact_ok = (
-                compact_owner not in {"", "not-applicable", "pending", "tbd"}
-                and not cross_module
-                and not class_changes
-                and contract_change == "none"
-            )
+        stage = str(plan_meta.get("planning_stage", "")).strip().lower()
+        plan_review = plan_meta.get("plan_review")
+        plan_review = plan_review if isinstance(plan_review, dict) else {}
+        handoff_ok = (
+            stage == "ready-for-check"
+            and plan_review.get("decision") == "continue-to-tasks"
+            and _named_decider(plan_review.get("decided_by"))
+        )
         record(
-            "PLANNING_MODE",
-            compact_ok,
-            "planning mode and human Compact selection are valid"
-            if compact_ok
-            else "Compact requires a named human and no cross-module, class, or public-contract change",
+            "PLAN_TASK_HANDOFF",
+            handoff_ok,
+            "a named human approved Task decomposition and the artifact is ready for check"
+            if handoff_ok
+            else "final check requires ready-for-check plus a named continue-to-tasks decision",
             blocked=True,
         )
 
@@ -492,7 +500,6 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             "Current responsibility",
             "Planned change",
             "Contract impact",
-            "Task IDs",
         }
         task_columns = {
             "Task ID",
@@ -571,22 +578,14 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
                     and all(value.strip() for value in row.values())
                     for row in module_plan
                 )
-                and all(
-                    set(_references(row["Task IDs"]))
-                    == {
-                        task_id
-                        for task_id, module_id in task_modules.items()
-                        if module_id == row["Module"]
-                    }
-                    for row in module_plan
-                )
+                and set(task_modules.values()) == set(modules)
             )
             record(
                 "MODULE_OWNERSHIP",
                 module_plan_ok,
                 "affected modules map to existing ownership cards, owners, and Tasks"
                 if module_plan_ok
-                else "each affected module needs one existing ownership source, named owner, and exact Task mapping",
+                else "each affected module needs one existing ownership source, named owner, and at least one Task",
                 blocked=True,
             )
 
@@ -738,7 +737,7 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
         if any(item.result == "BLOCK" for item in checks)
         else ("revise" if any(item.result == "FAIL" for item in checks) else "ready")
     )
-    mode = str(plan_meta.get("planning_mode", "unknown"))
+    stage = str(plan_meta.get("planning_stage", "unknown"))
     lines = [
         "# Plan And Task Check",
         "",
@@ -747,7 +746,7 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
         f"- Result: {result}",
         f"- Work ID: {work_id}",
         f"- Work type: {category}",
-        f"- Planning mode: {mode}",
+        f"- Planning stage: {stage}",
         f"- Validator: {VALIDATOR}",
         "",
         "## Deterministic Checks",

@@ -172,11 +172,19 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["permissions"]["require_implementation_review"] is True
     assert config["gates"]["require_work_item_anchor"] is True
     assert config["gates"]["allow_same_root_cause_issue_grouping"] is True
-    assert config["planning"]["default_mode"] == "standard"
-    assert config["planning"]["supported_modes"] == ["standard", "compact"]
-    assert config["planning"]["compact_requires_explicit_user_selection"] is True
-    assert config["planning"]["compact_requires_post_impact_human_gate"] is True
-    assert config["planning"]["compact_for_new_project"] is False
+    assert config["planning"]["artifact"] == "plan-and-task.md"
+    assert config["planning"]["stages"] == [
+        "plan-review",
+        "task-design",
+        "ready-for-check",
+    ]
+    assert config["planning"]["require_human_plan_decision_before_tasks"] is True
+    assert config["planning"]["plan_review_decisions"] == [
+        "continue-to-tasks",
+        "pause-for-discussion",
+        "revise-plan",
+    ]
+    assert config["planning"]["final_check_after_task_design"] is True
     assert config["issue_publishing"]["default_adapter"] == "github-cli"
     assert config["issue_publishing"]["require_verified_issue_url"] is True
     assert config["issue_publishing"]["require_approved_intake_gates"] is True
@@ -443,17 +451,15 @@ def test_ai_team_permission_envelope_document_exists():
     assert "do not sandbox shell commands" in text
 
 
-def test_ai_team_compact_planning_document_matches_role_skill_model():
-    compact_doc = EXTENSION_ROOT / "docs" / "compact-planning.md"
+def test_ai_team_uses_one_plan_review_then_task_decomposition_flow():
+    command = EXTENSION_ROOT / "commands" / "speckit.team.plan-and-task.md"
+    text = command.read_text(encoding="utf-8")
 
-    assert compact_doc.exists()
-    text = compact_doc.read_text(encoding="utf-8")
-    assert "Status: supported" in text
-    assert "AI may recommend compact planning" in text
-    assert "`planning_mode=compact`" in text
-    assert "combined Plan/Tasks review" in text
-    assert "Mandatory Fallback" in text
-    assert "Zero-to-one projects use the Standard path" in text
+    assert "continue to Task decomposition now" in text
+    assert "pause for Plan discussion" in text
+    assert "planning_stage: task-design" in text
+    assert "planning_stage: ready-for-check" in text
+    assert not (EXTENSION_ROOT / "docs" / "compact-planning.md").exists()
 
 
 def test_ai_team_work_field_spec_document_exists():
@@ -508,7 +514,7 @@ def test_ai_team_user_journeys_document_exists():
     assert "Confidential Enterprise Feature" in text
     assert "Bugfix" in text
     assert "New Project" in text
-    assert "Compact Planning" in text
+    assert "Plan Discussion And Task Decomposition" in text
     assert "Resume" in text
     for command in (
         "speckit.team.specify",

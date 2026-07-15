@@ -99,8 +99,8 @@ invoke the role skills naturally from chat.
 After installation, users can remain in chat:
 
 ```text
-Please add CSV export to the current project. Use Compact planning only if the
-impact is local and no public contract changes.
+Please add CSV export to the current project. After the architecture Plan is
+ready, pause so I can decide whether to discuss it or decompose Tasks now.
 ```
 
 The AI tool starts with `speckit.team.specify` and stops at each human

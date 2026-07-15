@@ -59,6 +59,8 @@ plain-language demand
 -> published state/draft Issue and spec.md
 -> Technical Committee changes the Issue to state/accepted outside the skill
 -> speckit.team.plan-and-task
+-> Plan HLD -> continue Tasks / pause discussion / revise Plan
+-> single-module Tasks
 -> deterministic plan-and-task-check.md
 -> architecture/module-owner review
 -> speckit.team.implement (planned)
@@ -67,8 +69,9 @@ plain-language demand
 
 There is no AI Team workflow runner. The human starts each role skill from chat,
 and the skill performs its own checks before stopping at the next human decision
-boundary. Standard and Compact planning use the same role skill; Compact only
-shortens the Plan and Tasks after a human confirms low risk.
+boundary. Plan-and-Task always writes the HLD first, pauses for a human choice,
+then either stops for discussion or continues to single-module LLD Tasks and the
+deterministic final check.
 
 ## Bugfix Flow
 
@@ -78,6 +81,8 @@ observed defect
 -> user approves the exact Bug Issue draft for publication
 -> reviewed Bug Issue and reproduction
 -> speckit.team.plan-and-task
+-> Plan HLD -> continue Tasks / pause discussion / revise Plan
+-> single-module regression Tasks
 -> deterministic plan-and-task-check.md
 -> reviewed root cause, scope, regression tests, and rollback
 -> speckit.team.implement (planned)
@@ -149,8 +154,8 @@ Users start from chat with a normal sentence:
 
 ```text
 Please add CSV export to the current project. Keep the exported columns aligned
-with the result list, and use Compact planning only if the architecture impact
-is demonstrably low.
+with the result list, and pause after the architecture Plan so I can decide
+whether to discuss it or decompose Tasks now.
 ```
 
 The AI tool should select `speckit.team.specify`, classify the work, and stop at

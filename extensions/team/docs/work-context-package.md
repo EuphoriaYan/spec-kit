@@ -16,7 +16,9 @@ Read in this order and stop as soon as the current phase is clear:
 
 1. `work-context.yml`: identity, phase, source snapshot, last action, next action.
 2. `spec.md` or gitignored `spec.override.md`: intended behavior.
-3. `plan-and-task.md`: approved technical approach, scope, Tasks, and self-tests.
+3. `plan-and-task.md`: Plan HLD, recorded human Plan decision, scope, Tasks, and
+   self-tests. The same file survives a pause between Plan review and Task
+   decomposition.
 4. `plan-and-task-check.md`: readiness result and unresolved findings.
 5. `context-pack.md`: short human-readable handoff when more explanation is needed.
 6. `permission-envelope.yml`, `codegraph/`, or `evidence/` only when the active
@@ -28,7 +30,7 @@ Read in this order and stop as soon as the current phase is clear:
 work_id: "123"
 category: feature
 primary_work_item: https://example.com/org/repo/issues/123
-phase: specified | planned | tasks-ready | blocked | done
+phase: specified | plan-review | plan-paused | task-design | tasks-ready | blocked | done
 source_revision: <git-revision>
 last_completed_skill: speckit.team.specify
 next_skill: speckit.team.plan-and-task

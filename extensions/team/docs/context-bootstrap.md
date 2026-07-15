@@ -43,8 +43,10 @@ stable Issue or an approved requirement identifier.
 Load the accepted Issue, `spec.md` (or gitignored `spec.override.md` when the
 private handoff mechanism produced it), repository architecture guidance,
 relevant module documentation, and a Code Graph slice or source-structure
-fallback. Produce `plan-and-task.md`, then run `scripts/check_plan_and_task.py`
-to generate `plan-and-task-check.md`. Treat each module's `README.md` as the
+fallback. Produce the Plan HLD in `plan-and-task.md`, stop for the human
+continue/pause/revise decision, and resume the same file for Task decomposition.
+Only then run `scripts/check_plan_and_task.py` to generate
+`plan-and-task-check.md`. Treat each module's `README.md` as the
 default ownership and boundary source. The Plan is the Issue-wide HLD; each
 Task is a single-module LLD delivery unit designed for parallel assignment and
 must own at least one minimum self-test. A model must not hand-write a passing

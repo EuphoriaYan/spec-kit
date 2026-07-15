@@ -110,13 +110,17 @@ release_archive:
     - docs/ai-team/memory/decisions
     - migration-playbook.md
 planning:
-  default_mode: standard
-  supported_modes:
-    - standard
-    - compact
-  compact_requires_explicit_user_selection: true
-  compact_requires_post_impact_human_gate: true
-  compact_for_new_project: false
+  artifact: plan-and-task.md
+  stages:
+    - plan-review
+    - task-design
+    - ready-for-check
+  require_human_plan_decision_before_tasks: true
+  plan_review_decisions:
+    - continue-to-tasks
+    - pause-for-discussion
+    - revise-plan
+  final_check_after_task_design: true
 
 issue_publishing:
   default_adapter: github-cli

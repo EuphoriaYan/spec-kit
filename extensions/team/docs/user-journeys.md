@@ -16,13 +16,16 @@ Please add CSV export. Keep exported columns aligned with the result list.
    the new Issue starts at `state/draft`.
 3. Outside any skill, the Technical Committee decides whether to accept the
    Feature and records scope, release/wave, owner, and `state/accepted`.
-4. `speckit.team.plan-and-task` loads source and Code Graph evidence, then
-   writes one LLD-capable `plan-and-task.md`, minimum self-tests, and
-   `plan-and-task-check.md`.
-5. An architect/module owner approves or revises the Plan and Tasks.
-6. A later development role skill changes code, runs tests, compares
+4. `speckit.team.plan-and-task` loads source and Code Graph evidence and writes
+   the Issue-wide HLD into `plan-and-task.md`.
+5. A human chooses to continue to Task decomposition, pause for discussion, or
+   revise the Plan. The same file is reused after resume.
+6. After continuation, Plan-and-Task writes single-module LLD Tasks, minimum
+   self-tests, and the generated `plan-and-task-check.md`.
+7. An architect/module owner approves or revises the checked Plan and Tasks.
+8. A later development role skill changes code, runs tests, compares
    actual scope with the Plan, and writes the Evidence Board.
-7. Named humans review and merge.
+9. Named humans review and merge.
 
 ## Existing Public Feature Issue
 
@@ -52,17 +55,19 @@ one root cause. Map every Issue to separate reproduction and verification.
 
 ## New Project
 
-New-project work uses the Feature journey and Standard planning. Plan-and-Task
-must define architecture boundaries, the runnable spine, module ownership,
+New-project work uses the Feature journey. Plan-and-Task must define
+architecture boundaries, the runnable spine, module ownership,
 interfaces, dependency minimum, deployment, rollback, and first end-to-end
 verification before implementation.
 
-## Compact Planning
+## Plan Discussion And Task Decomposition
 
-Users may ask for Compact in ordinary language. Plan-and-Task recommends it only
-after impact evidence proves the work is low risk. A human confirms the mode.
-Compact still creates `plan-and-task.md` and the generated
-`plan-and-task-check.md`.
+Every change uses the same path. Plan-and-Task first produces the Plan HLD and
+stops for a human decision. Small local changes naturally have a short Plan and
+one Task; larger changes have a wider HLD and multiple parallel single-module
+Tasks. A paused Plan can be discussed in a PR, Issue, or team review and resumed
+later from the same `plan-and-task.md`. The final check runs only after Task
+decomposition is complete.
 
 ## Resume
 

@@ -75,7 +75,7 @@ The opening request may additionally provide:
   existing Code Graph artifact path;
 - planning constraints, non-goals, compatibility concerns, or required test
   environments;
-- a request to evaluate Compact planning.
+- preferred discussion participants or a request to pause after the HLD.
 
 Optional guidance never overrides the accepted Spec, source evidence, module
 owners, or public contracts. A new or materially changed User Story is not a
@@ -92,8 +92,8 @@ Example request with optional guidance:
 
 ```text
 Plan https://github.com/acme/project/issues/123 for US-002 first. Inspect the
-export and storage modules, reuse .specify/feature/123/codegraph/summary.md if
-its source revision still matches, and evaluate whether Compact mode is safe.
+export and storage modules and reuse
+.specify/feature/123/codegraph/summary.md if its source revision still matches.
 ```
 
 ## Flow
@@ -120,27 +120,46 @@ its source revision still matches, and evaluate whether Compact mode is safe.
    that reference shape but does not claim remote authenticity. Create or update
    `plan-and-task.md` in that same directory. Its Plan is an Issue-wide HLD:
    architecture before/after, contract impact, change scope, and a per-module
-   change plan. Its Tasks are single-module LLD delivery units with explicit
-   paths, inputs/contracts, completion criteria, and minimum self-tests.
-7. For Bugfix work, include root-cause evidence and regression Tasks. For
+   change plan. Set `planning_stage: plan-review` and complete the Plan without
+   inventing Task decomposition. Update `work-context.yml` to
+   `phase: plan-review` and keep `speckit.team.plan-and-task` as the next skill.
+7. Present the complete Plan HLD, affected modules, contract changes, scope,
+   sequencing constraints, compatibility, risks, and rollback. Ask the user to
+   choose one action:
+   - `continue to Task decomposition now`;
+   - `pause for Plan discussion` with other maintainers or owners;
+   - `revise the Plan` before deciding.
+   Record the choice and named human in `plan_review`. When paused, set
+   `phase: plan-paused`, stop, and return the same `plan-and-task.md` path. When
+   revision is requested, update the Plan, keep `phase: plan-review`, and repeat
+   this decision point. On resume,
+   reload that file and current source evidence instead of rebuilding the Plan
+   from chat memory. Any material Plan change invalidates prior Tasks and
+   returns to this decision point.
+8. Only after `continue-to-tasks`, set `planning_stage: task-design`, update the
+   Work Context phase to `task-design`, and derive
+   single-module LLD Tasks with explicit paths, inputs/contracts, completion
+   criteria, and minimum self-tests. For Bugfix work, include root-cause
+   evidence and regression Tasks. For
    Feature/new-project work, map each Task to a User Story and acceptance point.
-8. Design Tasks for parallel assignment by default. Every Task belongs to
+9. Design Tasks for parallel assignment by default. Every Task belongs to
    exactly one module and must be small enough to assign to one contributor
    without reopening architecture decisions. Record dependency edges only when
    parallel execution is unsafe or impossible. When dependencies exist, the
    Plan must explain the development chain, handoff artifact, reason for
    serialization, and unblock evidence. Reject cyclic dependencies.
-9. Give every Task LLD-level design and at least one concrete self-verification
+10. Give every Task LLD-level design and at least one concrete self-verification
    scenario with fixture or precondition, command or procedure, and expected
    evidence. Map each through a test/evidence ID to an acceptance point.
-10. Run `python .specify/extensions/team/scripts/check_plan_and_task.py
+11. Set `planning_stage: ready-for-check`, then run `python
+    .specify/extensions/team/scripts/check_plan_and_task.py
     --work-type <feature|bugfix> --work-id <work_id>`. The script owns
     `plan-and-task-check.md`; never hand-write a passing result. Revise the Plan
     and Tasks until the deterministic check returns `ready` or a human records
     why a blocking finding remains.
-
-Compact mode may shorten Plan and Tasks but may not omit scope, compatibility,
-rollback, or self-test evidence. Escalate to Standard when impact expands.
+    On `ready`, set the Work Context phase to `tasks-ready` and hand off to the
+    later implementation role. On `revise` or `blocked`, preserve the failing
+    check and keep Plan-and-Task as the next skill.
 
 ## Output
 
@@ -148,7 +167,8 @@ rollback, or self-test evidence. Escalate to Standard when impact expands.
 Team Plan And Task:
 - work item:
 - work ID and category:
-- planning mode:
+- planning stage:
+- Plan review decision and decider:
 - code graph or fallback:
 - affected modules and owners:
 - declared files:
@@ -160,8 +180,8 @@ Team Plan And Task:
 - compatibility and rollback:
 - unresolved findings:
 - human decision required:
-- next step: later role skill / revise / blocked
-- result: ready / revise / blocked
+- next step: discuss Plan / decompose Tasks / later role skill / revise / blocked
+- result: plan-awaiting-decision / plan-paused / ready / revise / blocked
 ```
 
 Stop when Feature acceptance is missing, Bug scope is unconfirmed, ownership or

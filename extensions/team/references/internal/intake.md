@@ -53,7 +53,6 @@ Durable formal context begins under
 ```yaml
 work_type: bugfix | feature | new-project
 privacy_class: public-safe | confidential
-planning_mode: standard | compact
 feature_decision_evidence: not-applicable | unreviewed | accepted
 feature_approver:
 feature_approver_role:
@@ -61,8 +60,8 @@ feature_approver_role:
 
 `work_type=auto` is allowed only as input to this analysis. It must be resolved
 to `bug`, `feature`, or `new-project` in `intake.yml`; otherwise the review must
-be revised or rejected and no architecture planning may start. `new-project` always
-uses Standard planning and publishes a `type/feature` work item.
+be revised or rejected and no architecture planning may start. `new-project`
+publishes a `type/feature` work item.
 
 ## Mode: Draft
 
@@ -88,18 +87,12 @@ target_repository: owner/repository
 - public API/SPI/config/schema/dependency flags;
 - validation expected and known unknowns;
 - proposed labels: exactly one `type/*` and `state/draft`;
-- recommended planning mode with reasons and mandatory fallback conditions.
+- known architecture or coordination concerns that Plan-and-Task must inspect.
 
 When the checklist is ready, present `publish automatically`, `save draft
 only`, `revise`, and `stop`. Both save and stop retain the local draft path and
 create no Issue. A later `speckit.team.specify` invocation may receive that path
 and resume from the first pending checklist item.
-
-Recommend Compact only for an existing project when evidence shows a local or
-single-module change, a clear reuse path, no public-contract or migration
-change, no security/privacy or critical-dependency decision, and simple
-rollback. Words such as "small" or "quick" are not evidence. AI recommends;
-the human gate selects.
 
 Feature acceptance is a repository governance decision owned by the Technical
 Committee or delegated authority; it is not a skill. The role reads that
@@ -118,7 +111,7 @@ AI Team Intake Result:
 - issue draft path:
 - Specify Checklist path:
 - impact evidence path:
-- planning recommendation:
+- architecture or coordination concerns:
 - feature acceptance evidence, if supplied:
 - unresolved questions:
 - stop conditions:
@@ -138,5 +131,4 @@ Stop without completing the Intake draft when:
 - required read-only impact evidence is missing;
 - Intake claims a Feature is accepted without external Technical Committee or
   delegated approval evidence;
-- Compact was selected without qualifying impact evidence;
 - confidential demand would be copied into a public-safe draft.
