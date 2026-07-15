@@ -31,7 +31,7 @@ anything other than letters, numbers, dots, underscores, and hyphens.
    - `Feature slug:` or `Feature root:` in the PR body;
    - an unambiguous feature slug in the PR branch name.
 4. When a slug is resolved, set
-   `FEATURE_ROOT={repository root}/.specify/specs/{feature-slug}`. All feature
+   `FEATURE_ROOT={repository root}/.specify/feature/{feature-slug}`. All feature
    artifact reads and writes MUST stay under it. Never read or write
    repository-root `specs/` or `.specify/ai-team/work/`.
 
