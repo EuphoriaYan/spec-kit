@@ -35,7 +35,7 @@ def test_implement_contract_uses_unified_root_and_lazy_pr_prompt():
         encoding="utf-8"
     )
 
-    assert ".specify/specs/{feature-slug}" in command
+    assert ".specify/feature/{feature-slug}" in command
     assert "only=T001-T010" in command
     assert "submit_pr=true" in command
     assert "Readiness blocked. Do not proceed with implementation." in command

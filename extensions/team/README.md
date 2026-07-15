@@ -14,7 +14,7 @@ replace their collaboration infrastructure.
 Both commands use one artifact root:
 
 ```text
-.specify/specs/<feature-slug>/
+.specify/feature/<feature-slug>/
 ```
 
 The implementation command requires `spec.md`, `plan.md`, and `tasks.md` in

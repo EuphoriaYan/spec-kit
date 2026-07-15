@@ -38,7 +38,7 @@ Prepare a concise title and a body containing:
 
 ## Feature
 - Feature slug: ...
-- Feature root: `.specify/specs/.../`
+- Feature root: `.specify/feature/.../`
 - Work item: ...
 
 ## Tasks completed
