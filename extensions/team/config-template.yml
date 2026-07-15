@@ -1,0 +1,280 @@
+# AI Team SDD Collaboration configuration.
+# Copy is installed to `.specify/extensions/team/ai-team-config.yml`.
+
+bootstrap:
+  # Workspace creation must reuse Spec Kit init instead of copying template
+  # repositories into a product workspace.
+  use_specify_init: true
+  recommended_extensions:
+    - team
+    - agent-context
+    - bug
+
+agent_tools:
+  # AI Team defaults to the agent integrations already supported by Spec Kit.
+  # Cursor is represented by Spec Kit's `cursor-agent` integration key.
+  supported_integrations:
+    - codex
+    - claude
+    - cursor-agent
+    - trae
+  auto_detect_from_specify_init: true
+
+work_artifacts:
+  # Feature and Bugfix work use the same directory depth and file contract.
+  root: .specify
+  path_template: .specify/{category}/{work_id}
+  categories:
+    - feature
+    - bugfix
+  spec_file: spec.md
+  plan_and_task_file: plan-and-task.md
+  plan_and_task_check_file: plan-and-task-check.md
+  context_pack_file: context-pack.md
+  work_context_file: work-context.yml
+  permission_envelope_file: permission-envelope.yml
+  allow_reconstruct_from_handoff_requirement_url: true
+  allow_reconstruct_from_work_id: true
+
+memory:
+  # Three-tier memory keeps contributor scratch, department learning, and
+  # enterprise guidance separate.
+  service:
+    default_backend: file
+    supported_backends:
+      - file
+      - mem0
+    require_namespace_for_upload: true
+    store_raw_transcripts_by_default: false
+    mem0:
+      optional_package: mem0ai
+      api_key_env: MEM0_API_KEY
+  tiers:
+    local:
+      path: .specify/ai-team/memory/local
+      upload: false
+      docs: false
+      release_artifact: false
+      git_policy: ignore-or-local-only
+    department:
+      path: .specify/ai-team/memory/department
+      upload: true
+      docs: false
+      release_artifact: false
+      git_policy: internal-only-or-service-sync
+      namespace: ""
+    enterprise:
+      path: docs/ai-team/memory
+      upload: true
+      docs: true
+      release_artifact: true
+      git_policy: commit-after-review
+      namespace: ""
+  promotion:
+    local_to_department_requires:
+      - contributor self-check
+      - maintainer acceptance
+      - privacy sanitization
+    department_to_enterprise_requires:
+      - maintainer approval
+      - relevant owner approval
+      - evidence links
+      - public-safe or approved visibility
+
+release_archive:
+  # Release archive is a release-scoped batch view of memory consolidation.
+  # It summarizes completed work so future tasks do not need to load every
+  # task-level trace.
+  private_root: .specify/ai-team/releases/private
+  enterprise_root: docs/ai-team/memory/releases
+  default_privacy: department-internal
+  default_target_tier: department
+  summarize_before_delete: true
+  delete_raw_evidence_by_default: false
+  private_outputs:
+    - evidence-rollup.md
+    - archived-work.yml
+    - privacy-review.md
+  enterprise_outputs:
+    - release-summary.md
+    - shipped-work-index.md
+    - bugfix-lessons.md
+    - feature-decisions.md
+    - migration-playbook.md
+  promote_bugfix_lessons_to:
+    - support/knowledge-map.md
+    - support/memory-index.md
+    - memory/department/attempts
+    - docs/ai-team/memory/bugfix-playbooks
+    - tests-or-gates-when-repeatable
+  promote_feature_decisions_to:
+    - support/knowledge-map.md
+    - docs/ai-team/memory/decisions
+    - migration-playbook.md
+planning:
+  default_mode: standard
+  supported_modes:
+    - standard
+    - compact
+  compact_requires_explicit_user_selection: true
+  compact_requires_post_impact_human_gate: true
+  compact_for_new_project: false
+
+issue_publishing:
+  default_adapter: github-cli
+  supported_adapters:
+    - github-cli
+  github_cli:
+    command: gh
+  require_verified_issue_url: true
+  require_approved_intake_gates: true
+
+permissions:
+  # Human approval records are not a runtime sandbox. Keep policy-only until
+  # a tool-native or wrapper adapter is configured and verified.
+  default_enforcement_mode: policy-only
+  supported_enforcement_modes:
+    - policy-only
+    - agent-native
+    - wrapper-enforced
+  require_envelope: true
+  require_analysis_review: true
+  require_implementation_review: true
+  deny_unspecified_write_paths: true
+  deny_unspecified_network: true
+  require_human_approval_for:
+    - expand-write-paths
+    - public-contract-change
+    - cross-module-change
+    - dependency-install
+    - external-network-write
+  always_deny_without_explicit_exception:
+    - credential-read
+    - private-demand-export
+    - destructive-history-rewrite
+    - write-git-internals
+
+issue_lifecycle:
+  type_labels:
+    enhancement_internal_allowed:
+      - type/feature
+    coding_allowed:
+      - type/feature
+      - type/bug
+  state_labels:
+    - state/draft
+    - state/accepted
+    - state/working
+    - state/finished
+    - state/rejected
+    - state/closed
+    - state/superseded
+  enhancement_internal_allows_bugfix: false
+
+code_graph:
+  # Adapters may be local tools, MCP tools, or hosted services. All of them
+  # should normalize into the active work item's codegraph/ directory.
+  default_adapter_order:
+    - scip
+    - joern
+    - codeql
+    - tree-sitter-source
+  normalized_outputs:
+    - nodes.jsonl
+    - edges.jsonl
+    - summary.md
+    - adapter-report.md
+  require_for:
+    - public interface change
+    - class add or delete
+    - cross-module semantic change
+    - dependency direction change
+    - resumed task with changed source snapshot
+  license_review_required_for:
+    - jqassistant
+    - universal-ctags
+
+repositories:
+  # Internal enhancement repository stores confidential enterprise demand,
+  # drafts, approval discussion, wave planning, and sanitized handoff RFCs.
+  # Do not record private raw-demand paths in public coding-repository files.
+  enhancement_internal:
+    role: enhancement-internal
+    remote: ""
+    visibility: internal-only
+    customer_visible: false
+    raw_demand_record_in_coding_repository: false
+    stores:
+      - raw customer demand
+      - private drafts
+      - commercial context
+      - approval comments
+      - wave plan
+      - release scheduling
+      - sanitized handoff RFCs
+      - internal status labels
+
+  # Coding repository stores source code, public implementation plans, tasks,
+  # self-tests, evidence, implementation PRs, and public feature issues.
+  coding:
+    role: coding
+    remote: ""
+    visibility: project-controlled
+    enhancement_handoff_submodule_path: ""
+    stores:
+      - source code
+      - public feature issues
+      - plan-and-task
+      - self-test evidence
+      - implementation PRs
+      - public-safe summaries for internal enhancement work
+
+privacy:
+  raw_customer_demand_public: false
+  public_plan_allowed: true
+  coding_repo_may_record_raw_internal_demand: false
+  public_feature_may_start_from_coding_issue: true
+  internal_feature_requires_handoff_or_public_safe_summary: true
+  local_handoff_submodule_is_cache_only: true
+  private_handoff_override_file: spec.override.md
+  public_artifacts:
+    - public coding issue URL
+    - public-safe handoff summary
+    - plan-and-task.md
+    - plan-and-task-check.md
+    - quickstart.md
+    - Evidence Board
+  private_artifacts:
+    - raw customer request
+    - commercial context
+    - sensitive acceptance discussion
+    - internal requirement draft URL
+
+roles:
+  specify:
+    name: product-manager-or-customer-manager
+    owns:
+      - problem
+      - user scenario
+      - acceptance intent
+    context_isolation: true
+  plan_and_task:
+    name: architect-or-module-owner
+    owns:
+      - architecture plan
+      - implementation tasks
+      - minimum self-test design
+      - public/private boundary
+      - code graph impact
+      - build-from-zero strategy
+    context_isolation: true
+
+gates:
+  require_role_handoff: true
+  require_work_item_anchor: true
+  allow_same_root_cause_issue_grouping: true
+  require_code_graph_for_existing_project: true
+  require_strict_build_plan_for_new_project: true
+  require_selftest_mapping: true
+  require_evidence_board: true
+  require_failure_evolution_followup: true

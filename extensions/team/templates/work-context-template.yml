@@ -1,0 +1,10 @@
+work_id: ""
+category: feature
+primary_work_item: ""
+phase: specified
+source_revision: ""
+last_completed_skill: speckit.team.specify
+next_skill: speckit.team.plan-and-task
+artifacts:
+  spec: ""
+unresolved: []

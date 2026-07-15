@@ -1,35 +1,18 @@
 import json
 import importlib.util
 import subprocess
-import sys
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 import yaml
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-EXTENSION_ROOT = REPO_ROOT / "extensions" / "ai-team"
-WORKFLOW_PATH = REPO_ROOT / "workflows" / "ai-team-sdd" / "workflow.yml"
-INTAKE_WORKFLOW_PATH = REPO_ROOT / "workflows" / "ai-team-intake" / "workflow.yml"
-BUGFIX_WORKFLOW_PATH = REPO_ROOT / "workflows" / "ai-team-bugfix" / "workflow.yml"
+EXTENSION_ROOT = REPO_ROOT / "extensions" / "team"
 MEMORY_ADAPTER_PATH = EXTENSION_ROOT / "scripts" / "memory_adapter.py"
-WORK_ITEM_GATE = EXTENSION_ROOT / "scripts" / "check-work-item.py"
-INTAKE_ROUTER = EXTENSION_ROOT / "scripts" / "intake_router.py"
-IMPLEMENTATION_PERMISSION_GATE = (
-    EXTENSION_ROOT / "scripts" / "enforce-implementation-permission.py"
-)
-WORK_EVIDENCE_FINALIZER = EXTENSION_ROOT / "scripts" / "finalize-work-evidence.py"
-
-
-def _load_intake_router():
-    spec = importlib.util.spec_from_file_location("ai_team_intake_router", INTAKE_ROUTER)
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+WORK_ITEM_PATHS = EXTENSION_ROOT / "scripts" / "work_item_paths.py"
 
 
 def _load_memory_adapter():
@@ -69,197 +52,18 @@ def _staged_card(tmp_path: Path, name: str, content: str) -> Path:
     return source
 
 
-def _collect_step_ids(steps: list) -> list[str]:
-    """Return step ids from a workflow, including nested control-flow bodies."""
-    ids: list[str] = []
-    for step in steps:
-        step_id = step.get("id")
-        if step_id:
-            ids.append(step_id)
-        for key in ("then", "else", "steps"):
-            nested = step.get(key)
-            if isinstance(nested, list):
-                ids.extend(_collect_step_ids(nested))
-        for nested in step.get("cases", {}).values():
-            ids.extend(_collect_step_ids(nested))
-    return ids
+def test_feature_and_bugfix_share_one_directory_contract(tmp_path: Path):
+    module = _load_script(WORK_ITEM_PATHS, "ai_team_work_item_paths")
 
+    feature = module.resolve_work_root(tmp_path, "feature", "123")
+    bugfix = module.resolve_work_root(tmp_path, "bugfix", "456")
 
-def _find_step(steps: list, step_id: str) -> dict:
-    for step in steps:
-        if step.get("id") == step_id:
-            return step
-        for key in ("then", "else", "steps"):
-            nested = step.get(key)
-            if isinstance(nested, list):
-                try:
-                    return _find_step(nested, step_id)
-                except LookupError:
-                    pass
-        for nested in step.get("cases", {}).values():
-            try:
-                return _find_step(nested, step_id)
-            except LookupError:
-                pass
-    raise LookupError(step_id)
-
-
-def _run_ai_team_workflow_to_context_gate(
-    tmp_path: Path,
-    inputs: dict,
-    run_id: str,
-    workflow_path: Path = WORKFLOW_PATH,
-):
-    from specify_cli.workflows.base import RunStatus
-    from specify_cli.workflows.engine import WorkflowDefinition, WorkflowEngine
-
-    definition = WorkflowDefinition.from_yaml(workflow_path)
-    # These isolated workflow fixtures intentionally do not run ``specify
-    # init`` and therefore have no .specify/integration.json for the runtime
-    # ``auto`` sentinel to resolve. Pin the mocked CLI used by this helper.
-    inputs = {"integration": "codex", **inputs}
-    engine = WorkflowEngine(tmp_path)
-    mock_result = MagicMock()
-    mock_result.returncode = 0
-    mock_result.stdout = ""
-    mock_result.stderr = ""
-
-    with (
-        patch(
-            "specify_cli.workflows.steps.command.shutil.which",
-            return_value="/usr/bin/codex",
-        ),
-        patch(
-            "specify_cli.integrations.base.shutil.which",
-            return_value="/usr/bin/codex",
-        ),
-        patch("subprocess.run", return_value=mock_result),
-    ):
-        state = engine.execute(definition, inputs, run_id=run_id)
-
-    assert state.status == RunStatus.PAUSED
-    assert state.step_results["context-open"]["status"] == "completed"
-    assert state.step_results["permission-analysis"]["status"] == "completed"
-    assert state.step_results["review-context"]["status"] == "paused"
-    assert "route" not in state.step_results
-    return state
-
-
-def _run_work_item_gate(tmp_path: Path, inputs: dict, run_id: str = "test-run"):
-    run_dir = tmp_path / ".specify" / "workflows" / "runs" / run_id
-    run_dir.mkdir(parents=True)
-    (run_dir / "inputs.json").write_text(
-        json.dumps({"inputs": inputs}), encoding="utf-8"
-    )
-    return subprocess.run(
-        [
-            sys.executable,
-            str(WORK_ITEM_GATE),
-            "--run-id",
-            run_id,
-            "--project-root",
-            str(tmp_path),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-
-def _write_permission_fixture(tmp_path: Path, status: str = "pending-review") -> None:
-    run_dir = tmp_path / ".specify" / "workflows" / "runs" / "run-1"
-    run_dir.mkdir(parents=True)
-    (run_dir / "state.json").write_text(
-        json.dumps(
-            {
-                "step_results": {
-                    "review-permissions": {
-                        "output": {
-                            "choice": "approve",
-                            "decided_by": "maintainer@example.com",
-                            "decided_at": "2026-07-14T00:00:00Z",
-                        }
-                    }
-                }
-            }
-        ),
-        encoding="utf-8",
-    )
-    work_root = tmp_path / ".specify" / "ai-team" / "work" / "001-test"
-    work_root.mkdir(parents=True)
-    (work_root / "permission-envelope.yml").write_text(
-        yaml.safe_dump(
-            {
-                "work_slug": "001-test",
-                "mode": "implementation",
-                "status": status,
-                "allow": {"write_paths": ["PROJECT_STATUS.md"]},
-                "requested_implementation_access": {
-                    "intended_write_paths": ["PROJECT_STATUS.md"]
-                },
-            }
-        ),
-        encoding="utf-8",
-    )
-    (work_root / "work-context.yml").write_text(
-        yaml.safe_dump({"work_slug": "001-test", "artifacts": {"tasks": "missing"}}),
-        encoding="utf-8",
-    )
-    tasks = tmp_path / "specs" / "001-test" / "tasks.md"
-    tasks.parent.mkdir(parents=True)
-    tasks.write_text("# Tasks\n", encoding="utf-8")
-
-
-def test_implementation_permission_gate_approves_consistent_envelope(tmp_path: Path):
-    _write_permission_fixture(tmp_path)
-    module = _load_script(
-        IMPLEMENTATION_PERMISSION_GATE, "ai_team_implementation_permission"
-    )
-
-    result = module.enforce(tmp_path, "run-1", "001-test")
-
-    assert result["status"] == "approved"
-    envelope = yaml.safe_load(
-        (tmp_path / ".specify/ai-team/work/001-test/permission-envelope.yml").read_text()
-    )
-    context = yaml.safe_load(
-        (tmp_path / ".specify/ai-team/work/001-test/work-context.yml").read_text()
-    )
-    assert envelope["status"] == "approved"
-    assert envelope["approved_by"] == "maintainer@example.com"
-    assert context["phase"] == "implementing"
-    assert context["artifacts"]["tasks"] == "specs/001-test/tasks.md"
-
-
-def test_implementation_permission_gate_refuses_blocked_envelope(tmp_path: Path):
-    _write_permission_fixture(tmp_path, status="blocked")
-    module = _load_script(
-        IMPLEMENTATION_PERMISSION_GATE, "ai_team_blocked_implementation_permission"
-    )
-
-    with pytest.raises(ValueError, match="status is blocked"):
-        module.enforce(tmp_path, "run-1", "001-test")
-
-
-def test_work_evidence_finalizer_requires_and_indexes_board(tmp_path: Path):
-    _write_permission_fixture(tmp_path)
-    module = _load_script(WORK_EVIDENCE_FINALIZER, "ai_team_work_evidence")
-
-    with pytest.raises(ValueError, match="Evidence Board is missing"):
-        module.finalize(tmp_path, "001-test")
-
-    board = tmp_path / ".specify/ai-team/work/001-test/evidence/evidence-board.md"
-    board.parent.mkdir()
-    board.write_text("# Evidence Board\n\nAll checks passed.\n", encoding="utf-8")
-    result = module.finalize(tmp_path, "001-test")
-
-    assert result["status"] == "evidence-ready"
-    context = yaml.safe_load(
-        (tmp_path / ".specify/ai-team/work/001-test/work-context.yml").read_text()
-    )
-    assert context["phase"] == "evidence"
-    assert context["next_command"] == "speckit.ai-team.pr"
-    assert context["artifacts"]["evidence"].endswith("evidence-board.md")
+    assert feature.relative_to(tmp_path).as_posix() == ".specify/feature/123"
+    assert bugfix.relative_to(tmp_path).as_posix() == ".specify/bugfix/456"
+    assert len(feature.relative_to(tmp_path).parts) == len(bugfix.relative_to(tmp_path).parts)
+    assert module.resolve_work_root(tmp_path, "new-project", "REQ-7") == tmp_path / ".specify/feature/REQ-7"
+    with pytest.raises(ValueError, match="safe stable identifier"):
+        module.resolve_work_root(tmp_path, "feature", "../escape")
 
 
 def test_ai_team_extension_manifest_and_catalog_are_in_sync():
@@ -270,13 +74,13 @@ def test_ai_team_extension_manifest_and_catalog_are_in_sync():
         (REPO_ROOT / "extensions" / "catalog.json").read_text(encoding="utf-8")
     )
 
-    assert manifest["extension"]["id"] == "ai-team"
-    assert "ai-team" in catalog["extensions"]
+    assert manifest["extension"]["id"] == "team"
+    assert "team" in catalog["extensions"]
     assert (
-        catalog["extensions"]["ai-team"]["version"]
+        catalog["extensions"]["team"]["version"]
         == manifest["extension"]["version"]
     )
-    assert catalog["extensions"]["ai-team"]["bundled"] is True
+    assert catalog["extensions"]["team"]["bundled"] is True
 
 
 def test_ai_team_extension_command_files_exist():
@@ -284,104 +88,19 @@ def test_ai_team_extension_command_files_exist():
         (EXTENSION_ROOT / "extension.yml").read_text(encoding="utf-8")
     )
 
-    assert set(manifest["requires"]["commands"]) == {
-        "speckit.specify",
-        "speckit.plan",
-        "speckit.tasks",
-        "speckit.analyze",
-        "speckit.implement",
-        "speckit.converge",
-    }
-    assert "before_checklist" not in manifest["hooks"]
-    assert "before_tasks" not in manifest["hooks"]
-    assert "before_analyze" not in manifest["hooks"]
-    assert "before_implement" not in manifest["hooks"]
-    assert "before_converge" not in manifest["hooks"]
-    assert manifest["hooks"]["before_plan"]["command"] == "speckit.ai-team.handoff-spec-sync"
-    assert "after_checklist" not in manifest["hooks"]
-    assert "after_analyze" not in manifest["hooks"]
-    assert "after_implement" not in manifest["hooks"]
+    assert "commands" not in manifest["requires"]
+    assert "hooks" not in manifest
 
     command_names = {command["name"] for command in manifest["provides"]["commands"]}
     assert command_names == {
-        "speckit.ai-team.workspace",
-        "speckit.ai-team.start",
-        "speckit.ai-team.intake",
-        "speckit.ai-team.context",
-        "speckit.ai-team.permissions",
-        "speckit.ai-team.requirement",
-        "speckit.ai-team.codegraph",
-        "speckit.ai-team.impact",
-        "speckit.ai-team.plan-check",
-        "speckit.ai-team.handoff",
-        "speckit.ai-team.handoff-spec-sync",
-        "speckit.ai-team.feature-review",
-        "speckit.ai-team.pr",
-        "speckit.ai-team.review",
-        "speckit.ai-team.retrospect",
-        "speckit.ai-team.memory-consolidate",
-        "speckit.ai-team.release-archive",
-        "speckit.ai-team.support",
+        "speckit.team.specify",
+        "speckit.team.plan-and-task",
     }
 
     for command in manifest["provides"]["commands"]:
         command_file = EXTENSION_ROOT / command["file"]
         assert command_file.exists(), command["file"]
         assert command_file.read_text(encoding="utf-8").startswith("---\n")
-
-
-def test_ai_team_start_is_a_thin_plain_language_router():
-    text = (
-        EXTENSION_ROOT / "commands" / "speckit.ai-team.start.md"
-    ).read_text(encoding="utf-8")
-
-    assert "thin router" in text
-    assert "does not" in text
-    assert "No work item -> `ai-team-intake`" in text
-    assert "ai-team-intake" in text
-    assert "do not decide whether this is a bug or feature here" in text
-    assert "Work Context Package:" not in text
-    assert "likely modules:" not in text
-
-
-def test_ai_team_intake_command_keeps_pre_work_item_analysis_read_only():
-    text = (
-        EXTENSION_ROOT / "commands" / "speckit.ai-team.intake.md"
-    ).read_text(encoding="utf-8")
-
-    assert ".specify/ai-team/intake/<intake_slug>/" in text
-    assert "does not approve features" in text
-    assert "issue-draft.md" in text
-    assert "AI recommends" in text
-    assert "Technical Committee" in text
-    assert "It does not approve features" in text
-    assert "AI Team Intake Result:" in text
-    assert "intake_router.py" not in text
-
-
-def test_ai_team_command_responsibilities_are_non_overlapping():
-    readme = (EXTENSION_ROOT / "README.md").read_text(encoding="utf-8")
-    requirement = (
-        EXTENSION_ROOT / "commands" / "speckit.ai-team.requirement.md"
-    ).read_text(encoding="utf-8")
-    feature_review = (
-        EXTENSION_ROOT / "commands" / "speckit.ai-team.feature-review.md"
-    ).read_text(encoding="utf-8")
-    codegraph = (
-        EXTENSION_ROOT / "commands" / "speckit.ai-team.codegraph.md"
-    ).read_text(encoding="utf-8")
-    impact = (
-        EXTENSION_ROOT / "commands" / "speckit.ai-team.impact.md"
-    ).read_text(encoding="utf-8")
-
-    assert "Each command owns one phase" in readme
-    assert "classification without a work item" in readme
-    assert "Feature acceptance" in readme
-    assert "it does not\naccept the Feature" in requirement
-    assert "does not author the\nrequirement" in feature_review
-    assert ".specify/ai-team/intake/<intake_slug>/codegraph/" in codegraph
-    assert "does not generate the\nnormalized graph" in impact
-
 
 def test_ai_team_config_template_defines_repository_and_role_contracts():
     config = yaml.safe_load(
@@ -399,9 +118,11 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
         "cursor-agent",
         "trae",
     }
-    assert config["work_context"]["root"] == ".specify/ai-team/work"
-    assert config["work_context"]["context_pack_file"] == "context-pack.md"
-    assert config["work_context"]["work_context_file"] == "work-context.yml"
+    assert config["work_artifacts"]["root"] == ".specify"
+    assert config["work_artifacts"]["categories"] == ["feature", "bugfix"]
+    assert config["work_artifacts"]["path_template"] == ".specify/{category}/{work_id}"
+    assert config["work_artifacts"]["plan_and_task_file"] == "plan-and-task.md"
+    assert config["work_artifacts"]["plan_and_task_check_file"] == "plan-and-task-check.md"
     assert config["memory"]["service"]["default_backend"] == "file"
     assert config["memory"]["service"]["supported_backends"] == ["file", "mem0"]
     assert config["memory"]["service"]["mem0"]["optional_package"] == "mem0ai"
@@ -435,9 +156,9 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
         "archived-work.yml",
         "privacy-review.md",
     }
-    assert "change_package_file" not in config["work_context"]
+    assert "change_package_file" not in config["work_artifacts"]
     assert (
-        config["work_context"]["permission_envelope_file"]
+        config["work_artifacts"]["permission_envelope_file"]
         == "permission-envelope.yml"
     )
     assert config["permissions"]["default_enforcement_mode"] == "policy-only"
@@ -477,14 +198,14 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
         == "internal-only"
     )
     assert config["repositories"]["enhancement_internal"]["customer_visible"] is False
-    assert config["issue_workflow"]["type_labels"][
+    assert config["issue_lifecycle"]["type_labels"][
         "enhancement_internal_allowed"
     ] == ["type/feature"]
-    assert set(config["issue_workflow"]["type_labels"]["coding_allowed"]) == {
+    assert set(config["issue_lifecycle"]["type_labels"]["coding_allowed"]) == {
         "type/feature",
         "type/bug",
     }
-    assert set(config["issue_workflow"]["state_labels"]) == {
+    assert set(config["issue_lifecycle"]["state_labels"]) == {
         "state/draft",
         "state/accepted",
         "state/working",
@@ -493,7 +214,7 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
         "state/closed",
         "state/superseded",
     }
-    assert config["issue_workflow"]["enhancement_internal_allows_bugfix"] is False
+    assert config["issue_lifecycle"]["enhancement_internal_allows_bugfix"] is False
     assert (
         config["repositories"]["coding"]["enhancement_handoff_submodule_path"] == ""
     )
@@ -505,7 +226,7 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
         is True
     )
     assert config["privacy"]["private_handoff_override_file"] == "spec.override.md"
-    assert set(config["roles"]) == {"specify", "plan", "tasks_and_implement"}
+    assert set(config["roles"]) == {"specify", "plan_and_task"}
     assert all(role["context_isolation"] is True for role in config["roles"].values())
 
 
@@ -615,81 +336,6 @@ def test_memory_adapter_rejects_private_mem0_sync(tmp_path, monkeypatch):
         )
 
 
-def test_work_item_gate_accepts_same_repository_issue_group(tmp_path):
-    result = _run_work_item_gate(
-        tmp_path,
-        {
-            "work_slug": "bug-project-123",
-            "work_type": "bug",
-            "coding_issue_url": "https://example.com/org/project/issues/123",
-            "also_resolves_issue_urls": (
-                "https://example.com/org/project/issues/456,"
-                "https://example.com/org/project/issues/789"
-            ),
-        },
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert json.loads(result.stdout)["also_resolves_count"] == 2
-
-
-@pytest.mark.parametrize(
-    ("inputs", "error"),
-    [
-        (
-            {"work_slug": "work-1", "work_type": "auto"},
-            "must be resolved after intake classification",
-        ),
-        ({"work_slug": "bug-1", "work_type": "bug"}, "primary coding_issue_url"),
-        (
-            {
-                "work_slug": "../unsafe",
-                "work_type": "bug",
-                "coding_issue_url": "https://example.com/org/project/issues/1",
-            },
-            "safe lowercase directory name",
-        ),
-        (
-            {
-                "work_slug": "feature-1",
-                "work_type": "feature",
-                "coding_issue_url": "https://example.com/org/project/issues/1",
-                "handoff_requirement_url": "https://internal.example.com/req/1",
-            },
-            "exactly one primary anchor",
-        ),
-        (
-            {
-                "work_slug": "bug-1",
-                "work_type": "bug",
-                "coding_issue_url": "https://example.com/org/project/issues/1",
-                "also_resolves_issue_urls": "https://example.com/org/other/issues/2",
-            },
-            "primary coding repository",
-        ),
-        (
-            {
-                "work_slug": "new-project-2",
-                "work_type": "new-project",
-                "planning_mode": "compact",
-                "handoff_requirement_url": "https://internal.example.com/req/2",
-            },
-            "requires standard planning mode",
-        ),
-        (
-            {"work_slug": "new-project", "work_type": "new-project"},
-            "requires a coding issue/project charter",
-        ),
-        ({"work_type": "feature"}, "stable work_slug"),
-    ],
-)
-def test_work_item_gate_rejects_inconsistent_anchors(tmp_path, inputs, error):
-    result = _run_work_item_gate(tmp_path, inputs)
-
-    assert result.returncode == 2
-    assert error in result.stderr
-
-
 def test_ai_team_support_model_document_exists():
     support_doc = EXTENSION_ROOT / "docs" / "skill-knowledge-memory.md"
 
@@ -705,7 +351,6 @@ def test_ai_team_support_model_document_exists():
     assert "department memory" in text
     assert "enterprise memory" in text
     assert "mem0-style memory" in text
-    assert "speckit.ai-team.memory-consolidate" in text
     assert "release-summary.md" in text
     assert "bugfix-lessons.md" in text
     assert "Third-party sources to review" in text
@@ -722,8 +367,6 @@ def test_ai_team_memory_tiers_document_exists():
     assert "department memory" in text
     assert "enterprise memory" in text
     assert "mem0-style memory" in text
-    assert "speckit.ai-team.memory-consolidate" in text
-    assert "speckit.ai-team.release-archive" in text
 
 
 def test_ai_team_release_archive_document_exists():
@@ -734,8 +377,6 @@ def test_ai_team_release_archive_document_exists():
     assert "Release Archive and Knowledge Consolidation" in text
     assert "bugfix-lessons.md" in text
     assert "migration-playbook.md" in text
-    assert "speckit.ai-team.memory-consolidate" in text
-    assert "speckit.ai-team.release-archive" in text
     assert "not a mandatory pre-release gate" in text
     assert "public-safe" in text
 
@@ -753,8 +394,8 @@ def test_ai_team_repository_boundary_document_exists():
     assert "type/bug" in text
 
 
-def test_ai_team_issue_workflow_document_exists():
-    issue_doc = EXTENSION_ROOT / "docs" / "issue-workflow.md"
+def test_ai_team_issue_lifecycle_document_exists():
+    issue_doc = EXTENSION_ROOT / "docs" / "issue-lifecycle.md"
 
     assert issue_doc.exists()
     text = issue_doc.read_text(encoding="utf-8")
@@ -772,26 +413,21 @@ def test_ai_team_work_context_document_exists():
     assert context_doc.exists()
     text = context_doc.read_text(encoding="utf-8")
     assert "Work Context Package" in text
-    assert ".specify/ai-team/work/<work_slug>/" in text
+    assert ".specify/<feature|bugfix>/<work_id>/" in text
     assert "work-context.yml" in text
     assert "change-package.yml" not in text
     assert "permission-envelope.yml" in text
-    assert ".specify/workflows/runs/<run-id>/state.json" in text
-    assert "specify workflow resume <run-id>" in text
-    assert "handoff requirement URL" in text
-    assert "coding issue URL" in text
-    assert "`archived`" in text
-    assert "speckit.ai-team.memory-consolidate" in text
-    assert "speckit.ai-team.release-archive" in text
-    assert "after a stable Issue, charter, or handoff exists" in text
-    assert "intake-<intake_slug>" not in text
+    assert ".specify/workflows/runs/<run-id>/state.json" not in text
+    assert "plan-and-task.md" in text
+    assert "plan-and-task-check.md" in text
+    assert "second index" in text
 
 
 def test_ai_team_reuses_native_sdd_artifacts_without_change_manifest():
     assert not (EXTENSION_ROOT / "docs" / "change-package.md").exists()
     readme = (EXTENSION_ROOT / "README.md").read_text(encoding="utf-8")
-    assert "`spec.md` owns behavior" in readme
-    assert "workflow state owns gate decisions" in readme
+    assert "`spec.md`" in readme
+    assert "human decision" in readme.lower()
     assert "change-package.yml" not in readme
 
 
@@ -807,15 +443,15 @@ def test_ai_team_permission_envelope_document_exists():
     assert "do not sandbox shell commands" in text
 
 
-def test_ai_team_compact_planning_document_matches_bundled_runtime():
+def test_ai_team_compact_planning_document_matches_role_skill_model():
     compact_doc = EXTENSION_ROOT / "docs" / "compact-planning.md"
 
     assert compact_doc.exists()
     text = compact_doc.read_text(encoding="utf-8")
-    assert "Status: bundled" in text
+    assert "Status: supported" in text
     assert "AI may recommend compact planning" in text
     assert "`planning_mode=compact`" in text
-    assert "one combined Plan/Tasks review" in text
+    assert "combined Plan/Tasks review" in text
     assert "Mandatory Fallback" in text
     assert "Zero-to-one projects use the Standard path" in text
 
@@ -825,16 +461,11 @@ def test_ai_team_work_field_spec_document_exists():
 
     assert field_doc.exists()
     text = field_doc.read_text(encoding="utf-8")
-    assert "work_slug" in text
-    assert "003-user-auth" in text
-    assert "bug_slug" in text
-    assert "coding_issue_url" in text
-    assert "also_resolves_issue_urls" in text
-    assert "different symptoms of the same root cause" in text
-    assert "handoff_requirement_url" in text
-    assert "published_requirement_url" in text
-    assert "issue.type_label" in text
-    assert "issue.state_label" in text
+    assert "work_id" in text
+    assert "work_type" in text
+    assert ".specify/feature/<work_id>/" in text
+    assert ".specify/bugfix/<work_id>/" in text
+    assert "one root-cause change" in text
 
 
 def test_core_templates_exclude_handoff_spec_override():
@@ -872,564 +503,31 @@ def test_ai_team_user_journeys_document_exists():
 
     assert journeys_doc.exists()
     text = journeys_doc.read_text(encoding="utf-8")
-    assert "Existing Project Bug Fix" in text
-    assert "Existing Project Public Feature" in text
-    assert "Existing Project Confidential Enterprise Feature" in text
-    assert "New Project From Zero" in text
-    assert "Resume From The Middle" in text
-    assert "speckit.ai-team.context work_slug=<work_slug> resume=true" in text
-    assert "ai-team-sdd feature path" in text
-    assert "ai-team-bugfix path" in text
-    assert "ai-team-sdd new-project path" in text
-    assert "ai-team-sdd resume path" in text
-    assert "ai-team-memory consolidate path" in text
-    assert "ai-team-release archive path" in text
-    assert "Memory Consolidation" in text
-    assert "Release Archive and Knowledge Consolidation" in text
+    assert "One-Sentence Feature" in text
+    assert "Existing Public Feature Issue" in text
+    assert "Confidential Enterprise Feature" in text
+    assert "Bugfix" in text
+    assert "New Project" in text
+    assert "Compact Planning" in text
+    assert "Resume" in text
+    for command in (
+        "speckit.team.specify",
+        "speckit.team.plan-and-task",
+    ):
+        assert command in text
 
 
-def test_ai_team_workflow_is_bundled_and_uses_init_step():
+def test_ai_team_role_skills_do_not_register_workflows():
     catalog = json.loads(
         (REPO_ROOT / "workflows" / "catalog.json").read_text(encoding="utf-8")
     )
     pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-
-    assert WORKFLOW_PATH.exists()
-    data = yaml.safe_load(WORKFLOW_PATH.read_text(encoding="utf-8"))
-    assert data["workflow"]["id"] == "ai-team-sdd"
-    assert "ai-team-sdd" in catalog["workflows"]
-    assert "ai-team-intake" in catalog["workflows"]
-    assert "ai-team-bugfix" in catalog["workflows"]
-    assert "workflows/ai-team-sdd" in pyproject
-    assert "workflows/ai-team-intake" in pyproject
-    assert "workflows/ai-team-bugfix" in pyproject
-    steps = data["steps"]
-    assert steps[0]["type"] == "if"
-    assert steps[0]["then"][0]["type"] == "init"
-    assert "work_slug" in data["inputs"]
-    assert data["inputs"]["planning_mode"]["default"] == "standard"
-    assert data["inputs"]["planning_mode"]["enum"] == ["standard", "compact"]
-    assert "also_resolves_issue_urls" in data["inputs"]
-    assert "handoff_requirement_url" in data["inputs"]
-    assert "published_requirement_url" in data["inputs"]
-    assert "resume_from" in data["inputs"]
-    assert "bug_slug" not in data["inputs"]
-    assert "bug" not in data["inputs"]["work_type"]["enum"]
-    assert "new-project" in data["inputs"]["work_type"]["enum"]
-    step_ids = _collect_step_ids(steps)
-    assert "route" not in step_ids
-    assert "review-context" in step_ids
-    assert "feature-acceptance-if-needed" in step_ids
-    assert "review-feature-acceptance" in step_ids
-    assert "review-template-maintenance" in step_ids
-    assert "validate-work-item" in step_ids
-    assert "context-open" in step_ids
-    assert "codegraph" in step_ids
-    assert "permission-analysis" in step_ids
-    assert "specify" in step_ids
-    assert "review-spec" in step_ids
-    assert "plan-cycle" in step_ids
-    assert "plan" in step_ids
-    assert "plan-check" in step_ids
-    assert "checklist" not in step_ids
-    assert "review-plan" in step_ids
-    assert "task-cycle" in step_ids
-    assert "tasks" in step_ids
-    assert "analyze" in step_ids
-    assert "task-gate" not in step_ids
-    assert "review-tasks" in step_ids
-    assert "permission-implementation" in step_ids
-    assert "review-permissions" in step_ids
-    assert "enforce-implementation-permission" in step_ids
-    assert "implement" in step_ids
-    assert "converge" in step_ids
-    assert "finalize-work-evidence" in step_ids
-    assert "checks" not in step_ids
-    assert "evidence" not in step_ids
-
-    planning_path = next(step for step in steps if step["id"] == "planning-path")
-    assert planning_path["type"] == "switch"
-    assert planning_path["expression"] == "{{ inputs.planning_mode }}"
-    assert set(planning_path["cases"]) == {"standard", "compact"}
-
-    plan_cycle = _find_step(planning_path["cases"]["standard"], "plan-cycle")
-    assert plan_cycle["type"] == "do-while"
-    assert plan_cycle["condition"] == "{{ steps.review-plan.output.choice == 'revise' }}"
-    plan_cycle_ids = [s["id"] for s in plan_cycle["steps"]]
-    assert plan_cycle_ids == ["plan", "plan-check", "review-plan"]
-    plan_if = next(s for s in plan_cycle["steps"] if s["id"] == "plan")
-    assert plan_if["type"] == "if"
-    assert plan_if["condition"] == "{{ steps.review-plan.output.choice == 'revise' }}"
-    plan_revise = plan_if["then"][0]
-    plan_initial = plan_if["else"][0]
-    assert plan_revise["id"] == "plan-revise"
-    assert plan_initial["id"] == "plan-initial"
-    assert "Revise plan.md only" in plan_revise["input"]["args"]
-    assert "inputs.request" not in plan_revise["input"]["args"]
-    assert "{{ inputs.request }}" in plan_initial["input"]["args"]
-
-    task_cycle = _find_step(planning_path["cases"]["standard"], "task-cycle")
-    assert task_cycle["type"] == "do-while"
-    assert task_cycle["condition"] == "{{ steps.review-tasks.output.choice == 'revise' }}"
-    task_cycle_ids = [s["id"] for s in task_cycle["steps"]]
-    assert task_cycle_ids == ["tasks", "analyze", "review-tasks"]
-    tasks_if = next(s for s in task_cycle["steps"] if s["id"] == "tasks")
-    assert tasks_if["type"] == "if"
-    tasks_revise = tasks_if["then"][0]
-    tasks_initial = tasks_if["else"][0]
-    assert tasks_revise["id"] == "tasks-revise"
-    assert tasks_initial["id"] == "tasks-initial"
-    assert "Revise tasks.md only" in tasks_revise["input"]["args"]
-    assert "{{ inputs.request }}" in tasks_initial["input"]["args"]
-    compact_steps = planning_path["cases"]["compact"]
-    assert [step["id"] for step in compact_steps] == [
-        "review-compact-eligibility",
-        "compact-cycle",
-    ]
-    compact_cycle = _find_step(compact_steps, "compact-cycle")
-    assert [step["id"] for step in compact_cycle["steps"]] == [
-        "compact-plan",
-        "compact-plan-check",
-        "handoff-plan-to-tasks",
-        "compact-tasks",
-        "compact-analyze",
-        "review-compact-plan-tasks",
-    ]
-    assert "planning_mode=compact" in compact_cycle["steps"][0]["input"]["args"]
-    assert compact_cycle["steps"][2]["command"] == "speckit.ai-team.handoff"
-    assert compact_cycle["steps"][-1]["type"] == "gate"
-
-    context_step = next(step for step in steps if step["id"] == "context-open")
-    assert context_step["command"] == "speckit.ai-team.context"
-    permission_analysis_step = next(
-        step for step in steps if step["id"] == "permission-analysis"
-    )
-    assert permission_analysis_step["command"] == "speckit.ai-team.permissions"
-    assert "mode=analysis" in permission_analysis_step["input"]["args"]
-    codegraph_step = next(step for step in steps if step["id"] == "codegraph")
-    assert codegraph_step["command"] == "speckit.ai-team.codegraph"
-    plan_check_step = next(
-        step
-        for step in plan_cycle["steps"]
-        if step["id"] == "plan-check"
-    )
-    assert plan_check_step["command"] == "speckit.ai-team.plan-check"
-    analyze_step = next(
-        step for step in task_cycle["steps"] if step["id"] == "analyze"
-    )
-    assert analyze_step["command"] == "speckit.analyze"
-    permission_implementation_step = next(
-        step for step in steps if step["id"] == "permission-implementation"
-    )
-    assert (
-        permission_implementation_step["command"]
-        == "speckit.ai-team.permissions"
-    )
-    assert "mode=implementation" in permission_implementation_step["input"]["args"]
-    assert step_ids.index("permission-analysis") < step_ids.index("codegraph")
-    assert step_ids.index("context-open") < step_ids.index("validate-work-item")
-    assert step_ids.index("impact") < step_ids.index("validate-work-item")
-    assert step_ids.index("validate-work-item") < step_ids.index("specify")
-    assert step_ids.index("review-feature-acceptance") < step_ids.index("specify")
-    assert (
-        _find_step(steps, "review-feature-acceptance")["authority"]
-        == "technical-committee"
-    )
-    assert _find_step(steps, "review-template-maintenance")["authority"] == "maintainer"
-    assert step_ids.index("permission-implementation") < step_ids.index("implement")
-    assert step_ids.index("review-permissions") < step_ids.index("implement")
-    assert step_ids.index("enforce-implementation-permission") < step_ids.index(
-        "implement"
-    )
-    assert step_ids.index("converge") < step_ids.index("finalize-work-evidence")
-    converge_step = next(step for step in steps if step["id"] == "converge")
-    assert converge_step["command"] == "speckit.converge"
-    specify_step = next(step for step in steps if step["id"] == "specify")
-    assert (
-        "SPECIFY_FEATURE_DIRECTORY=specs/{{ inputs.work_slug }}"
-        in specify_step["input"]["args"]
+    bundle = yaml.safe_load(
+        (REPO_ROOT / "bundles" / "ai-team" / "bundle.yml").read_text(encoding="utf-8")
     )
 
-    assert BUGFIX_WORKFLOW_PATH.exists()
-    bugfix = yaml.safe_load(BUGFIX_WORKFLOW_PATH.read_text(encoding="utf-8"))
-    assert bugfix["workflow"]["id"] == "ai-team-bugfix"
-    assert "work_slug" in bugfix["inputs"]
-    assert "bug_slug" not in bugfix["inputs"]
-    assert "coding_issue_url" in bugfix["inputs"]
-    assert bugfix["inputs"]["coding_issue_url"]["required"] is True
-    assert "also_resolves_issue_urls" in bugfix["inputs"]
-    bugfix_step_ids = [step["id"] for step in bugfix["steps"]]
-    assert "review-context" in bugfix_step_ids
-    assert "validate-work-item" in bugfix_step_ids
-    assert "permission-analysis" in bugfix_step_ids
-    assert "route" not in bugfix_step_ids
-    assert "review-impact" in bugfix_step_ids
-    assert "bug-assess" in bugfix_step_ids
-    assert "review-assessment" in bugfix_step_ids
-    assert "permission-implementation" in bugfix_step_ids
-    assert "review-permissions" in bugfix_step_ids
-    assert "bug-fix" in bugfix_step_ids
-    assert "review-fix" in bugfix_step_ids
-    assert "bug-test" in bugfix_step_ids
-    assert "checks" not in bugfix_step_ids
-    assert "evidence" not in bugfix_step_ids
-    assert bugfix_step_ids.index("permission-analysis") < bugfix_step_ids.index(
-        "codegraph"
-    )
-    assert bugfix_step_ids.index("validate-work-item") < bugfix_step_ids.index(
-        "context-open"
-    )
-    assert bugfix_step_ids.index(
-        "permission-implementation"
-    ) < bugfix_step_ids.index("bug-fix")
-    assert bugfix_step_ids.index("review-permissions") < bugfix_step_ids.index(
-        "bug-fix"
-    )
-
-
-def test_ai_team_intake_workflow_is_read_only_until_issue_approval():
-    from specify_cli.workflows.engine import WorkflowDefinition
-
-    assert INTAKE_WORKFLOW_PATH.exists()
-    WorkflowDefinition.from_yaml(INTAKE_WORKFLOW_PATH)
-    data = yaml.safe_load(INTAKE_WORKFLOW_PATH.read_text(encoding="utf-8"))
-    catalog = json.loads(
-        (REPO_ROOT / "workflows" / "catalog.json").read_text(encoding="utf-8")
-    )
-
-    assert data["workflow"]["id"] == "ai-team-intake"
-    assert "ai-team-intake" in catalog["workflows"]
-    assert data["inputs"]["work_type"]["enum"] == [
-        "auto",
-        "bug",
-        "feature",
-        "new-project",
-    ]
-    assert data["inputs"]["planning_preference"]["enum"] == [
-        "auto",
-        "standard",
-        "compact",
-    ]
-
-    steps = data["steps"]
-    step_ids = [step["id"] for step in steps]
-    assert step_ids == [
-        "workspace",
-        "intake-boundary-cycle",
-        "codegraph",
-        "impact",
-        "issue-draft-cycle",
-        "publish-issue",
-        "launch-formal-workflow",
-    ]
-    nested_ids = _collect_step_ids(steps)
-    assert "review-intake-boundary" in nested_ids
-    assert "review-issue-draft" in nested_ids
-    boundary_cycle = _find_step(steps, "intake-boundary-cycle")
-    draft_cycle = _find_step(steps, "issue-draft-cycle")
-    assert boundary_cycle["condition"] == "{{ steps.review-intake-boundary.output.choice == 'revise' }}"
-    assert draft_cycle["condition"] == "{{ steps.review-issue-draft.output.choice == 'revise' }}"
-    assert _find_step(steps, "publish-issue")["type"] == "shell"
-    assert _find_step(steps, "launch-formal-workflow")["type"] == "shell"
-    assert "intake_router.py publish" in _find_step(steps, "publish-issue")["run"]
-    assert "intake_router.py route" in _find_step(steps, "launch-formal-workflow")["run"]
-    permission_step = _find_step(steps, "permission-analysis")
-    assert "intake_mode=true" in permission_step["input"]["args"]
-    assert "work_slug=intake-" not in permission_step["input"]["args"]
-
-
-def _write_approved_intake(tmp_path: Path, *, work_type: str, accepted: bool = True):
-    run_id = "intake-run"
-    slug = "csv-export"
-    run_dir = tmp_path / ".specify" / "workflows" / "runs" / run_id
-    run_dir.mkdir(parents=True)
-    (run_dir / "inputs.json").write_text(
-        json.dumps({"inputs": {"request": "Add CSV export"}}), encoding="utf-8"
-    )
-    (run_dir / "state.json").write_text(
-        json.dumps(
-            {
-                "step_results": {
-                    "review-intake-boundary": {"output": {"choice": "approve"}},
-                    "review-issue-draft": {"output": {"choice": "approve"}},
-                }
-            }
-        ),
-        encoding="utf-8",
-    )
-    intake_dir = tmp_path / ".specify" / "ai-team" / "intake" / slug
-    intake_dir.mkdir(parents=True)
-    intake = {
-        "work_type": work_type,
-        "privacy_class": "public-safe",
-        "planning_mode": "compact" if work_type == "feature" else "standard",
-        "feature_decision_evidence": "accepted" if accepted else "unreviewed",
-        "feature_approver": "tc-member" if accepted and work_type != "bug" else None,
-        "feature_approver_role": "technical-committee" if accepted and work_type != "bug" else None,
-    }
-    (intake_dir / "intake.yml").write_text(
-        yaml.safe_dump(intake, sort_keys=False), encoding="utf-8"
-    )
-    (intake_dir / "issue-draft.md").write_text(
-        f"""---
-title: Add CSV export
-type_label: {"type/bug" if work_type == "bug" else "type/feature"}
-target_repository: example/project
----
-
-## Requested behavior
-
-Add CSV export with the visible columns.
-""",
-        encoding="utf-8",
-    )
-    return run_id, slug
-
-
-def test_intake_router_publishes_and_launches_accepted_feature(tmp_path):
-    router = _load_intake_router()
-    run_id, slug = _write_approved_intake(tmp_path, work_type="feature")
-    publish_runner = MagicMock(
-        return_value=subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="https://github.com/example/project/issues/42\n", stderr=""
-        )
-    )
-
-    published = router.publish_issue(
-        project_root=tmp_path,
-        run_id=run_id,
-        intake_slug=slug,
-        runner=publish_runner,
-    )
-    route_runner = MagicMock(
-        return_value=subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="Workflow paused at review-context", stderr=""
-        )
-    )
-    routed = router.route_formal_workflow(
-        project_root=tmp_path,
-        run_id=run_id,
-        intake_slug=slug,
-        runner=route_runner,
-    )
-
-    assert published["route_status"] == "ready"
-    assert routed["route_status"] == "launched"
-    command = route_runner.call_args.args[0]
-    assert command[:4] == ["specify", "workflow", "run", "ai-team-sdd"]
-    assert "work_slug=csv-export" in command
-    assert "work_type=feature" in command
-    assert "planning_mode=compact" in command
-    assert "coding_issue_url=https://github.com/example/project/issues/42" in command
-
-
-def test_intake_router_draft_feature_stops_after_issue_creation(tmp_path):
-    router = _load_intake_router()
-    run_id, slug = _write_approved_intake(
-        tmp_path, work_type="feature", accepted=False
-    )
-    runner = MagicMock(
-        return_value=subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="https://github.com/example/project/issues/43\n", stderr=""
-        )
-    )
-
-    router.publish_issue(
-        project_root=tmp_path,
-        run_id=run_id,
-        intake_slug=slug,
-        runner=runner,
-    )
-    route_runner = MagicMock()
-    result = router.route_formal_workflow(
-        project_root=tmp_path,
-        run_id=run_id,
-        intake_slug=slug,
-        runner=route_runner,
-    )
-
-    assert result["route_status"] == "awaiting-feature-acceptance"
-    route_runner.assert_not_called()
-
-
-def test_intake_router_launches_new_project_in_standard_mode(tmp_path):
-    router = _load_intake_router()
-    run_id, slug = _write_approved_intake(tmp_path, work_type="new-project")
-    publish_runner = MagicMock(
-        return_value=subprocess.CompletedProcess(
-            args=[],
-            returncode=0,
-            stdout="https://github.com/example/project/issues/44\n",
-            stderr="",
-        )
-    )
-    router.publish_issue(
-        project_root=tmp_path,
-        run_id=run_id,
-        intake_slug=slug,
-        runner=publish_runner,
-    )
-    route_runner = MagicMock(
-        return_value=subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="Workflow paused", stderr=""
-        )
-    )
-
-    router.route_formal_workflow(
-        project_root=tmp_path,
-        run_id=run_id,
-        intake_slug=slug,
-        runner=route_runner,
-    )
-
-    command = route_runner.call_args.args[0]
-    assert "work_slug=csv-export" in command
-    assert "work_type=new-project" in command
-    assert "planning_mode=standard" in command
-
-
-def test_intake_router_refuses_unapproved_draft(tmp_path):
-    router = _load_intake_router()
-    run_id, slug = _write_approved_intake(tmp_path, work_type="bug")
-    state_path = tmp_path / ".specify" / "workflows" / "runs" / run_id / "state.json"
-    state = json.loads(state_path.read_text(encoding="utf-8"))
-    state["step_results"]["review-issue-draft"]["output"]["choice"] = "revise"
-    state_path.write_text(json.dumps(state), encoding="utf-8")
-
-    with pytest.raises(router.IntakeRouteError, match="not approved"):
-        router.publish_issue(
-            project_root=tmp_path,
-            run_id=run_id,
-            intake_slug=slug,
-            runner=MagicMock(),
-        )
-
-
-def test_ai_team_bugfix_workflow_pauses_at_context_gate(tmp_path):
-    run_id = "ai-team-bugfix-bug-project-alpha-123"
-    state = _run_ai_team_workflow_to_context_gate(
-        tmp_path,
-        {
-            "request": "Fix upload timeout reported by support",
-            "work_slug": "bug-project-alpha-123",
-            "coding_issue_url": "https://example.com/org/project/issues/123",
-            "also_resolves_issue_urls": "https://example.com/org/project/issues/456",
-        },
-        run_id,
-        workflow_path=BUGFIX_WORKFLOW_PATH,
-    )
-
-    context_args = state.step_results["context-open"]["input"]["args"]
-    permission_args = state.step_results["permission-analysis"]["input"]["args"]
-
-    assert f"workflow_run_id={run_id}" in context_args
-    assert "work_type=bug" in context_args
-    assert "work_slug=bug-project-alpha-123" in context_args
-    assert "bug_slug=bug-project-alpha-123" in context_args
-    assert "coding_issue_url=https://example.com/org/project/issues/123" in context_args
-    assert "also_resolves_issue_urls=https://example.com/org/project/issues/456" in context_args
-    assert "mode=analysis" in permission_args
-    assert "work_slug=bug-project-alpha-123" in permission_args
-
-
-@pytest.mark.parametrize(
-    ("case_name", "inputs", "expected_fragments"),
-    [
-        (
-            "existing project public feature",
-            {
-                "request": "Implement public search result export",
-                "work_slug": "search-export",
-                "work_type": "feature",
-                "coding_issue_url": "https://example.com/org/project/issues/456",
-            },
-            [
-                "work_type=feature",
-                "planning_mode=standard",
-                "coding_issue_url=https://example.com/org/project/issues/456",
-                "handoff_requirement_url=",
-            ],
-        ),
-        (
-            "existing project compact feature from chat routing",
-            {
-                "request": "Use AI Team Compact mode for search export",
-                "work_slug": "search-export-compact",
-                "work_type": "feature",
-                "planning_mode": "compact",
-                "coding_issue_url": "https://example.com/org/project/issues/457",
-            },
-            [
-                "work_type=feature",
-                "planning_mode=compact",
-                "coding_issue_url=https://example.com/org/project/issues/457",
-            ],
-        ),
-        (
-            "existing project confidential feature",
-            {
-                "request": "Implement REQ-2026-015 search result export",
-                "work_slug": "req-2026-015",
-                "work_type": "feature",
-                "handoff_requirement_url": "https://example.com/enhancements/rfcs/REQ-2026-015",
-            },
-            [
-                "work_type=feature",
-                "handoff_requirement_url=https://example.com/enhancements/rfcs/REQ-2026-015",
-                "coding_issue_url=",
-            ],
-        ),
-        (
-            "new project from zero",
-            {
-                "request": "Create the initial customer notification service",
-                "work_slug": "customer-notification",
-                "work_type": "new-project",
-                "bootstrap_workspace": True,
-                "handoff_requirement_url": "https://example.com/enhancements/rfcs/REQ-2026-020",
-            },
-            [
-                "work_type=new-project",
-                "handoff_requirement_url=https://example.com/enhancements/rfcs/REQ-2026-020",
-                "resume_from=auto",
-            ],
-        ),
-        (
-            "resume from task gate",
-            {
-                "request": "Continue REQ-2026-015 after task gate approval",
-                "work_slug": "003-search-export",
-                "work_type": "feature",
-                "resume_from": "tasks-ready",
-                "handoff_requirement_url": "https://example.com/enhancements/rfcs/REQ-2026-015",
-            },
-            [
-                "work_slug=003-search-export",
-                "work_type=feature",
-                "resume_from=tasks-ready",
-                "handoff_requirement_url=https://example.com/enhancements/rfcs/REQ-2026-015",
-            ],
-        ),
-    ],
-)
-def test_ai_team_workflow_passes_journey_inputs_to_context(
-    tmp_path, case_name, inputs, expected_fragments
-):
-    run_id = "ai-team-" + case_name.replace(" ", "-")
-    state = _run_ai_team_workflow_to_context_gate(tmp_path, inputs, run_id)
-
-    context_args = state.step_results["context-open"]["input"]["args"]
-    permission_args = state.step_results["permission-analysis"]["input"]["args"]
-
-    assert f"workflow_run_id={run_id}" in context_args
-    for fragment in expected_fragments:
-        assert fragment in context_args
-    assert "mode=analysis" in permission_args
-
-    bootstrap_result = state.step_results["bootstrap-if-requested"]["output"][
-        "condition_result"
-    ]
-    assert bootstrap_result is (inputs.get("bootstrap_workspace") is True)
-    if inputs.get("bootstrap_workspace") is True:
-        assert state.step_results["bootstrap"]["status"] == "completed"
-        assert "--integration" in state.step_results["bootstrap"]["output"]["argv"]
+    assert "ai-team-sdd" not in catalog["workflows"]
+    assert "ai-team-bugfix" not in catalog["workflows"]
+    assert "workflows/ai-team-sdd" not in pyproject
+    assert "workflows/ai-team-bugfix" not in pyproject
+    assert "workflows" not in bundle["provides"]

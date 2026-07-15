@@ -1,46 +1,38 @@
-# AI Team SDD bundle
+# AI Team Bundle
 
-One-step bootstrap for enterprise AI Team Spec-Driven Development in a coding
-repository.
+The `ai-team` bundle installs an enterprise collaboration layer without
+overwriting native Spec Kit commands.
 
-## What it installs
+AI Team targets four large role skills. This bundle currently exposes the first
+two agreed skills; later role skills remain unregistered until their contracts
+and names are decided.
 
-| Kind | ID | Purpose |
-|------|-----|---------|
-| Extension | `ai-team` | Enterprise SDD commands, hooks, and work context |
-| Extension | `bug` | Bug assess/fix/test stages for bugfix workflow |
-| Extension | `agent-context` | Managed Spec Kit section in agent context files |
-| Preset | `ai-team-sdd-governance` | Work-item traceability, handoff reading, checks, evidence |
-| Workflow | `ai-team-intake` | Plain-language intake → issue → formal handoff |
-| Workflow | `ai-team-sdd` | Feature / new-project SDD cycle |
-| Workflow | `ai-team-bugfix` | Bug fix lifecycle with evidence |
+## Installed Components
 
-This bundle is **integration-agnostic** but AI Team workflows require one of:
-`codex`, `claude`, `cursor-agent`, or `trae`. Pass `--integration` on init.
+| Component | Installed item |
+|---|---|
+| Role extension | `team`, exposing exactly two `speckit.team.*` skills |
+| Bug artifacts | native `bug` extension, reused without modification |
+| Agent context | native `agent-context` extension |
 
-## Usage
+No preset overlays native `speckit.specify`, `speckit.plan`,
+`speckit.tasks`, `speckit.implement`, or `speckit.converge`.
 
-Install this distribution and initialize the project:
+## Install
 
 ```bash
-specify init . --integration cursor-agent
+specify init . --integration codex --integration-options="--skills"
+specify bundle catalog add https://raw.githubusercontent.com/EuphoriaYan/spec-kit/main/bundles/catalog.json --id ai-team --policy install-allowed
+specify bundle install ai-team
 ```
 
-Initialization reads the packaged distribution catalog and installs this bundle
-automatically. No catalog registration or separate bundle command is required.
-The catalog entry remains `verified: false` until clean-project init install
-tests pass for a packaged CLI build.
+Bundle installation immediately creates or refreshes the short AI Team pointer
+in the active tools' rule files, including `AGENTS.md`. It uses only the trusted
+initializer shipped with this Spec Kit distribution; third-party extension
+installers are not executed.
 
-### Validate the manifest
-
-Maintainers can validate changes locally:
-
-```bash
-specify bundle validate --path bundles/ai-team --offline
-```
-
-## After install
-
-1. Run `speckit.ai-team.workspace` to record repository boundaries.
-2. Optionally run `speckit.agent-context.update` when using the agent-context extension.
-3. Start work with `speckit.ai-team.start` or `specify workflow run ai-team-intake`.
+After installation, start in chat with a normal requirement or defect. The
+active AI tool starts with `speckit.team.specify`; after the required human
+acceptance, the user starts `speckit.team.plan-and-task` with the Issue or Work
+ID. Each role skill performs its own checks and stops at its human decision
+boundary; no AI Team workflow command is installed.

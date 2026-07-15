@@ -1,0 +1,37 @@
+schema_version: "1.0"
+
+extension:
+  id: team
+  name: "AI Team SDD Skills"
+  version: "0.2.0"
+  description: "Two role-isolated enterprise SDD skills for specification and architecture planning."
+  author: AI Team Template
+  repository: https://github.com/EuphoriaYan/spec-kit
+  license: MIT
+
+requires:
+  speckit_version: ">=0.12.4"
+
+provides:
+  commands:
+    - name: speckit.team.specify
+      file: commands/speckit.team.specify.md
+      description: "Business/Product role: create the primary Issue and behavior specification from plain-language demand or a reported defect."
+    - name: speckit.team.plan-and-task
+      file: commands/speckit.team.plan-and-task.md
+      description: "Architect/Module Owner role: produce Code Graph grounded Plan, LLD-capable Tasks, self-tests, and one readiness check."
+
+  config:
+    - name: ai-team-config.yml
+      template: config-template.yml
+      description: "AI Team repository roles, privacy boundaries, role isolation, and evidence settings."
+      required: false
+
+tags:
+  - ai-team
+  - enterprise
+  - sdd
+  - roles
+  - collaboration
+  - evidence
+  - code-graph

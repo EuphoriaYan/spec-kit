@@ -19,231 +19,76 @@
 
 ## AI Team Independent Distribution
 
-This repository is maintained as an independent AI Team SDD distribution based
-on Spec Kit. AI Team changes are developed and reviewed in
-`EuphoriaYan/spec-kit`; do not open upstream pull requests to `github/spec-kit`
-for this work.
+This repository is pinned to the Spec Kit `v0.12.5` base and adds an
+enterprise Team extension. Native Spec Kit commands remain available and
+unchanged; Team collaboration is implemented entirely under
+[`extensions/team/`](extensions/team/).
 
-The upstream base is locked to `github/spec-kit` release `v0.12.5`
-(`12efa87`). This was the final upstream alignment point. Do not add an
-`upstream` remote or periodically rebase/merge from `github/spec-kit` unless
-the AI Team maintainers explicitly decide to perform a new one-time baseline
-alignment.
+### Role Skills
 
-The current pinned AI Team release is **`v0.12.5+teamwork.1`**. The
-`+teamwork.1` suffix identifies the first Teamwork distribution built on that
-upstream base. Install and update from this exact tag; automatic
-`specify self check/upgrade` is not part of this pinned distribution.
-See the [release notes](docs/releases/v0.12.5-teamwork.1.md) for its capability
-and compatibility boundary.
+AI Team is designed as four large, role-isolated skills rather than one
+workflow. This iteration implements only the first two agreed skills; the other
+two remain unnamed until their responsibilities are agreed.
 
-Upstream Spec Kit documentation remains as reference until a local AI Team page
-replaces it. When commands or links disagree, prefer this repository's AI Team
-extension docs under [`extensions/ai-team/`](extensions/ai-team/).
-
-AI Team adds role-isolated SDD, repository-boundary rules for coding issues and
-internal-only enhancement traceability, durable Work Context Packages for
-resume, replaceable code graph adapters for impact analysis, and portable
-evidence gates for enterprise teams.
-
-### AI Team Working Model
-
-This distribution is designed for teams using Codex, Claude Code, Cursor Agent,
-or Trae to collaborate on enterprise software. It keeps the Spec Kit SDD phases
-but adds team controls around them:
+| Skill | Responsibility |
+|---|---|
+| `speckit.team.specify` | turn one sentence into a primary Issue and behavior Spec or Bug reproduction |
+| `speckit.team.plan-and-task` | produce Code Graph grounded Plan, LLD-capable Tasks, and self-test design |
 
 ```text
-plain-language request -> read-only intake -> reviewed work item
--> work context -> code graph impact -> specify -> review-spec gate -> plan
--> plan-check (chat report) -> review-plan gate -> tasks
--> analyze (native cross-artifact report) -> review-tasks gate
--> implement -> converge (composite checks/evidence) -> PR/review
--> optional memory consolidation or release archive
+Feature: Specify publication -> Technical Committee acceptance -> Plan-and-Task -> later role skills
+Bugfix: Specify publication -> maintainer triage -> Plan-and-Task -> later role skills
 ```
 
-**Three layers** in the feature path:
+Issue creation belongs to Specify, where User Stories, value, scope, and
+acceptance are established. Tasks are later engineering decomposition and may
+reach LLD detail. The native `speckit.taskstoissues` command is not used to
+create the primary work item.
 
-| Layer | Example | Output |
-|---|---|---|
-| Extension command | `speckit.ai-team.plan-check` | Plan Check Report in chat; `plan_check` in work context |
-| Preset (optional) | `ai-team-sdd-governance` on `converge` / `bug.test` | Handoff spec rules; composite checks / evidence |
-| Workflow human gate | `review-plan`, `review-tasks` | You approve, revise, or reject before the next SDD step |
+Supporting context, permissions, private-requirement synchronization, Code
+Graph, impact, evidence, memory, and release knowledge remain internal
+extension capabilities. They are loaded progressively by the two skills and
+do not clutter the AI tool with additional user-facing skills.
 
-The `ai-team-sdd` workflow does **not** run core `speckit.checklist`. Requirement-quality
-checklists remain available as a manual Spec Kit command when you want them.
+Team work uses one artifact layout for both Features and Bugfixes:
 
-The exact path depends on the user journey:
+```text
+.specify/<feature|bugfix>/<work_id>/
+  spec.md
+  plan-and-task.md
+  plan-and-task-check.md
+```
 
-| Journey | When to use | Required anchor |
-|---|---|---|
-| start with one sentence | intent is clear enough to analyze, but no issue exists | generated Intake slug; issue required only before formal SDD |
-| existing project bug fix | current behavior is broken, flaky, regressed, or throws errors | primary coding issue URL; work slug identifies local artifacts |
-| existing project new feature | adding public behavior to an existing repository | coding issue URL for public work, or internal handoff requirement URL for confidential enterprise traceability |
-| new project from zero | creating a new repository, service, product, or application | public project issue/charter, or handoff requirement URL for confidential enterprise work |
-| resume from middle | work stopped after approval, gate, failed check, tool switch, or lost chat | workflow run ID or Work Context Package work slug |
-| failure evolution | repeated AI mistake, failed review, failed check, escaped bug, or incident | failed PR, check, incident, or work slug |
-| memory consolidation | contributor or maintainer wants to preserve a useful lesson | work slug, bug slug, PR, incident, release id, or manual note |
-| release archive | maintainer wants release-scoped or milestone-scoped knowledge consolidation | release id, tag range, release issue, or shipped work slugs |
+The Team extension does not split Feature documents into native `specs/` and
+Bugfix documents into another directory. Native Spec Kit commands retain their
+original behavior when used independently.
 
-For detailed steps, start with
-[`extensions/ai-team/README.md`](extensions/ai-team/) and
-[`extensions/ai-team/docs/user-journeys.md`](extensions/ai-team/docs/user-journeys.md).
-
-### AI Team Quick Start
-
-Install this distribution, then bootstrap each coding repository — `specify init`
-installs the full AI Team stack (extensions, governance preset, workflows)
-automatically; no extra flags or catalog URLs required.
+### Install
 
 ```bash
-uv tool install specify-cli --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.1
-cd your-coding-repo
-
-specify init . --integration cursor-agent
+specify init . --integration codex --integration-options="--skills"
+specify bundle catalog add https://raw.githubusercontent.com/EuphoriaYan/spec-kit/main/bundles/catalog.json --id ai-team --policy install-allowed
+specify bundle install ai-team
 ```
 
-Use `codex`, `claude`, `cursor-agent`, or `trae` for `--integration`. Add
-`--integration-options="--skills"` when initializing a fresh repo with Codex if
-you prefer skills mode.
+The bundle initializes the active AI tools' short rule pointers before the first
+chat. Every role skill refreshes them again after resume or context compression.
 
-During initialization, the CLI reads its packaged
-[`bundles/catalog.json`](bundles/catalog.json) and installs every listed bundle
-fully offline. The AI Team manifest lives at
-[`bundles/ai-team/bundle.yml`](bundles/ai-team/bundle.yml).
+Manual installation uses `specify extension add team`, `specify extension add
+bug`, and `specify extension add agent-context`. AI Team does not install a
+workflow; users invoke the role skills from chat.
 
-**Alternative: manual install** (same components, separate commands):
-
-```bash
-uv tool install specify-cli --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.1
-specify init . --integration cursor-agent
-specify extension add ai-team
-specify extension add bug
-specify extension add agent-context
-specify preset add ai-team-sdd-governance
-specify workflow add ai-team-intake
-specify workflow add ai-team-sdd
-specify workflow add ai-team-bugfix
-```
-
-The `bug` extension is required for `ai-team-bugfix` (composite checks/evidence run
-inside `speckit.bug.test`).
-
-**Extension:** `speckit.ai-team.plan-check` runs after `speckit.plan`, outputs a
-Plan Check Report in chat (no gate markdown file), and records `plan_check` in the
-Work Context Package.
-
-**Preset:** `ai-team-sdd-governance` composes handoff spec rules and composite AI Team
-logic into native commands: checks/evidence in `speckit.converge` (feature) or
-`speckit.bug.test` (bugfix). `speckit.analyze` stays native (read-only report).
-
-**Workflow gates:** `review-plan` and `review-tasks` are human decision points.
-Choose **revise** at either gate and the workflow loops automatically (`plan-cycle`
-or `task-cycle` do-while). Revise iterations pass a fixed patch instruction (plus
-`work_slug`) instead of the original request/spec URLs — agents revise from
-`plan_check`, `context-pack.md`, or native analyze findings already on disk.
-
-**Compact planning:** Users do not need to know `planning_mode` or type a CLI
-command. In an installed Codex, Claude Code, Cursor Agent, or Trae workspace,
-say:
+After installation, users can remain in chat:
 
 ```text
-请帮我在导出结果里增加 CSV 格式，字段和页面列表保持一致；如果影响很小，可以建议走 Compact。
+Please add CSV export to the current project. Use Compact planning only if the
+impact is local and no public contract changes.
 ```
 
-No issue is needed for this first message. `speckit.ai-team.start` launches the
-read-only `ai-team-intake` workflow, which analyzes impact, drafts the issue,
-and asks a human to confirm publication and Standard/Compact mode. The system
-then creates the issue and launches formal SDD when its approval conditions are
-met. The user never has to compose the workflow command.
-
-An existing issue can still be supplied explicitly:
-
-```text
-请用 AI Team Compact 模式实现搜索结果导出，需求单是：
-https://example.com/org/project/issues/456
-```
-
-`speckit.ai-team.start` recognizes the explicit request and launches the same
-`ai-team-sdd` workflow with its Compact branch. After impact analysis, a human
-confirms Compact eligibility; Plan and Tasks run in isolated contexts and share
-one combined review. Requests without an explicit Compact choice use Standard.
-
-Without the preset, core commands do not know about `spec.override.md` or AI Team
-policy overlays.
-
-Use `--integration claude`, `--integration cursor-agent`, or `--integration
-trae` when those tools are active.
-
-Examples:
-
-```bash
-# Existing project bug fix
-specify workflow run ai-team-bugfix \
-  --input request="Fix the upload timeout reported by customer support" \
-  --input work_slug=bug-project-alpha-123 \
-  --input coding_issue_url="https://example.com/org/project/issues/123" \
-  --input also_resolves_issue_urls="https://example.com/org/project/issues/456"
-
-# Existing project public feature
-specify workflow run ai-team-sdd \
-  --input request="Implement public search result export" \
-  --input work_type=feature \
-  --input coding_issue_url="https://example.com/org/project/issues/456"
-
-# Existing project confidential enterprise feature
-specify workflow run ai-team-sdd \
-  --input request="Implement REQ-2026-015 search result export" \
-  --input work_type=feature \
-  --input handoff_requirement_url="https://example.com/enhancements/rfcs/REQ-2026-015"
-
-# New project
-specify workflow run ai-team-sdd \
-  --input request="Create the initial customer notification service" \
-  --input work_type=new-project \
-  --input bootstrap_workspace=true \
-  --input handoff_requirement_url="https://example.com/enhancements/rfcs/REQ-2026-020"
-
-# Resume by durable work context after tool or chat loss
-speckit.ai-team.context work_slug=<work_slug> resume=true
-
-# Resume by workflow run state
-specify workflow resume <run-id>
-
-# Consolidate one useful lesson into local, department, or enterprise memory
-speckit.ai-team.memory-consolidate scope=bugfix bug_slug=bug-project-alpha-123 target_tier=department privacy=department-internal
-
-# Archive a release or milestone and promote reusable lessons in batch
-speckit.ai-team.release-archive release_id=v1.4.0 since_tag=v1.3.0 privacy=public-safe
-```
-
-For chat-first tools, use stable path aliases. These phrases are aliases for the
-workflow inputs above:
-
-```text
-Please add CSV export whose fields match the page list. I do not have an issue yet.
-
-Use the ai-team-sdd feature path for this public coding issue:
-https://example.com/org/project/issues/456
-
-Use the ai-team-sdd feature path for this internal handoff requirement:
-https://example.com/enhancements/rfcs/REQ-2026-015
-
-Use the ai-team-bugfix path with work_slug=bug-project-alpha-123 for this coding issue:
-https://example.com/org/project/issues/123
-
-Use the ai-team-sdd new-project path for this internal handoff requirement:
-https://example.com/enhancements/rfcs/REQ-2026-020
-
-Use the ai-team-sdd resume path for work_slug=003-search-export from tasks-ready.
-
-Use the ai-team-memory consolidate path for bug_slug=bug-project-alpha-123
-target_tier=department. Summarize the bugfix lesson after sanitizing private
-details.
-
-Use the ai-team-release archive path for release_id=v1.4.0 since_tag=v1.3.0.
-Focus on bugfix lessons and reusable design patterns.
-```
-
+The AI tool starts with `speckit.team.specify` and stops at each human
+decision boundary. See
+[the Team extension guide](extensions/team/README.md) for artifacts, repository
+boundaries, resume behavior, and the complete Feature/Bugfix journeys.
 ## Table of Contents
 
 - [🤔 What is Spec-Driven Development?](#-what-is-spec-driven-development)
