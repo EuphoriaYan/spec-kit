@@ -41,32 +41,20 @@ You control which extensions your team can discover and install:
 
 ### Bundled Extensions In This Distribution
 
-This independent distribution includes an enterprise AI Team extension:
-
-| Extension | Purpose |
-|---|---|
-| `ai-team` | Adds role-isolated SDD handoffs, repository boundaries, durable task context, code graph adapters, and composite plan/task/evidence gates (via preset) for enterprise AI Team Coding. |
-
-Install it in a Spec Kit project with:
+This independent distribution includes the `team` extension. The target model
+has four role skills; this iteration exposes the two whose contracts are
+agreed: `speckit.team.specify` and `speckit.team.plan-and-task`.
 
 ```bash
-specify extension add ai-team
+specify extension add team
 specify extension add bug
-specify preset add ai-team-sdd-governance
-specify workflow add ai-team-sdd
-specify workflow add ai-team-bugfix
+specify extension add agent-context
 ```
 
-The `ai-team-sdd-governance` preset composes handoff spec rules and composite AI Team
-logic into native SDD commands (`speckit.converge`) and composite
-checks/evidence to `speckit.bug.test`. `speckit.analyze` stays native.
-
-**Extension (not preset):** `speckit.ai-team.plan-check` runs after `speckit.plan`,
-outputs a Plan Check Report in chat, and records `plan_check` in task context. The
-`ai-team-sdd` workflow does not run core `speckit.checklist`.
-
-Install the `bug` extension for bugfix workflows.
-
+Supporting permissions, Code Graph, impact, evidence, and memory capabilities
+are internal extension references and scripts. AI Team does not install a
+workflow or a governance preset, and it does not modify native Spec Kit
+commands.
 ### Option 1: Curated Catalog (Recommended for Organizations)
 
 Populate your `catalog.json` with approved extensions:

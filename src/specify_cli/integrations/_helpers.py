@@ -403,6 +403,18 @@ def _register_extensions_for_agent(
     )
 
 
+def _install_core_skills_for_project(project_root: Path) -> bool:
+    """Preserve a project's selected skill surface across integration changes."""
+    from .. import load_init_options
+
+    options = load_init_options(project_root)
+    if not isinstance(options, dict):
+        return True
+    # Existing upstream projects predate the profile field and retain their
+    # original full command surface. Team projects record the field at init.
+    return options.get("skill_profile", "full") == "full"
+
+
 def _unregister_extensions_for_agent(
     project_root: Path,
     agent_key: str,

@@ -470,6 +470,28 @@ class TestExtensionManifest:
         with pytest.raises(ValidationError, match="Invalid command 'file'"):
             ExtensionManifest(manifest_path)
 
+    @pytest.mark.parametrize("field", ["source", "target"])
+    @pytest.mark.parametrize(
+        "bad_path",
+        ["../escape.md", "../../outside.md", "/abs/outside.md", "C:\\Windows\\x.md"],
+    )
+    def test_command_resource_traversal_rejected(
+        self, temp_dir, valid_manifest_data, field, bad_path
+    ):
+        """Skill resources must remain inside extension and skill roots."""
+        import yaml
+
+        resource = {"source": "docs/reference.md", "target": "references/reference.md"}
+        resource[field] = bad_path
+        valid_manifest_data["provides"]["commands"][0]["resources"] = [resource]
+
+        manifest_path = temp_dir / "extension.yml"
+        with open(manifest_path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(valid_manifest_data, f)
+
+        with pytest.raises(ValidationError, match="Invalid command resource"):
+            ExtensionManifest(manifest_path)
+
     @pytest.mark.parametrize("bad_file", [" commands/hello.md", "commands/hello.md ", "\tcommands/hello.md"])
     def test_command_file_whitespace_rejected(self, temp_dir, valid_manifest_data, bad_file):
         """Manifest 'file' with leading/trailing whitespace raises ValidationError."""

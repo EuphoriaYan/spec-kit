@@ -117,6 +117,7 @@ def _run_init(integration: str, *, script_type: str, offline: bool = False) -> N
             preset=None,
             integration=integration,
             integration_options=None,
+            skill_profile="team",
         )
     except typer.Exit as exc:
         if exc.exit_code:
@@ -437,7 +438,13 @@ def bundle_update(
                 active_integration=detected if detected is not None else integration,
                 integration_explicit=bool(integration) and detected is None,
             )
-            install_bundle(project_root, plan, installer, manifest=manifest, refresh=True)
+            install_bundle(
+                project_root,
+                plan,
+                installer,
+                manifest=manifest,
+                refresh=True,
+            )
             console.print(f"[green]✓[/green] Updated '{target}' to v{plan.version}.")
     except BundlerError as exc:
         _fail(str(exc))

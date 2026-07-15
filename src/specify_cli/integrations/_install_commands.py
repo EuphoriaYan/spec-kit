@@ -24,6 +24,7 @@ from ._helpers import (
     _cli_error_detail,
     _cli_phase_label,
     _get_speckit_version,
+    _install_core_skills_for_project,
     _read_integration_json,
     _refresh_init_options_speckit_version,
     _remove_integration_json,
@@ -144,6 +145,7 @@ def integration_install(
             parsed_options=parsed_options,
             script_type=selected_script,
             raw_options=raw_options,
+            install_core_skills=_install_core_skills_for_project(project_root),
         )
         manifest.save()
         new_installed = _dedupe_integration_keys([*installed_keys, integration.key])

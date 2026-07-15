@@ -80,10 +80,9 @@ class TestInitIntegrationFlag:
         # init must not leave any legacy agent-context keys in init-options.json
         assert "context_file" not in opts
 
-        # The distribution catalog installs agent-context, while the extension
-        # remains solely responsible for managing the actual context file.
-        ext_cfg_path = project / ".specify" / "extensions" / "agent-context" / "agent-context-config.yml"
-        assert ext_cfg_path.exists(), "init must install the agent-context extension"
+        # AI Team is installed directly; agent-context remains opt-in.
+        assert (project / ".specify" / "extensions" / "team").is_dir()
+        assert not (project / ".specify" / "extensions" / "agent-context").exists()
 
         assert (project / ".specify" / "integrations" / "copilot.manifest.json").exists()
 
@@ -190,7 +189,7 @@ class TestInitIntegrationFlag:
             os.chdir(project)
             runner = CliRunner()
             result = runner.invoke(app, [
-                "init", "--here", "--force", "--integration", "claude", "--script", "sh", "--ignore-agent-tools",
+                "init", "--here", "--force", "--integration", "claude", "--script", "sh", "--ignore-agent-tools", "--skill-profile", "full",
             ], catch_exceptions=False)
         finally:
             os.chdir(old_cwd)

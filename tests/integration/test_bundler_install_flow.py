@@ -64,6 +64,27 @@ def test_partial_failure_rolls_back_and_records_nothing(tmp_path: Path):
     assert load_records(tmp_path) == []
 
 
+def test_finalize_failure_rolls_back_and_records_nothing(tmp_path: Path):
+    make_project(tmp_path)
+    manifest = BundleManifest.from_dict(valid_manifest_dict())
+    installer = FakeInstaller()
+
+    def fail_finalize() -> None:
+        raise BundlerError("context initialization failed")
+
+    with pytest.raises(BundlerError, match="context initialization failed"):
+        install_bundle(
+            tmp_path,
+            _plan(manifest),
+            installer,
+            manifest=manifest,
+            finalize=fail_finalize,
+        )
+
+    assert installer.installed == set()
+    assert load_records(tmp_path) == []
+
+
 def test_remove_is_non_collateral(tmp_path: Path):
     make_project(tmp_path)
     installer = FakeInstaller()

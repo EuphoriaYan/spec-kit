@@ -11,6 +11,7 @@ write (FR-018, SC partial-failure-stop).
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
@@ -59,6 +60,7 @@ def install_bundle(
     installer: PrimitiveInstaller,
     manifest: BundleManifest | None = None,
     refresh: bool = False,
+    finalize: Callable[[], None] | None = None,
 ) -> InstallResult:
     """Execute *plan*, recording provenance. Idempotent, with bounded rollback.
 
@@ -81,6 +83,10 @@ def install_bundle(
     guaranteed to be applied when the bundler actually performs an install or a
     refresh; running ``specify bundle update`` re-applies every owned component
     at its pinned version.
+
+    ``finalize`` is a trusted CLI-owned step, not an extension hook. It runs
+    after component installation and before provenance is recorded; failure
+    rolls back components newly installed by this call.
     """
     records = load_records(project_root)
 
@@ -130,6 +136,8 @@ def install_bundle(
             done.append(component)
             result.installed.append(component)
             contributed.append(component)
+        if finalize is not None:
+            finalize()
     except BundlerError:
         _rollback(project_root, installer, done)
         raise

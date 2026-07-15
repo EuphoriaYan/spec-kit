@@ -4460,14 +4460,6 @@ class TestBundledPresetLocator:
         path = _locate_bundled_preset("nonexistent-preset")
         assert path is None
 
-    def test_locate_ai_team_governance_preset(self):
-        """The AI Team bundle's governance preset ships with the CLI."""
-        from specify_cli import _locate_bundled_preset
-
-        path = _locate_bundled_preset("ai-team-sdd-governance")
-        assert path is not None
-        assert (path / "preset.yml").is_file()
-
     def test_locate_bundled_preset_rejects_invalid_id(self):
         """_locate_bundled_preset rejects IDs with invalid characters."""
         from specify_cli import _locate_bundled_preset
@@ -4633,24 +4625,6 @@ class TestBundledPresetLocator:
         assert "lean" in catalog["presets"]
         assert catalog["presets"]["lean"]["bundled"] is True
         assert "download_url" not in catalog["presets"]["lean"]
-
-    def test_ai_team_governance_preset_is_bundled_and_packaged(self):
-        """Catalog and wheel metadata must agree for the AI Team preset."""
-        import tomllib
-
-        repo_root = Path(__file__).parent.parent
-        catalog = json.loads((repo_root / "presets" / "catalog.json").read_text())
-        entry = catalog["presets"]["ai-team-sdd-governance"]
-        assert entry["bundled"] is True
-        assert "download_url" not in entry
-
-        pyproject = tomllib.loads((repo_root / "pyproject.toml").read_text())
-        force_include = pyproject["tool"]["hatch"]["build"]["targets"]["wheel"][
-            "force-include"
-        ]
-        assert force_include["presets/ai-team-sdd-governance"] == (
-            "specify_cli/core_pack/presets/ai-team-sdd-governance"
-        )
 
     def test_bundled_preset_download_raises_error(self, project_dir):
         """download_pack raises PresetError for bundled presets without download_url."""

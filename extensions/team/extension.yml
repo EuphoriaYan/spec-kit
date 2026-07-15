@@ -1,0 +1,83 @@
+schema_version: "1.0"
+
+extension:
+  id: team
+  name: "AI Team SDD Skills"
+  version: "0.3.0"
+  description: "Two role-isolated enterprise SDD skills for specification and architecture planning."
+  author: AI Team Template
+  repository: https://github.com/EuphoriaYan/spec-kit
+  license: MIT
+
+requires:
+  speckit_version: ">=0.12.4"
+
+provides:
+  commands:
+    - name: speckit.team.specify
+      file: commands/speckit.team.specify.md
+      description: "Business/Product role: clarify Feature User Stories and publish or print the primary Issue."
+      resources:
+        - source: docs/context-bootstrap.md
+          target: references/context-bootstrap.md
+        - source: docs/issue-lifecycle.md
+          target: references/issue-lifecycle.md
+        - source: docs/repository-boundary.md
+          target: references/repository-boundary.md
+        - source: scripts/init_role_context.py
+          target: scripts/init_role_context.py
+    - name: speckit.team.plan-and-task
+      file: commands/speckit.team.plan-and-task.md
+      description: "Architect role: summarize an accepted Issue and produce Code Graph grounded Plan, parallel Tasks, self-tests, and one readiness check."
+      resources:
+        - source: docs/context-bootstrap.md
+          target: references/context-bootstrap.md
+        - source: docs/issue-lifecycle.md
+          target: references/issue-lifecycle.md
+        - source: docs/work-item-layout.md
+          target: references/work-item-layout.md
+        - source: docs/code-graph-adapters.md
+          target: references/code-graph-adapters.md
+        - source: references/internal/context.md
+          target: references/context.md
+        - source: references/internal/permissions.md
+          target: references/permissions.md
+        - source: references/internal/handoff-spec-sync.md
+          target: references/handoff-spec-sync.md
+        - source: references/internal/codegraph.md
+          target: references/codegraph.md
+        - source: references/internal/impact.md
+          target: references/impact.md
+        - source: references/internal/feature-spec.md
+          target: references/feature-spec.md
+        - source: templates/plan-and-task-template.md
+          target: references/plan-and-task-format.md
+        - source: scripts/init_role_context.py
+          target: scripts/init_role_context.py
+        - source: scripts/check_plan_and_task.py
+          target: scripts/check_plan_and_task.py
+        - source: scripts/work_item_paths.py
+          target: scripts/work_item_paths.py
+        - source: scripts/bash/handoff-spec-common.sh
+          target: scripts/bash/handoff-spec-common.sh
+        - source: scripts/bash/sync-handoff-spec.sh
+          target: scripts/bash/sync-handoff-spec.sh
+        - source: scripts/powershell/HandoffSpecCommon.ps1
+          target: scripts/powershell/HandoffSpecCommon.ps1
+        - source: scripts/powershell/Sync-HandoffSpec.ps1
+          target: scripts/powershell/Sync-HandoffSpec.ps1
+
+  config:
+    - name: ai-team-config.yml
+      template: config-template.yml
+      description: "AI Team repository roles, privacy boundaries, role isolation, and evidence settings."
+      required: false
+
+tags:
+  - ai-team
+  - enterprise
+  - sdd
+  - roles
+  - collaboration
+  - evidence
+  - code-graph

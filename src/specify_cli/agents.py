@@ -9,6 +9,7 @@ command files into agent-specific directories in the correct format.
 import os
 import platform
 import re
+import shutil
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -518,6 +519,45 @@ class CommandRegistrar:
             return None
         return agent
 
+    @staticmethod
+    def _copy_skill_resources(
+        command: Dict[str, Any], source_root: Path, skill_root: Path
+    ) -> None:
+        """Copy manifest-declared files beside a generated SKILL.md.
+
+        Resources use explicit source and target paths so an extension can
+        install progressively loaded references and deterministic scripts
+        without exposing arbitrary filesystem copies.
+        """
+
+        resources = command.get("resources", [])
+        if not resources:
+            return
+        if not isinstance(resources, list):
+            raise ValueError("command resources must be a list")
+
+        source_root = source_root.resolve()
+        skill_root = skill_root.resolve()
+        for resource in resources:
+            if not isinstance(resource, dict):
+                raise ValueError("each command resource must be a mapping")
+            source_value = resource.get("source")
+            target_value = resource.get("target")
+            if relative_extension_path_violation(source_value):
+                raise ValueError(f"invalid command resource source: {source_value!r}")
+            if relative_extension_path_violation(target_value):
+                raise ValueError(f"invalid command resource target: {target_value!r}")
+
+            source_file = (source_root / str(source_value)).resolve()
+            target_file = (skill_root / str(target_value)).resolve()
+            source_file.relative_to(source_root)
+            target_file.relative_to(skill_root)
+            if not source_file.is_file() or source_file.is_symlink():
+                raise ValueError(f"command resource is not a regular file: {source_value}")
+
+            target_file.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source_file, target_file)
+
     def register_commands(
         self,
         agent_name: str,
@@ -692,6 +732,8 @@ class CommandRegistrar:
                 link_outputs,
                 agent_config,
             )
+            if agent_config["extension"] == "/SKILL.md":
+                self._copy_skill_resources(cmd_info, source_root, dest_file.parent)
 
             if agent_name == "copilot":
                 self.write_copilot_prompt(project_root, cmd_name)
@@ -767,6 +809,10 @@ class CommandRegistrar:
                     link_outputs,
                     agent_config,
                 )
+                if agent_config["extension"] == "/SKILL.md":
+                    self._copy_skill_resources(
+                        cmd_info, source_root, alias_file.parent
+                    )
                 if agent_name == "copilot":
                     self.write_copilot_prompt(project_root, alias)
                 registered.append(alias)

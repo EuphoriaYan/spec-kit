@@ -318,6 +318,22 @@ class ExtensionManifest:
                 label = repr(cmd_file) if isinstance(cmd_file, str) else f"for command '{cmd.get('name')}'"
                 raise ValidationError(f"Invalid command 'file' {label}: {reason}")
 
+            resources = cmd.get("resources", [])
+            if not isinstance(resources, list):
+                raise ValidationError("Command 'resources' must be a list")
+            for resource in resources:
+                if not isinstance(resource, dict):
+                    raise ValidationError(
+                        "Each command resource must be a source/target mapping"
+                    )
+                for field in ("source", "target"):
+                    reason = relative_extension_path_violation(resource.get(field))
+                    if reason:
+                        raise ValidationError(
+                            f"Invalid command resource '{field}' for "
+                            f"'{cmd['name']}': {reason}"
+                        )
+
             # Validate command name format
             if not EXTENSION_COMMAND_NAME_PATTERN.match(cmd["name"]):
                 corrected = self._try_correct_command_name(cmd["name"], ext["id"])
@@ -1057,6 +1073,20 @@ class ExtensionManager:
                 # symlinks that point back to this extension's generated cache
                 # to be refreshed on a subsequent dev install.
                 if not is_expected_dev_symlink:
+                    try:
+                        existing, _ = registrar.parse_frontmatter(
+                            skill_file.read_text(encoding="utf-8")
+                        )
+                        source = existing.get("metadata", {}).get("source", "")
+                    except (OSError, UnicodeError, AttributeError):
+                        source = ""
+                    if source == f"extension:{manifest.id}" or str(source).startswith(
+                        f"{manifest.id}:"
+                    ):
+                        CommandRegistrar._copy_skill_resources(
+                            cmd_info, ext_root, skill_subdir
+                        )
+                        written.append(skill_name)
                     continue
 
             # Create skill directory; track whether we created it so we can clean
@@ -1127,6 +1157,9 @@ class ExtensionManager:
                 if skill_file.is_symlink():
                     skill_file.unlink()
                 skill_file.write_text(skill_content, encoding="utf-8")
+            CommandRegistrar._copy_skill_resources(
+                cmd_info, ext_root, skill_subdir
+            )
             written.append(skill_name)
 
         return written
@@ -1214,7 +1247,9 @@ class ExtensionManager:
                                 if isinstance(fm, dict)
                                 else ""
                             )
-                    if source != f"extension:{extension_id}":
+                    if source != f"extension:{extension_id}" and not str(source).startswith(
+                        f"{extension_id}:"
+                    ):
                         continue
                 except (OSError, UnicodeDecodeError, Exception):
                     continue
@@ -1271,7 +1306,9 @@ class ExtensionManager:
                                     else ""
                                 )
                         # Only remove skills explicitly created by this extension
-                        if source != f"extension:{extension_id}":
+                        if source != f"extension:{extension_id}" and not str(source).startswith(
+                            f"{extension_id}:"
+                        ):
                             continue
                     except (OSError, UnicodeDecodeError, Exception):
                         # If we can't verify, skip to avoid accidental deletion
@@ -1557,13 +1594,41 @@ class ExtensionManager:
 
         extension_dir = self.extensions_dir / extension_id
 
+        # Remove owned skill directories before command-file cleanup. A skill
+        # may contain manifest-managed references and scripts, so unlinking
+        # SKILL.md first would leave an orphaned non-empty directory.
+        self._unregister_extension_skills(registered_skills, extension_id)
+
+        # One project may have several detected skills-backed agents. The
+        # active-agent list above is not enough to clean resources installed
+        # for the others, so derive their skill names from registered commands
+        # and remove each owned directory explicitly.
+        if isinstance(registered_commands, dict):
+            from ..agents import CommandRegistrar as AgentCommandRegistrar
+
+            agent_registrar = AgentCommandRegistrar()
+            for agent_name, command_names in registered_commands.items():
+                config = agent_registrar.AGENT_CONFIGS.get(agent_name, {})
+                if config.get("extension") != "/SKILL.md":
+                    continue
+                try:
+                    skills_dir = agent_registrar._resolve_agent_dir(
+                        agent_name, config, self.project_root
+                    )
+                except (OSError, ValueError):
+                    continue
+                names = []
+                for command_name in self._valid_name_list(command_names):
+                    short_name = command_name.removeprefix("speckit.")
+                    names.append(f"speckit-{short_name.replace('.', '-')}")
+                self._unregister_extension_skills(
+                    names, extension_id, skills_dir=skills_dir
+                )
+
         # Unregister commands from all AI agents
         if registered_commands:
             registrar = CommandRegistrar()
             registrar.unregister_commands(registered_commands, self.project_root)
-
-        # Unregister agent skills
-        self._unregister_extension_skills(registered_skills, extension_id)
 
         if keep_config:
             # Preserve config files, only remove non-config files

@@ -135,14 +135,12 @@ def test_load_bundled_manifests_uses_packaged_core_without_network(
     assert [manifest.bundle.id for manifest in manifests] == ["packaged"]
 
 
-def test_init_installs_every_bundle_from_distribution_catalog(
+def test_init_installs_only_team_extension_and_managed_rules(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from typer.testing import CliRunner
 
     from specify_cli import app
-    from specify_cli.bundler.models.records import load_records
-
     monkeypatch.chdir(tmp_path)
     runner = CliRunner()
     result = runner.invoke(
@@ -152,42 +150,51 @@ def test_init_installs_every_bundle_from_distribution_catalog(
             "--here",
             "--force",
             "--integration",
-            "generic",
-            "--integration-options",
-            "--commands-dir .agent/commands/",
+            "codex",
+            "--ignore-agent-tools",
             "--script",
             "sh",
         ],
     )
 
     assert result.exit_code == 0, result.stdout
-    assert (tmp_path / ".specify" / "extensions" / "ai-team").is_dir()
-    assert (tmp_path / ".specify" / "extensions" / "bug").is_dir()
-    assert (
+    assert (tmp_path / ".specify" / "extensions" / "team").is_dir()
+    assert not (tmp_path / ".specify" / "extensions" / "bug").exists()
+    assert not (tmp_path / ".specify" / "extensions" / "agent-context").exists()
+    assert not (
         tmp_path / ".specify" / "presets" / "ai-team-sdd-governance"
-    ).is_dir()
-    assert (tmp_path / ".specify" / "workflows" / "ai-team-intake").is_dir()
-    assert (tmp_path / ".specify" / "workflows" / "ai-team-sdd").is_dir()
-    assert (tmp_path / ".specify" / "workflows" / "ai-team-bugfix").is_dir()
-    assert [record.bundle_id for record in load_records(tmp_path)] == ["ai-team"]
+    ).exists()
+    assert not (tmp_path / ".specify" / "workflows" / "ai-team-intake").exists()
+    assert not (tmp_path / ".specify" / "workflows" / "ai-team-sdd").exists()
+    assert not (tmp_path / ".specify" / "workflows" / "ai-team-bugfix").exists()
+    assert not (tmp_path / ".specify" / "workflows" / "speckit").exists()
+    assert "AI TEAM CONTEXT START" in (tmp_path / "AGENTS.md").read_text(
+        encoding="utf-8"
+    )
+    assert not (tmp_path / ".specify" / "bundles" / "installed.json").exists()
+    skills = {path.name for path in (tmp_path / ".agents" / "skills").iterdir()}
+    assert skills == {
+        "speckit-team-plan-and-task",
+        "speckit-team-specify",
+    }
 
 
-def test_init_fails_closed_when_distribution_bundle_install_fails(
+def test_init_fails_closed_when_team_setup_fails(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from typer.testing import CliRunner
 
     from specify_cli import app
-    from specify_cli.bundler.services import bundled_install
+    from specify_cli import team_setup
 
     monkeypatch.chdir(tmp_path)
 
     def fail_install(*args, **kwargs):
-        raise BundlerError("distribution bundle exploded")
+        raise RuntimeError("team setup exploded")
 
     monkeypatch.setattr(
-        bundled_install,
-        "install_bundled_catalog",
+        team_setup,
+        "install_bundled_team",
         fail_install,
     )
 
@@ -207,5 +214,57 @@ def test_init_fails_closed_when_distribution_bundle_install_fails(
     )
 
     assert result.exit_code == 1
-    assert "Initialization failed: distribution bundle exploded" in result.stdout
+    assert "Initialization failed: team setup exploded" in result.stdout
     assert "Project ready." not in result.stdout
+
+
+def test_team_profile_hides_native_skills_and_full_profile_keeps_them(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from typer.testing import CliRunner
+
+    from specify_cli import app
+
+    runner = CliRunner()
+    team_root = tmp_path / "team"
+    full_root = tmp_path / "full"
+
+    team_result = runner.invoke(
+        app,
+        [
+            "init",
+            str(team_root),
+            "--ignore-agent-tools",
+            "--integration",
+            "codex",
+            "--script",
+            "sh",
+        ],
+    )
+    full_result = runner.invoke(
+        app,
+        [
+            "init",
+            str(full_root),
+            "--ignore-agent-tools",
+            "--integration",
+            "codex",
+            "--script",
+            "sh",
+            "--skill-profile",
+            "full",
+        ],
+    )
+
+    assert team_result.exit_code == 0, team_result.stdout
+    assert full_result.exit_code == 0, full_result.stdout
+    team_skills = {path.name for path in (team_root / ".agents" / "skills").iterdir()}
+    full_skills = {path.name for path in (full_root / ".agents" / "skills").iterdir()}
+    assert team_skills == {
+        "speckit-team-plan-and-task",
+        "speckit-team-specify",
+    }
+    assert team_skills < full_skills
+    assert "speckit-plan" in full_skills
+    assert "speckit-implement" in full_skills
+    assert (full_root / ".specify" / "workflows" / "speckit" / "workflow.yml").is_file()

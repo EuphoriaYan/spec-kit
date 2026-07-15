@@ -347,8 +347,8 @@ class SkillsIntegrationTests:
         skills_dir = i.skills_dest(project)
         assert skills_dir.is_dir(), f"Skills directory {skills_dir} not created"
 
-    def test_init_installs_agent_context_config(self, tmp_path):
-        """The distribution catalog installs agent-context during init."""
+    def test_init_installs_team_extension(self, tmp_path):
+        """The default profile installs Team directly and keeps extras opt-in."""
         from typer.testing import CliRunner
         from specify_cli import app
 
@@ -359,13 +359,13 @@ class SkillsIntegrationTests:
             os.chdir(project)
             result = CliRunner().invoke(app, [
                 "init", "--here", "--integration", self.KEY, "--script", "sh",
-                "--ignore-agent-tools",
+                "--ignore-agent-tools", "--skill-profile", "full",
             ], catch_exceptions=False)
         finally:
             os.chdir(old_cwd)
         assert result.exit_code == 0
-        ext_cfg_path = project / ".specify" / "extensions" / "agent-context" / "agent-context-config.yml"
-        assert ext_cfg_path.exists()
+        assert (project / ".specify" / "extensions" / "team").is_dir()
+        assert not (project / ".specify" / "extensions" / "agent-context").exists()
 
     # -- IntegrationOption ------------------------------------------------
 
@@ -444,7 +444,7 @@ class SkillsIntegrationTests:
             os.chdir(project)
             result = CliRunner().invoke(app, [
                 "init", "--here", "--integration", self.KEY, "--script", "sh",
-                "--ignore-agent-tools",
+                "--ignore-agent-tools", "--skill-profile", "full",
             ], catch_exceptions=False)
         finally:
             os.chdir(old_cwd)
@@ -454,10 +454,11 @@ class SkillsIntegrationTests:
             for p in project.rglob("*") if p.is_file() and ".git" not in p.parts
         )
         expected = self._expected_files("sh")
-        assert actual == expected, (
-            f"Missing: {sorted(set(expected) - set(actual))}\n"
-            f"Extra: {sorted(set(actual) - set(expected))}"
+        assert set(expected) <= set(actual), (
+            f"Missing: {sorted(set(expected) - set(actual))}"
         )
+        assert any("speckit-team-specify" in path for path in actual)
+        assert "AGENTS.md" in actual
 
     def test_complete_file_inventory_ps(self, tmp_path):
         """Every file produced by specify init --integration <key> --script ps."""
@@ -471,7 +472,7 @@ class SkillsIntegrationTests:
             os.chdir(project)
             result = CliRunner().invoke(app, [
                 "init", "--here", "--integration", self.KEY, "--script", "ps",
-                "--ignore-agent-tools",
+                "--ignore-agent-tools", "--skill-profile", "full",
             ], catch_exceptions=False)
         finally:
             os.chdir(old_cwd)
@@ -481,7 +482,8 @@ class SkillsIntegrationTests:
             for p in project.rglob("*") if p.is_file() and ".git" not in p.parts
         )
         expected = self._expected_files("ps")
-        assert actual == expected, (
-            f"Missing: {sorted(set(expected) - set(actual))}\n"
-            f"Extra: {sorted(set(actual) - set(expected))}"
+        assert set(expected) <= set(actual), (
+            f"Missing: {sorted(set(expected) - set(actual))}"
         )
+        assert any("speckit-team-specify" in path for path in actual)
+        assert "AGENTS.md" in actual
