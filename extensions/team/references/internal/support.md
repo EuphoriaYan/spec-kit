@@ -29,7 +29,7 @@ lessons without relying on hidden chat context.
      equivalent;
    - project docs, module docs, code graph outputs, test maps, and evidence
      boards when present.
-3. Create `.specify/ai-team/support/` when missing.
+3. Create `.specify/team/support/` when missing.
 4. Produce or update `skill-inventory.md`:
    - local skills;
    - Spec Kit commands/extensions;

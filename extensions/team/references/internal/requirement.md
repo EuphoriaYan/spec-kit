@@ -55,10 +55,9 @@ Feature implementation references either:
    `speckit.team.specify`.
 3. Work in `enhancement-internal` when raw demand, commercial context, or
    unapproved acceptance discussion is needed. The issue must use `type/feature`
-   and exactly one state label from `state/draft`, `state/accepted`,
-   `state/working`, `state/finished`, `state/rejected`, `state/closed`, or
-   `state/superseded`.
-4. Reject or reroute any enhancement-internal issue labeled `type/bug` or
+   and exactly one status label from `status/new-issue`, `status/accept`,
+   `status/working`, or `status/close`.
+4. Reject or reroute any enhancement-internal issue labeled `type/bugfix` or
    describing a bug fix. Bug fixes belong in coding repository issues and start
    with `speckit.team.specify`.
 5. Produce a sanitized handoff requirement with:
@@ -92,7 +91,7 @@ Requirement handoff:
 - public-safe summary:
 - coding repository may link handoff URL: yes / no / not applicable
 - type label: type/feature
-- state label: state/draft / state/accepted / state/working / state/finished / state/rejected / state/closed / state/superseded
+- status label: status/new-issue / status/accept / status/working / status/close
 - approval route:
 - current wave:
 - affected coding repository:

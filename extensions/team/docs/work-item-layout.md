@@ -1,6 +1,7 @@
 # Team Work Item Layout
 
-All Team Feature and Bugfix documents use one directory contract:
+Plan-and-Task creates the formal work directory after a primary Issue is
+visible at `status/accept` or `status/working`.
 
 ```text
 .specify/
@@ -16,33 +17,37 @@ All Team Feature and Bugfix documents use one directory contract:
 |       `-- evidence/
 `-- bugfix/
     `-- <work_id>/
-        `-- same file contract
+        |-- plan-and-task.md
+        |-- plan-and-task-check.md
+        |-- work-context.yml
+        |-- context-pack.md
+        |-- permission-envelope.yml
+        |-- codegraph/
+        `-- evidence/
 ```
 
-`work_id` is the stable unique identifier from the primary Issue or approved
-requirement. It must match `[A-Za-z0-9][A-Za-z0-9._-]{0,127}`. Prefer an Issue
-number or durable requirement ID. Never derive it from a mutable title.
+Bugfix intake may add a separate analysis artifact through its own preceding
+skill. This extension does not define that artifact yet. Bugfix work does not
+use `spec.md`.
 
-Feature, confidential Feature, and new-project work use `feature`. Defect work
-uses `bugfix`. The category and ID together form the canonical identity and
-must not change between skills, sessions, branches, or AI tools.
+## Identity
 
-The Team extension does not store its work artifacts under native `specs/` or
-under a separate bug directory. Native Spec Kit commands may continue to use
-their original layout; Team skills do not modify that behavior.
+- coding-repository Issue: `<work_id>` is its numeric Issue ID;
+- enhancement-repository Issue: `<work_id>` is `enhancement-<issue-id>`;
+- absolute Issue URL remains the global authority.
+
+Never derive identity from a mutable title or silently select the newest work
+directory.
 
 ## Core Files
 
-- `spec.md`: observable problem or desired behavior, User Stories or Bugfix
-  reproduction, scope, non-goals, and acceptance points.
-- `plan-and-task.md`: Issue-wide HLD and module change plan, followed by
-  single-module LLD Tasks, their parallel/dependency model, minimum self-tests,
-  compatibility, migration, and rollback.
-- `plan-and-task-check.md`: generated `ready`, `revise`, or `blocked` result
-  covering cross-file consistency, scope, Code Graph, ownership, and self-test
-  findings. Generate it with `scripts/check_plan_and_task.py`; do not hand-edit
-  a passing result.
+- Feature `spec.md`: reviewed snapshot of accepted User Stories and their
+  Verification behavior, generated from the Issue by Plan-and-Task.
+- `plan-and-task.md`: Issue-wide HLD followed by single-module LLD Tasks,
+  parallel/dependency design, minimum self-tests, compatibility, and rollback.
+- `plan-and-task-check.md`: generated readiness result; never hand-edit a
+  passing result.
 
-`spec.override.md` may sit beside `spec.md` for an authorized confidential
-handoff, but it must be ignored by Git. When present, planning reads it before
-`spec.md` without copying private source text into committed files.
+`spec.override.md` may sit beside a Feature `spec.md` for an authorized
+confidential handoff, but it must be ignored by Git and read first. It is not
+used to copy private demand into committed files.

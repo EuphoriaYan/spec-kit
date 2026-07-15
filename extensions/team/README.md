@@ -1,172 +1,116 @@
 # AI Team Role Extension
 
-The `team` extension adapts Spec Kit for enterprise collaboration without
-changing native Spec Kit commands, templates, or prompts. This iteration
-exposes exactly two agreed skills:
+The `team` extension adds two role-isolated skills without changing native Spec Kit commands:
 
-| Skill | Human/AI role | Input | Durable output |
+| Skill | Role | Input | Durable output |
 |---|---|---|---|
-| `speckit.team.specify` | Business / Product | one sentence, Issue URL, or confidential handoff URL | primary Issue plus `spec.md`, or Bug Issue plus reproduction |
-| `speckit.team.plan-and-task` | Architect / Module Owner | accepted `spec.md` and source | Code Graph impact, `plan-and-task.md`, `plan-and-task-check.md`, minimum self-tests |
+| `speckit.team.specify` | Business / Product | plain-language Feature or new-project demand | published Feature Issue, or Issue text in the current response |
+| `speckit.team.plan-and-task` | Architect | Issue URL at `status/accept` or `status/working` plus source | Feature `spec.md` when applicable, Code Graph impact, Plan, parallel Tasks, self-tests, generated check |
 
-The skills are installed by the extension and appear as `speckit-team-*`
-folders in skills-based AI tools. Command IDs use the Spec Kit canonical form
-`speckit.team.*`.
+Bugfix intake is owned by a separate preceding skill. Plan-and-Task accepts its reviewed `type/bugfix` Issue but does not require a Bugfix `spec.md`.
 
-Both skills use the same work directory:
+## Role Boundary
+
+Roles do not share hidden chat context. Specify publishes complete User Stories to the Issue. The Technical Committee or delegated authority discusses the demand and applies `status/accept` outside the skill. Plan-and-Task then reads the Issue body, accepted discussion, labels, decision evidence, and current source.
+
+An accepted Issue body is primary. Suggestions and rejected alternatives in comments are not requirements. Before acceptance, maintainers should consolidate accepted changes into the Issue body; an explicit decision comment may supplement it.
+
+## Labels And Identity
+
+Use exactly one type and one status label:
 
 ```text
-.specify/<feature|bugfix>/<work_id>/
-|-- spec.md
-|-- plan-and-task.md
-`-- plan-and-task-check.md
+type/feature | type/bugfix
+status/new-issue | status/accept | status/working | status/close
 ```
 
-## Four-Skill Target
-
-The target model contains four large role skills. This iteration implements
-`specify` and `plan-and-task`; `implement` and `review` are planned and are not
-advertised until their command files are installed. Roles intentionally do not
-share hidden chat context. They communicate
-through an Issue and `spec.md`, then `plan-and-task.md`, its check, and the Work
-Context Package.
-
-The primary Issue is created during Specify. It is not deferred until Tasks.
-Tasks are engineering decomposition and may contain LLD-level file, class,
-function, data-flow, migration, and test details. Native
-`speckit.taskstoissues` is never the source of the primary Feature Issue.
-
-## Module Ownership And Parallel Tasks
-
-The authoritative module card lives in each code module's `README.md`. Copy
-[`templates/module-readme-template.md`](templates/module-readme-template.md)
-into a module root and maintain the owner, review route, responsibility, public
-contracts, dependency direction, and test entry points there. The project root
-README may index module cards. `CODEOWNERS` is useful for review automation but
-is not a substitute for module architecture documentation.
-
-`speckit.team.plan-and-task` uses those cards to write an Issue-wide Plan (HLD)
-and single-module Tasks (LLD). Tasks are parallel by default and can be assigned
-to different contributors. When a Task must wait for another, the Plan records
-the dependency, handoff artifact, serialization reason, and unblock evidence.
+The Issue URL is the global identity. Coding-repository work uses the numeric Issue ID as `work_id`; enhancement-repository work uses `enhancement-<issue-id>` to avoid collisions.
 
 ## Feature Flow
 
 ```text
 plain-language demand
 -> speckit.team.specify
--> user approves the exact Issue draft for publication
--> published state/draft Issue and spec.md
--> Technical Committee changes the Issue to state/accepted outside the skill
--> speckit.team.plan-and-task
--> Plan HLD -> continue Tasks / pause discussion / revise Plan
--> single-module Tasks
--> deterministic plan-and-task-check.md
--> architecture/module-owner review
--> speckit.team.implement (planned)
--> speckit.team.review (planned)
+-> natural clarification
+-> one completeness pass per Issue and User Story
+-> publish Issue or print final Issue text
+-> status/new-issue discussion
+-> Technical Committee sets status/accept
+-> speckit.team.plan-and-task reads Issue and comments
+-> create feature/<work_id>/spec.md
+-> Code Graph and impact
+-> Plan HLD
+-> human continue / pause / revise
+-> parallel single-module Tasks and minimum self-tests
+-> generated plan-and-task-check.md
 ```
 
-There is no AI Team workflow runner. The human starts each role skill from chat,
-and the skill performs its own checks before stopping at the next human decision
-boundary. Plan-and-Task always writes the HLD first, pauses for a human choice,
-then either stops for discussion or continues to single-module LLD Tasks and the
-deterministic final check.
+Specify writes no local checklist, Issue draft, Work Context, or `spec.md`.
 
-## Bugfix Flow
+## Bugfix Flow Boundary
 
 ```text
 observed defect
--> speckit.team.specify
--> user approves the exact Bug Issue draft for publication
--> reviewed Bug Issue and reproduction
+-> separate Bugfix intake skill
+-> reviewed type/bugfix Issue
+-> status/accept or status/working
 -> speckit.team.plan-and-task
--> Plan HLD -> continue Tasks / pause discussion / revise Plan
--> single-module regression Tasks
--> deterministic plan-and-task-check.md
--> reviewed root cause, scope, regression tests, and rollback
--> speckit.team.implement (planned)
--> speckit.team.review (planned)
+-> Bugfix summary in plan-and-task.md, without spec.md
+-> Code Graph, root-cause evidence, regression Tasks, self-tests, check
 ```
 
-Several same-root-cause Issues may map to one change
-when each symptom has separate reproduction and verification evidence.
+Several Bug Issues may map to one change only when they are symptoms of the same root cause and each has separate reproduction and verification evidence.
 
-## Internal Capabilities
+## Planning Rules
 
-Only the two agreed skill files live under `commands/`. Supporting material lives
-under `references/internal/`, `docs/`, and `scripts/`:
+The Plan is Issue-wide HLD. Each Task is a small LLD unit scoped to one module and designed for parallel assignment. The module must have a clear repository path and responsibility; a named Module Owner is optional. When Tasks cannot run in parallel, the Plan records the dependency, handoff artifact, serialization reason, and unblock evidence.
 
-- context initialization and resume;
-- privacy-aware Intake and repository boundary;
-- confidential requirement URL synchronization;
-- Permission Envelopes;
-- Code Graph adapters and impact analysis;
-- evidence finalization, review, retrospective, memory, and release archive.
+Public API, SPI, configuration, protocol, schema, database ownership, or cross-module semantics still require the appropriate human architecture or contract authority.
 
-A role loads these references progressively. They are not separately registered
-as user skills, so users see two coherent entry points instead of a toolbox of
-partial commands.
+## Installed Skill Layout
 
-`speckit.team.plan-and-task` must run
-`scripts/check_plan_and_task.py`. The script reads the Spec and Plan front
-matter plus their structured tables, then generates the check file. A model may
-revise source documents in response to findings but may not hand-write a
-passing check.
+Each supported skills-based integration receives a self-contained directory:
 
-## Context And Git
+```text
+speckit-team-<role>/
+|-- SKILL.md
+|-- references/
+`-- scripts/
+```
 
-Repository rules contain only a short managed pointer to
-`.specify/extensions/team/docs/context-bootstrap.md`. Every role reruns the
-initializer after a new chat, resume, or context compression.
+The Skill resolves these resources relative to its own `SKILL.md`. The complete extension remains under `.specify/extensions/team/` for registration, upgrade, shared configuration, and repository context pointers. References are loaded progressively; they are not separately exposed as user skills.
 
-| Artifact | Git |
-|---|---|
-| Issue, `spec.md`, `plan-and-task.md`, `plan-and-task-check.md`, enterprise guidance | commit |
-| approved architecture and Evidence Board required by team policy | commit |
-| `spec.override.md`, private customer text, local memory | ignore |
-| department memory | follow repository privacy policy |
+Plan-and-Task must run its installed `scripts/check_plan_and_task.py`. The script generates `plan-and-task-check.md`; a model may fix source artifacts but may not hand-write a passing result. Human decisions remain in the Issue and Plan review record.
+
+## Work Directories
+
+```text
+.specify/feature/<work_id>/   # includes spec.md
+.specify/bugfix/<work_id>/    # no spec.md
+```
+
+Commit Feature Specs, Plans, generated checks, and reviewed evidence. Ignore `spec.override.md`, private customer text, credentials, and local memory.
 
 ## Installation
 
-The recommended installation is the Team-minimal profile:
+The default Team-minimal profile keeps the Spec Kit engine but installs only the Team role skills:
 
 ```bash
 specify init . --integration codex
 ```
 
-This keeps the full Spec Kit engine while registering only the skills declared
-by this extension; the native Spec Kit workflow is also omitted. To expose the
-native Spec Kit skills and workflow as well, use:
-
-```bash
-specify init . --integration codex --skill-profile full
-```
-
-Initialization installs `team` directly and atomically refreshes `AGENTS.md`,
-`CLAUDE.md`, Cursor rules, or Trae rules for the detected integrations. The
-generic bundle system remains available for unrelated multi-component stacks,
-but AI Team no longer depends on a bundle, `bug`, or `agent-context`.
+Use `--skill-profile full` only when native Spec Kit skills are also wanted. Codex, Claude Code, Cursor Agent, and Trae receive the same role behavior and their own installed Skill resources.
 
 ## Chat Entry
 
-Users start from chat with a normal sentence:
+Users do not need to name a skill:
 
 ```text
-Please add CSV export to the current project. Keep the exported columns aligned
-with the result list, and pause after the architecture Plan so I can decide
-whether to discuss it or decompose Tasks now.
+Please add CSV export to the current project. Export the same fields shown in the result list, and help me turn this into a reviewable requirement.
 ```
 
-The AI tool should select `speckit.team.specify`, classify the work, and stop at
-the appropriate human decision boundary. After acceptance, start
-`speckit.team.plan-and-task` with the Issue URL or Work ID. The two roles share
-documents and Issues, not hidden chat context.
+The AI routes a new Feature to Specify. After governance acceptance, a user can start planning with:
 
-Specify progressively fills a local checklist and asks one blocking question at
-a time. Before publication, the user can publish automatically, save the draft,
-revise it, or stop. An unpublished draft remains at
-`.specify/ai-team/intake/<intake_slug>/issue-draft.md` and can be passed back to
-`speckit.team.specify` in a later chat to continue. Local Intake files are
-gitignored and do not become formal project context until a stable Issue or
-approved requirement ID exists.
+```text
+Please plan the accepted work at <Issue URL>. Pause after the HLD so we can discuss it before decomposing Tasks.
+```

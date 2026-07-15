@@ -12,9 +12,6 @@ from pathlib import Path
 START = "<!-- AI TEAM CONTEXT START -->"
 END = "<!-- AI TEAM CONTEXT END -->"
 BOOTSTRAP = ".specify/extensions/team/docs/context-bootstrap.md"
-INTAKE_IGNORE_START = "# AI TEAM LOCAL INTAKE START"
-INTAKE_IGNORE_END = "# AI TEAM LOCAL INTAKE END"
-INTAKE_IGNORE = "/.specify/ai-team/intake/"
 AGENT_FILES = {
     "codex": "AGENTS.md",
     "claude": "CLAUDE.md",
@@ -25,13 +22,13 @@ AGENT_FILES = {
 ROUTES = (
     (
         "speckit.team.specify",
-        "A new idea, requirement, defect symptom, or missing work item",
-        "create the primary Issue and `spec.md`",
+        "A new Feature or new-project idea needs clarification",
+        "publish or print complete Feature User Stories as the primary Issue",
     ),
     (
         "speckit.team.plan-and-task",
-        "An accepted work item needs architecture, scope, tasks, and self-tests",
-        "create and check `plan-and-task.md`",
+        "An accepted Feature or Bugfix Issue needs architecture, scope, tasks, and self-tests",
+        "summarize the Issue and create and check `plan-and-task.md`",
     ),
     (
         "speckit.team.implement",
@@ -79,8 +76,17 @@ def _integrations(root: Path) -> list[str]:
     return result
 
 
-def _installed_routes() -> list[tuple[str, str, str]]:
-    commands = Path(__file__).resolve().parent.parent / "commands"
+def _installed_routes(root: Path | None = None) -> list[tuple[str, str, str]]:
+    installed_commands = (
+        root / ".specify/extensions/team/commands"
+        if root is not None
+        else Path(__file__).resolve().parent.parent / "commands"
+    )
+    commands = (
+        installed_commands
+        if installed_commands.is_dir()
+        else Path(__file__).resolve().parent.parent / "commands"
+    )
     return [
         route
         for route in ROUTES
@@ -88,12 +94,12 @@ def _installed_routes() -> list[tuple[str, str, str]]:
     ]
 
 
-def _managed_section(target: str) -> str:
+def _managed_section(target: str, root: Path | None = None) -> str:
     if target == "CLAUDE.md":
         return f"{START}\n@AGENTS.md\n{END}\n"
     routes = "\n".join(
         f"- {when}: use `{name}` to {outcome}."
-        for name, when, outcome in _installed_routes()
+        for name, when, outcome in _installed_routes(root)
     )
     return (
         f"{START}\n"
@@ -138,9 +144,9 @@ def _safe_target(root: Path, relative: str) -> Path:
     return path
 
 
-def _merge(path: Path, target: str) -> None:
+def _merge(path: Path, target: str, root: Path) -> None:
     content = path.read_text(encoding="utf-8-sig") if path.exists() else ""
-    section = _managed_section(target)
+    section = _managed_section(target, root)
     start = content.find(START)
     end = content.find(END, start + len(START)) if start >= 0 else -1
     if (start >= 0) != (end >= 0):
@@ -154,22 +160,6 @@ def _merge(path: Path, target: str) -> None:
     if path.suffix == ".mdc":
         merged = _with_mdc_frontmatter(merged)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(merged.replace("\r\n", "\n"), encoding="utf-8")
-
-
-def _merge_intake_ignore(path: Path) -> None:
-    content = path.read_text(encoding="utf-8-sig") if path.exists() else ""
-    start = content.find(INTAKE_IGNORE_START)
-    end = content.find(INTAKE_IGNORE_END, start + len(INTAKE_IGNORE_START)) if start >= 0 else -1
-    if (start >= 0) != (end >= 0):
-        raise ValueError("Unbalanced AI Team local Intake markers in .gitignore")
-    block = f"{INTAKE_IGNORE_START}\n{INTAKE_IGNORE}\n{INTAKE_IGNORE_END}\n"
-    if start >= 0:
-        end += len(INTAKE_IGNORE_END)
-        merged = content[:start] + block.rstrip("\n") + content[end:]
-    else:
-        separator = "" if not content or content.endswith("\n\n") else "\n"
-        merged = content + separator + block
     path.write_text(merged.replace("\r\n", "\n"), encoding="utf-8")
 
 
@@ -191,15 +181,13 @@ def initialize(root: Path) -> list[str]:
         if target not in targets:
             targets.append(target)
     paths = [(target, _safe_target(root, target)) for target in targets]
-    gitignore = _safe_target(root, ".gitignore")
     snapshots = {
         path: path.read_bytes() if path.exists() else None
-        for path in [path for _, path in paths] + [gitignore]
+        for path in [path for _, path in paths]
     }
     try:
         for target, path in paths:
-            _merge(path, target)
-        _merge_intake_ignore(gitignore)
+            _merge(path, target, root)
     except (OSError, UnicodeError, ValueError):
         for path, content in snapshots.items():
             if content is None:

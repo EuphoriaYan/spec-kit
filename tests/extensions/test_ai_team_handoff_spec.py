@@ -56,8 +56,16 @@ def test_team_plan_skill_loads_internal_handoff_capability():
         EXTENSION_ROOT / "commands" / "speckit.team.plan-and-task.md"
     ).read_text(encoding="utf-8")
     assert "handoff-spec-sync.md" in plan_task
-    assert "internal" in plan_task
-    assert "not separate user skills" in plan_task
+    assert "confidential handoff" in plan_task
+    plan_command = next(
+        item
+        for item in manifest["provides"]["commands"]
+        if item["name"] == "speckit.team.plan-and-task"
+    )
+    assert any(
+        item["target"] == "references/handoff-spec-sync.md"
+        for item in plan_command["resources"]
+    )
 
 
 @requires_bash

@@ -1,23 +1,25 @@
 ---
-description: "Business/Product role for turning plain-language demand or a reported defect into a reviewed Issue and a unified Team specification."
+description: "Business/Product role for turning a plain-language Feature or new-project demand into a complete, reviewable Issue."
 ---
 
 # Spec Kit Team Specify
 
-Own the Business/Product role. Start from the user's language, not an
-implementation proposal. Produce the primary collaboration Issue before
-architecture planning or task decomposition.
+Own the Business/Product role for Feature and new-project demand. Start from a
+natural conversation, clarify complete User Stories, and publish or print one
+primary Issue. Do not create local requirement drafts, `spec.md`, architecture
+plans, Tasks, or Bugfix artifacts.
+
+Resolve `references/` and `scripts/` relative to this installed `SKILL.md`, not
+relative to the repository working directory.
 
 ## Bootstrap
 
-1. Run `python .specify/extensions/team/scripts/init_role_context.py`.
+1. Run the installed `scripts/init_role_context.py` by its resolved path.
 2. Read the invariant and Business/Product sections of
-   `.specify/extensions/team/docs/context-bootstrap.md`.
-3. Load only these references when needed:
-   - `.specify/extensions/team/docs/work-item-layout.md` for the canonical directory and files;
-   - `.specify/extensions/team/references/internal/intake.md` for classification and privacy;
-   - `.specify/extensions/team/docs/issue-lifecycle.md` for Issue labels and state;
-   - `.specify/extensions/team/docs/repository-boundary.md` for public or confidential placement.
+   `references/context-bootstrap.md`.
+3. Load only when needed:
+   - `references/issue-lifecycle.md` for labels and governance state;
+   - `references/repository-boundary.md` for public or confidential placement.
 
 Do not load architecture or implementation chat history.
 
@@ -27,106 +29,123 @@ Do not load architecture or implementation chat history.
 $ARGUMENTS
 ```
 
-## Flow
+The user may provide one sentence, an existing Feature Issue URL, or additional
+context. If the request is a defect, explain that it belongs to the Bugfix
+intake skill and stop without inventing a Feature Issue.
 
-1. Classify the request as `bug`, `feature`, `new-project`, or `unclear`.
-2. When the input is an existing
-   `.specify/ai-team/intake/<intake_slug>/issue-draft.md`, load its sibling
-   `request.md` and `specify-checklist.md`, verify that they remain inside the
-   local Intake root, and resume from the first blocking checklist item. Do not
-   restart discovery or discard answered items.
-3. For a request without a stable Issue, create or resume
-   `.specify/ai-team/intake/<intake_slug>/` using
-   `templates/specify-checklist-template.md` and
-   `templates/issue-draft-template.md`. Preserve the user's original wording in
-   `request.md`.
-4. Fill the Specify Checklist from user statements and repository evidence
-   before asking questions. Then clarify progressively:
-   - ask one focused blocking question at a time;
-   - update the checklist and Issue draft after every answer;
-   - do not ask for information already present in the request or source;
-   - distinguish facts, user decisions, assumptions, and unresolved questions;
-   - do not prescribe implementation or infer a Bug root cause.
-   After each update, run `python
-   .specify/extensions/team/scripts/check_specify_intake.py --intake-slug
-   <intake_slug>` and use its `next` result to select the next question. The
-   script checks completeness; it never supplies an answer.
-   Continue until required common checks and the matching Feature/new-project or
-   Bugfix checks are `ready`; mark only the non-matching type section
-   `not-applicable`. A pending item that
-   changes scope, publication safety, or testability blocks publication.
-5. Resolve the repository and privacy boundary. Ask a focused question whenever
-   classification or publication safety changes the route.
-6. Create or refine one primary Issue draft:
-   - Feature/new project: User Stories, value, scenarios, scope, non-goals,
-     acceptance points, privacy, and target release when decided.
-   - Bug: observable behavior, expected behavior, reproduction evidence,
-     impact, environment, and acceptance for the fix.
-7. Present the exact Issue title, body, target repository, labels, unresolved
-   non-blocking questions, and local draft path only after the Intake check
-   returns `ready`. Ask the user to choose exactly one publication action:
-   - `publish automatically`: use the configured repository tool;
-   - `save draft only`: do not publish and return the local `issue-draft.md` path;
-   - `revise`: continue the clarification loop and present the updated draft;
-   - `stop`: do not publish and return the retained local draft path.
-   Saving or stopping publication is not a rejection of the requirement and
-   must not add `state/rejected`. This publication choice is the only approval
-   owned by this skill.
-8. After `publish automatically`, publish only when the configured repository
-   tool is available. If publication fails or no tool is available, keep
-   `publication_status: not-published`, return the draft path and failure, and
-   stop without pretending an Issue exists. New Issues use one matching
-   `type/feature` or `type/bug` label and
-   exactly one lifecycle state label: `state/draft`. Publication approval must
-   not add `state/accepted`.
-   Never assign `state/accepted`; publication does not imply acceptance.
-9. Resolve one stable `work_id` from the created/linked Issue or approved
-   requirement identifier. Do not use a display title as identity.
-10. Normalize the directory category to `feature` or `bugfix`, then create
-   `.specify/<category>/<work_id>/spec.md` from the internal Team template.
-   Feature/new-project specs contain prioritized, independently testable User
-   Stories. Bugfix specs contain observation, expected behavior, reproduction,
-   environment, impact, and fix acceptance.
-   New draft work leaves `approval.decided_by` and `approval.evidence_url`
-   empty. For an already accepted Issue, copy the named decision maker and the
-   exact Issue/comment URL only after reading that repository evidence; never
-   infer or self-author an acceptance record.
-11. Create or update `work-context.yml` beside `spec.md`. Record category,
-   `work_id`, primary Issue, phase, and the Spec path. Do not create the formal
-   work directory until a stable Issue or approved requirement identifier
-   exists.
-12. Run a unified Issue/Spec check. Revise only the failed fields.
+## Conversation First
 
-The Technical Committee's `state/accepted` decision is outside this skill. Do
-not ask for it, simulate it, or continue into architecture planning. When an
-existing Issue is already `state/accepted`, report that fact without changing
-it, and synchronize only its verifiable approval reference;
-`speckit.team.plan-and-task` remains a separate invocation.
+1. Let the user explain the demand in their own words. Establish the affected
+   user, desired capability, important context, and broad boundary before
+   applying a structured checklist.
+2. Split a large demand into independently understandable User Stories. Work
+   through one Story at a time so later Stories can reuse established context.
+3. Ask one focused question only when the answer materially changes a Story,
+   scope, publication safety, or target repository. Do not turn the opening
+   conversation into a form interview.
 
-Never wait for `plan-and-task.md` to create the primary Issue. Do not use
-`speckit.taskstoissues` for the primary work item. Optional child execution
-tickets remain subordinate to the primary Issue.
+## Readiness Pass
+
+After the demand is substantially understood, perform one explicit
+completeness pass. Fill known answers first, then ask only for missing blocking
+information.
+
+For the whole Issue, check:
+
+- Feature versus new project is understood;
+- target repository and privacy boundary are known;
+- scope and important non-goals are not contradictory;
+- unresolved questions do not prevent review.
+
+For every User Story, check:
+
+- a concrete user or affected party;
+- the capability they need;
+- the value or outcome;
+- preconditions or triggering context;
+- a main scenario;
+- an important boundary or failure scenario when relevant;
+- observable `Verification` behavior with a stable `VER-###` ID.
+
+Repeat only the affected Story's readiness pass after a material revision. Do
+not persist the checklist or an Issue draft to disk.
+
+## Issue Format
+
+Present one complete Issue using this shape. `Background / Goal`, `Scope`,
+`Non-Goals`, and `Open Questions` are optional when they add useful context.
+
+```markdown
+# <Feature title>
+
+## User Stories
+
+### US-001: <Story title>
+
+As a <user>, I want <capability>, so that <value>.
+
+- Preconditions:
+- Main scenario:
+- Boundary or failure scenario:
+- Verification (`VER-001`):
+
+## Background / Goal
+
+## Scope
+
+## Non-Goals
+
+## Open Questions
+```
+
+`Verification` is the observable result that future planning, self-tests, and
+review can trace. It is not Issue acceptance; governance acceptance is
+represented only by `status/accept`.
+
+The proposed labels must be exactly:
+
+- `type/feature`;
+- `status/new-issue`.
+
+New-project demand also uses `type/feature`.
+
+## Publication Decision
+
+Show the exact title, body, repository, and labels, then ask the user to choose:
+
+- `publish`: create the Issue;
+- `output only`: print the final Issue in the current response and create
+  nothing;
+- `revise`: continue the conversation and rerun the affected readiness pass;
+- `stop`: create and persist nothing.
+
+For GitHub, use an available authenticated GitHub integration or `gh`. For
+other Git hosts, use an available authenticated repository integration, API,
+CLI, or browser. If the host is unsupported, authentication is unavailable, a
+tool is missing, or publication fails, fall back to `output only`. Report the
+failure honestly and never claim that an Issue was created.
+
+Publishing creates `status/new-issue`; it does not accept the Feature. The
+Technical Committee or delegated authority changes the Issue to
+`status/accept` outside this skill after discussion. Never assign
+`status/accept` or continue into architecture planning.
 
 ## Output
 
 ```text
 Team Specify Result:
-- work type:
-- work ID: stable ID or `not-assigned-before-publication`
-- primary Issue URL or approved draft:
-- Specify Checklist: .specify/ai-team/intake/<intake_slug>/specify-checklist.md
-- retained Issue draft: .specify/ai-team/intake/<intake_slug>/issue-draft.md
-- issue state:
-- spec: .specify/<feature|bugfix>/<work_id>/spec.md or `not-created-before-publication`
-- user stories or reproduction:
-- acceptance points:
+- work type: feature / new-project
+- target repository:
+- Issue URL: <url or not-created>
+- labels: type/feature, status/new-issue
+- User Stories:
 - privacy boundary:
-- unresolved questions:
-- publication decision: published-automatically / saved-draft / revise / stopped / not-needed
-- next step: publish Issue / Technical Committee decision / speckit.team.plan-and-task / blocked
-- result: published-draft / saved-draft / ready-for-external-decision / already-accepted / revise / blocked
+- unresolved non-blocking questions:
+- publication decision: published / output-only / revise / stopped
+- next step: Issue discussion / Technical Committee decision / revise / stop
+- result: published-new-issue / output-only / revise / blocked
 ```
 
-Stop before architecture work when the Issue is unpublished, Feature Issue and
-Spec disagree, private demand would leak, or acceptance criteria are not
-testable.
+Stop when the request is a Bugfix, privacy-safe publication cannot be
+established, a required User Story remains unclear, or the user declines both
+publication and output.

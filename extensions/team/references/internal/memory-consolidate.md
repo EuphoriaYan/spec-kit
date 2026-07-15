@@ -53,7 +53,7 @@ Distill noisy task artifacts into reusable memory:
 Default path:
 
 ```text
-.specify/ai-team/memory/local/
+.specify/team/memory/local/
 ```
 
 Local memory is not uploaded by default. It may include raw notes, failed
@@ -65,7 +65,7 @@ as authoritative by other agents.
 Default path:
 
 ```text
-.specify/ai-team/memory/department/
+.specify/team/memory/department/
 ```
 
 Department memory is uploaded to a controlled internal location, but it does not
@@ -101,7 +101,7 @@ python .specify/extensions/team/scripts/memory_adapter.py --ensure-ignore
 ```
 
 Write candidate cards under the ignored
-`.specify/ai-team/memory/staging/` directory, then persist a reviewed card:
+`.specify/team/memory/staging/` directory, then persist a reviewed card:
 
 ```text
 python .specify/extensions/team/scripts/memory_adapter.py \

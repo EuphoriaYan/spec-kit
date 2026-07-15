@@ -74,10 +74,7 @@ def test_context_initializer_merges_supported_agent_files_idempotently(tmp_path:
     cursor = (tmp_path / ".cursor/rules/specify-rules.mdc").read_text(encoding="utf-8")
     assert "alwaysApply: true" in cursor
     assert cursor.count(module.START) == 1
-    gitignore = (tmp_path / ".gitignore").read_text(encoding="utf-8")
-    assert "dist/" in gitignore
-    assert gitignore.count(module.INTAKE_IGNORE_START) == 1
-    assert module.INTAKE_IGNORE in gitignore
+    assert (tmp_path / ".gitignore").read_text(encoding="utf-8") == "dist/\n"
 
 
 def test_context_initializer_always_writes_agents_without_detected_tool(tmp_path: Path) -> None:
@@ -134,6 +131,7 @@ def test_direct_team_setup_rolls_back_extension_when_rules_fail(
     (specify / "init-options.json").write_text(
         json.dumps({"ai": "codex", "ai_skills": True}), encoding="utf-8"
     )
+    (tmp_path / ".claude" / "skills").mkdir(parents=True)
     monkeypatch.setattr(team_setup, "_locate_bundled_extension", lambda _id: AI_TEAM)
 
     def fail_rules(_root: Path) -> list[str]:
@@ -147,6 +145,48 @@ def test_direct_team_setup_rolls_back_extension_when_rules_fail(
     assert not (specify / "extensions" / "team").exists()
     assert not (specify / "extensions" / ".backup" / "team").exists()
     assert not (tmp_path / ".agents" / "skills" / "speckit-team-specify").exists()
+    assert not (tmp_path / ".claude" / "skills" / "speckit-team-specify").exists()
+
+
+@pytest.mark.parametrize(
+    ("integration", "skills_dir"),
+    [
+        ("codex", ".agents/skills"),
+        ("claude", ".claude/skills"),
+        ("cursor-agent", ".cursor/skills"),
+        ("trae", ".trae/skills"),
+    ],
+)
+def test_team_skills_install_with_local_references_and_scripts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    integration: str,
+    skills_dir: str,
+) -> None:
+    from specify_cli import team_setup
+
+    specify = tmp_path / ".specify"
+    specify.mkdir()
+    (specify / "init-options.json").write_text(
+        json.dumps(
+            {"ai": integration, "integration": integration, "ai_skills": True}
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(team_setup, "_locate_bundled_extension", lambda _id: AI_TEAM)
+
+    team_setup.install_bundled_team(tmp_path)
+
+    root = tmp_path / skills_dir
+    specify_skill = root / "speckit-team-specify"
+    plan_skill = root / "speckit-team-plan-and-task"
+    assert (specify_skill / "SKILL.md").is_file()
+    assert (specify_skill / "references/issue-lifecycle.md").is_file()
+    assert (specify_skill / "scripts/init_role_context.py").is_file()
+    assert (plan_skill / "references/codegraph.md").is_file()
+    assert (plan_skill / "references/feature-spec.md").is_file()
+    assert (plan_skill / "references/plan-and-task-format.md").is_file()
+    assert (plan_skill / "scripts/check_plan_and_task.py").is_file()
 
 
 def test_context_initializer_repairs_cursor_auto_load(tmp_path: Path) -> None:
@@ -194,37 +234,35 @@ def test_specify_role_contract_keeps_issue_and_user_story_model() -> None:
         encoding="utf-8"
     )
 
-    assert "Produce the primary collaboration Issue before" in text
-    assert "prioritized, independently testable User" in text
+    assert "Publish or print one" in text or "publish or print one" in text
+    assert "one Story at a time" in text
     assert "type/feature" in text
-    assert "exactly one lifecycle state label" in text
-    assert "speckit.taskstoissues" in text
-    assert "Never wait for `plan-and-task.md` to create the primary Issue" in text
-    assert ".specify/<category>/<work_id>/spec.md" in text
+    assert "status/new-issue" in text
+    assert "Do\nnot persist the checklist or an Issue draft" in text
+    assert "Do not create local requirement drafts, `spec.md`" in text
 
 
-def test_specify_progressively_clarifies_and_can_resume_a_saved_draft() -> None:
+def test_specify_converses_before_one_non_persistent_readiness_pass() -> None:
     text = (AI_TEAM / "commands/speckit.team.specify.md").read_text(
         encoding="utf-8"
     )
 
-    assert "specify-checklist.md" in text
-    assert "ask one focused blocking question at a time" in text
-    assert "update the checklist and Issue draft after every answer" in text
-    assert "publish automatically" in text
-    assert "save draft only" in text
-    assert "do not publish and return the retained local draft path" in text
-    assert "resume from the first blocking checklist item" in text
+    assert "Conversation First" in text
+    assert "After the demand is substantially understood" in text
+    assert "For every User Story" in text
+    assert "Do\nnot persist the checklist or an Issue draft" in text
+    assert "output only" in text
+    assert "fall back to `output only`" in text
 
 
 def test_publication_approval_is_not_feature_acceptance() -> None:
     specify = (AI_TEAM / "commands/speckit.team.specify.md").read_text(
         encoding="utf-8"
     )
-    for action in ("publish automatically", "save draft only", "revise", "stop"):
+    for action in ("publish", "output only", "revise", "stop"):
         assert f"`{action}`" in specify
-    assert "Publication approval must\n   not add `state/accepted`" in specify
-    assert "decision is outside this skill" in specify
+    assert "Publishing creates `status/new-issue`" in specify
+    assert "Never assign\n`status/accept`" in specify
 
     internal_text = "\n".join(
         path.read_text(encoding="utf-8")
@@ -246,10 +284,10 @@ def test_plan_and_task_role_uses_core_artifact_scripts_without_prompt_chain() ->
         assert removed_command not in text
     assert "minimum self-test" in text
     assert "LLD-level" in text
-    assert "test/evidence ID" in text
+    assert "self-verification scenario" in text
     assert "plan-and-task-check.md" in text
     assert ".specify/<feature|bugfix>/<work_id>/plan-and-task.md" in text
-    assert "Produce the technical Plan and executable Tasks without" in text
+    assert "Produce technical planning artifacts without" in text
 
 
 def test_plan_and_task_has_structured_input_contract() -> None:
@@ -257,18 +295,14 @@ def test_plan_and_task_has_structured_input_contract() -> None:
         encoding="utf-8"
     )
 
-    assert "Required To Locate The Work" in text
-    assert "Provide the primary Issue URL" in text
-    assert "accepted` or `working" in text
-    assert "Required Before Planning Can Finish" in text
+    assert "required user input is one primary Issue URL" in text
+    assert "status/accept" in text
+    assert "Issue Identity And Summary" in text
+    assert "Read the current Issue body and all relevant discussion" in text
     assert "Code Graph slice tied to the exact source revision" in text
-    assert "architecture guidance and module descriptions" in text
-    assert "Design Tasks for parallel assignment by default" in text
-    assert "exactly one module" in text
-    assert "Optional User Guidance" in text
-    assert "subset or priority order of User Story" in text
-    assert "return to `speckit.team.specify`" in text
-    assert "two locators disagree" in text
+    assert "Design Tasks for parallel assignment" in text
+    assert "Every Task belongs to one" in text
+    assert "enhancement-<issue-id>" in text
 
 
 def test_team_work_item_layout_and_templates_are_unified() -> None:
@@ -278,15 +312,7 @@ def test_team_work_item_layout_and_templates_are_unified() -> None:
     assert "bugfix/" in layout
     assert "<work_id>/" in layout
 
-    expected = {
-        "spec-template.md",
-        "plan-and-task-template.md",
-        "plan-and-task-check-template.md",
-        "module-readme-template.md",
-        "specify-checklist-template.md",
-        "issue-draft-template.md",
-        "work-context-template.yml",
-    }
+    expected = {"plan-and-task-template.md", "work-context-template.yml"}
     assert {path.name for path in (AI_TEAM / "templates").iterdir() if path.is_file()} == expected
     assert "plan-and-task.md" in layout
     assert "plan-and-task-check.md" in layout
@@ -294,10 +320,10 @@ def test_team_work_item_layout_and_templates_are_unified() -> None:
 
 def test_role_commands_require_repeatable_progressive_bootstrap() -> None:
     bootstrap = (AI_TEAM / "docs/context-bootstrap.md").read_text(encoding="utf-8")
-    assert "after every resume or\ncontext compression" in bootstrap
+    assert "after resume or context\ncompression" in bootstrap
     assert "Level 0: Always Load" in bootstrap
-    assert "Level 1: Load Only For The Active Role" in bootstrap
-    for role in ("Business / Product", "Architect / Module Owner"):
+    assert "Level 1: Active Role Only" in bootstrap
+    for role in ("Business / Product", "Architect"):
         assert role in bootstrap
     for command in (AI_TEAM / "commands").glob("*.md"):
         text = command.read_text(encoding="utf-8")

@@ -16,10 +16,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from work_item_paths import normalize_category, resolve_work_root
 
 
-VALIDATOR = "ai-team-plan-and-task-check/v3"
-SPEC_SCHEMA = "ai-team-spec/v1"
-PLAN_SCHEMA = "ai-team-plan-and-task/v3"
-ACCEPTED_STATES = {"accepted", "working"}
+VALIDATOR = "ai-team-plan-and-task-check/v4"
+SPEC_SCHEMA = "ai-team-feature-spec/v1"
+PLAN_SCHEMA = "ai-team-plan-and-task/v4"
+ACCEPTED_STATUSES = {"accept", "working"}
 PLACEHOLDER = re.compile(r"(?i)\b(?:TBD|TODO|FIXME)\b|<[^>]+>|path/to/file")
 ID_SPLIT = re.compile(r"\s*(?:,|;|<br\s*/?>)\s*", re.IGNORECASE)
 HTTP_URL = re.compile(r"^https?://\S+$", re.IGNORECASE)
@@ -107,8 +107,8 @@ def _acyclic(task_ids: list[str], dependencies: dict[str, list[str]]) -> bool:
     return True
 
 
-def _state(value: object) -> str:
-    return str(value or "").strip().lower().removeprefix("state/")
+def _status(value: object) -> str:
+    return str(value or "").strip().lower().removeprefix("status/")
 
 
 def _list(value: object) -> list[str]:
@@ -162,7 +162,10 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             Check(check_id, "PASS" if ok else ("BLOCK" if blocked else "FAIL"), detail)
         )
 
-    missing = [path.name for path in (spec_path, plan_path) if not path.is_file()]
+    required_paths = [plan_path]
+    if category == "feature":
+        required_paths.insert(0, spec_path)
+    missing = [path.name for path in required_paths if not path.is_file()]
     record(
         "ARTIFACTS",
         not missing,
@@ -176,7 +179,10 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
     plan_body = ""
     parse_errors: list[str] = []
     if not missing:
-        for path, target in ((spec_path, "spec"), (plan_path, "plan")):
+        parse_targets = [(plan_path, "plan")]
+        if category == "feature":
+            parse_targets.insert(0, (spec_path, "spec"))
+        for path, target in parse_targets:
             try:
                 metadata, body = _frontmatter(path)
                 if target == "spec":
@@ -193,33 +199,50 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
 
     if not missing and not parse_errors:
         try:
-            spec_category = normalize_category(str(spec_meta.get("work_type", "")))
             plan_category = normalize_category(str(plan_meta.get("work_type", "")))
+            spec_category = (
+                normalize_category(str(spec_meta.get("work_type", "")))
+                if category == "feature"
+                else category
+            )
         except ValueError:
             spec_category = plan_category = "invalid"
+        issue_source = plan_meta.get("issue_source")
+        issue_source = issue_source if isinstance(issue_source, dict) else {}
+        source_ok = all(
+            str(issue_source.get(key, "")).strip()
+            for key in ("repository", "issue_number", "updated_at", "body_hash")
+        )
         identity_ok = (
-            spec_meta.get("schema") == SPEC_SCHEMA
-            and plan_meta.get("schema") == PLAN_SCHEMA
-            and str(spec_meta.get("work_id", "")) == work_id
+            plan_meta.get("schema") == PLAN_SCHEMA
             and str(plan_meta.get("work_id", "")) == work_id
             and spec_category == category
             and plan_category == category
-            and _decision_evidence(spec_meta.get("primary_issue"))
+            and _decision_evidence(plan_meta.get("primary_issue"))
+            and source_ok
+            and (
+                category != "feature"
+                or (
+                    spec_meta.get("schema") == SPEC_SCHEMA
+                    and str(spec_meta.get("work_id", "")) == work_id
+                    and spec_meta.get("primary_issue") == plan_meta.get("primary_issue")
+                )
+            )
         )
         record(
             "IDENTITY", identity_ok, "schema, work ID, type, and primary Issue agree"
         )
 
-        accepted = _state(spec_meta.get("issue_state")) in ACCEPTED_STATES
+        accepted = _status(plan_meta.get("issue_status")) in ACCEPTED_STATUSES
         record(
             "ISSUE_STATE",
             accepted,
-            "Spec records state/accepted or state/working"
+            "Plan records status/accept or status/working"
             if accepted
-            else "Issue must be state/accepted or state/working",
+            else "Issue must be status/accept or status/working",
             blocked=True,
         )
-        approval = spec_meta.get("approval")
+        approval = plan_meta.get("approval")
         approval = approval if isinstance(approval, dict) else {}
         approval_ok = (
             accepted
@@ -235,119 +258,53 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             blocked=True,
         )
 
-        spec_common = {
-            "Common Specification",
-            "Problem And Goal",
-            "Acceptance Summary",
-            "Scope",
-            "Non-Goals",
-            "Open Questions",
-        }
-        spec_specific = (
-            {"Feature Specification", "User Stories", "Feature Acceptance"}
-            if category == "feature"
-            else {
-                "Bugfix Specification",
-                "Observed Behavior",
-                "Expected Behavior",
-                "Reproduction",
-                "Environment",
-                "Impact",
-                "Fix Acceptance",
-            }
-        )
-        missing_spec = sorted((spec_common | spec_specific) - _headings(spec_body))
-        record(
-            "SPEC_STRUCTURE",
-            not missing_spec,
-            "required common and type-specific Spec sections exist"
-            if not missing_spec
-            else f"missing headings: {', '.join(missing_spec)}",
-        )
-        spec_leaf_sections = {
-            "Problem And Goal",
-            "Acceptance Summary",
-            "Scope",
-            "Non-Goals",
-            "Open Questions",
-        } | (
-            {"User Stories", "Feature Acceptance"}
-            if category == "feature"
-            else {
-                "Observed Behavior",
-                "Expected Behavior",
-                "Reproduction",
-                "Environment",
-                "Impact",
-                "Fix Acceptance",
-            }
-        )
-        empty_spec = sorted(
-            heading
-            for heading in spec_leaf_sections
-            if heading in _headings(spec_body)
-            and not _meaningful(_section(spec_body, heading))
-        )
-        record(
-            "SPEC_CONTENT",
-            not empty_spec,
-            "required Spec sections contain non-placeholder content"
-            if not empty_spec
-            else f"empty or placeholder sections: {', '.join(empty_spec)}",
-        )
-
         if category == "feature":
-            acceptance_rows = _table(spec_body, "Feature Acceptance")
-            acceptance_columns = {"Acceptance ID", "Given", "When", "Then"}
-            story_ids = set(re.findall(r"(?m)^####\s+(US-\d+)\b", spec_body))
-        else:
-            acceptance_rows = _table(spec_body, "Fix Acceptance")
-            acceptance_columns = {
-                "Acceptance ID",
-                "Reproduction ID",
-                "Expected result after fix",
-            }
-            story_ids = set()
-        reproduction_ids = set(
-            re.findall(r"\bBUG-OBS-\d+\b", _section(spec_body, "Reproduction"))
-        )
-        acceptance_shape = (
-            bool(acceptance_rows)
-            and acceptance_columns.issubset(acceptance_rows[0])
-            and all(
-                all(value.strip() for value in row.values())
-                and not PLACEHOLDER.search(" ".join(row.values()))
-                for row in acceptance_rows
+            story_ids = set(re.findall(r"(?m)^#{3,4}\s+(US-\d+)\b", spec_body))
+            known_acceptance = set(re.findall(r"\bVER-\d+\b", spec_body))
+            missing_spec = sorted({"User Stories"} - _headings(spec_body))
+            spec_ok = (
+                not missing_spec
+                and _meaningful(_section(spec_body, "User Stories"))
+                and bool(story_ids)
+                and bool(known_acceptance)
             )
-        )
-        known_acceptance = (
-            {row.get("Acceptance ID", "") for row in acceptance_rows}
-            if acceptance_shape
-            else set()
-        )
-        acceptance_shape = (
-            acceptance_shape
-            and len(known_acceptance) == len(acceptance_rows)
-            and all(re.fullmatch(r"AC-\d+", item) for item in known_acceptance)
-            and (category != "feature" or bool(story_ids))
-            and (
-                category != "bugfix"
-                or (
-                    bool(reproduction_ids)
-                    and all(
-                        row["Reproduction ID"] in reproduction_ids
-                        for row in acceptance_rows
-                    )
+            record(
+                "SPEC_STRUCTURE",
+                spec_ok,
+                "Feature Spec contains User Stories and Verification IDs"
+                if spec_ok
+                else "Feature Spec requires User Stories and VER-### Verification IDs",
+            )
+            reproduction_ids: set[str] = set()
+        else:
+            story_ids = set()
+            bug_rows = _table(plan_body, "Bugfix Verification")
+            bug_columns = {"Verification ID", "Reproduction ID", "Expected result"}
+            bug_shape = bool(bug_rows) and bug_columns.issubset(bug_rows[0])
+            known_acceptance = (
+                {row["Verification ID"] for row in bug_rows} if bug_shape else set()
+            )
+            reproduction_ids = (
+                {row["Reproduction ID"] for row in bug_rows} if bug_shape else set()
+            )
+            bug_shape = (
+                bug_shape
+                and bool(known_acceptance)
+                and all(re.fullmatch(r"VER-\d+", item) for item in known_acceptance)
+                and all(re.fullmatch(r"BUG-OBS-\d+", item) for item in reproduction_ids)
+                and all(
+                    all(value.strip() for value in row.values())
+                    and not PLACEHOLDER.search(" ".join(row.values()))
+                    for row in bug_rows
                 )
             )
-        )
-        record(
-            "SPEC_ACCEPTANCE",
-            acceptance_shape,
-            "acceptance rows and type-specific identifiers are parseable"
-            if acceptance_shape
-            else "acceptance table or Feature User Story identifiers are missing or invalid",
-        )
+            record(
+                "BUGFIX_INPUT",
+                bug_shape,
+                "Bugfix reproduction and Verification IDs are parseable"
+                if bug_shape
+                else "Bugfix Verification requires VER-### and BUG-OBS-### mappings",
+            )
 
         plan_common = {
             "Plan (HLD)",
@@ -371,6 +328,8 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             if category == "feature"
             else {
                 "Bugfix Delivery Plan",
+                "Accepted Bug Summary",
+                "Bugfix Verification",
                 "Root Cause Evidence",
                 "Reproduction And Regression Mapping",
             }
@@ -396,7 +355,12 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
         } | (
             {"User Story Delivery Mapping"}
             if category == "feature"
-            else {"Root Cause Evidence", "Reproduction And Regression Mapping"}
+            else {
+                "Accepted Bug Summary",
+                "Bugfix Verification",
+                "Root Cause Evidence",
+                "Reproduction And Regression Mapping",
+            }
         )
         empty_plan = sorted(
             heading
@@ -454,21 +418,23 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             else "impact_analysis.code_graph requires kind, existing evidence_path, and matching source_revision",
             blocked=True,
         )
-        owner_approval = impact.get("contract_owner_approval")
-        owner_approval = owner_approval if isinstance(owner_approval, dict) else {}
+        contract_authority = impact.get("contract_authority")
+        contract_authority = (
+            contract_authority if isinstance(contract_authority, dict) else {}
+        )
         contract_ok = bool(contract_change)
         if contract_change != "none":
             contract_ok = (
                 contract_ok
-                and _named_decider(owner_approval.get("decided_by"))
-                and _decision_evidence(owner_approval.get("evidence_url"))
+                and _named_decider(contract_authority.get("decided_by"))
+                and _decision_evidence(contract_authority.get("evidence_url"))
             )
         record(
             "CONTRACT_AUTHORITY",
             contract_ok,
             "contract impact and required owner decision reference are recorded"
             if contract_ok
-            else "public contract change requires a named owner and an http(s) decision URL",
+            else "public contract change requires a named architecture or contract authority and an http(s) decision URL",
             blocked=True,
         )
 
@@ -495,11 +461,11 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
         tests = _table(plan_body, "Minimum Self-Tests")
         module_columns = {
             "Module",
-            "Ownership source",
-            "Owner",
+            "Module path",
             "Current responsibility",
             "Planned change",
             "Contract impact",
+            "Review route (optional)",
         }
         task_columns = {
             "Task ID",
@@ -571,8 +537,12 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             module_plan_ok = (
                 len(module_ids) == len(set(module_ids))
                 and set(module_ids) == set(modules)
-                and all(_evidence_file(project_root, row["Ownership source"]) for row in module_plan)
-                and all(_named_decider(row["Owner"]) for row in module_plan)
+                and all(
+                    bool(row["Module path"].strip())
+                    and not Path(row["Module path"]).is_absolute()
+                    and ".." not in Path(row["Module path"]).parts
+                    for row in module_plan
+                )
                 and all(
                     not PLACEHOLDER.search(" ".join(row.values()))
                     and all(value.strip() for value in row.values())
@@ -581,11 +551,11 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
                 and set(task_modules.values()) == set(modules)
             )
             record(
-                "MODULE_OWNERSHIP",
+                "MODULE_SCOPE",
                 module_plan_ok,
-                "affected modules map to existing ownership cards, owners, and Tasks"
+                "affected modules map to bounded module paths and Tasks"
                 if module_plan_ok
-                else "each affected module needs one existing ownership source, named owner, and at least one Task",
+                else "each affected module needs one safe module path and at least one Task",
                 blocked=True,
             )
 
@@ -619,9 +589,9 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             record(
                 "TRACEABILITY",
                 mappings_ok,
-                "Tasks map to acceptance IDs, declared paths, and defined self-tests"
+                "Tasks map to Verification IDs, declared paths, and defined self-tests"
                 if mappings_ok
-                else "Task/test IDs, acceptance mapping, declared paths, or required values are inconsistent",
+                else "Task/test IDs, Verification mapping, declared paths, or required values are inconsistent",
             )
 
             dependency_refs_ok = all(
@@ -663,13 +633,13 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
 
             if category == "feature":
                 delivery = _table(plan_body, "User Story Delivery Mapping")
-                columns = {"User Story ID", "Acceptance IDs", "Task IDs"}
+                columns = {"User Story ID", "Verification IDs", "Task IDs"}
                 delivery_ok = bool(delivery) and columns.issubset(delivery[0])
                 if delivery_ok:
                     mapped_acceptance = {
                         item
                         for row in delivery
-                        for item in _ids(row["Acceptance IDs"])
+                        for item in _ids(row["Verification IDs"])
                     }
                     delivery_ok = (
                         {row["User Story ID"] for row in delivery} == story_ids

@@ -23,8 +23,9 @@ Check in this order:
    coding issue; confidential feature links an allowed handoff requirement or
    public-safe summary. Additional issues must represent different symptoms of
    the same root-cause change and each must map to verification evidence.
-3. Native artifacts: `spec.md`, `plan-and-task.md`, bug reports, Issue approval
-   records, and the Evidence Board agree on the work item and delivered behavior.
+3. Native artifacts: Feature `spec.md` when applicable, `plan-and-task.md`,
+   Bugfix intake artifacts, Issue decision records, and the Evidence Board agree
+   on the work item and delivered behavior.
 4. Work context: `.specify/<category>/<work_id>/context-pack.md` and
    `work-context.yml` point to the active native artifacts and evidence.
 5. Permissions: effective reads, writes, commands, dependencies, and network

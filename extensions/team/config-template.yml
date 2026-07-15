@@ -19,13 +19,13 @@ agent_tools:
   auto_detect_from_specify_init: true
 
 work_artifacts:
-  # Feature and Bugfix work use the same directory depth and file contract.
+  # Feature and Bugfix work use the same directory depth. Only Feature uses Spec.
   root: .specify
   path_template: .specify/{category}/{work_id}
   categories:
     - feature
     - bugfix
-  spec_file: spec.md
+  feature_spec_file: spec.md
   plan_and_task_file: plan-and-task.md
   plan_and_task_check_file: plan-and-task-check.md
   context_pack_file: context-pack.md
@@ -49,13 +49,13 @@ memory:
       api_key_env: MEM0_API_KEY
   tiers:
     local:
-      path: .specify/ai-team/memory/local
+      path: .specify/team/memory/local
       upload: false
       docs: false
       release_artifact: false
       git_policy: ignore-or-local-only
     department:
-      path: .specify/ai-team/memory/department
+      path: .specify/team/memory/department
       upload: true
       docs: false
       release_artifact: false
@@ -83,7 +83,7 @@ release_archive:
   # Release archive is a release-scoped batch view of memory consolidation.
   # It summarizes completed work so future tasks do not need to load every
   # task-level trace.
-  private_root: .specify/ai-team/releases/private
+  private_root: .specify/team/releases/private
   enterprise_root: docs/ai-team/memory/releases
   default_privacy: department-internal
   default_target_tier: department
@@ -123,13 +123,18 @@ planning:
   final_check_after_task_design: true
 
 issue_publishing:
-  default_adapter: github-cli
+  default_adapter: auto
   supported_adapters:
+    - repository-integration
     - github-cli
+    - host-api
+    - authenticated-browser
+    - output-only
   github_cli:
     command: gh
+  fallback: output-only
   require_verified_issue_url: true
-  require_approved_intake_gates: true
+  require_feature_readiness_pass: true
 
 permissions:
   # Human approval records are not a runtime sandbox. Keep policy-only until
@@ -162,15 +167,12 @@ issue_lifecycle:
       - type/feature
     coding_allowed:
       - type/feature
-      - type/bug
-  state_labels:
-    - state/draft
-    - state/accepted
-    - state/working
-    - state/finished
-    - state/rejected
-    - state/closed
-    - state/superseded
+      - type/bugfix
+  status_labels:
+    - status/new-issue
+    - status/accept
+    - status/working
+    - status/close
   enhancement_internal_allows_bugfix: false
 
 code_graph:

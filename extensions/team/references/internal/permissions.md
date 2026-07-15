@@ -15,9 +15,9 @@ $ARGUMENTS
 
 ## Required Inputs
 
-Resolve either a formal work scope or an Intake scope:
+Resolve the formal work scope:
 
-- formal `work_id`, or `intake_mode=true` plus `intake_slug`;
+- formal `work_id`;
 - requested `mode=analysis|implementation|verification|submission`;
 - repository role and target module;
 - active AI integration;
@@ -25,13 +25,8 @@ Resolve either a formal work scope or an Intake scope:
   network destinations;
 - requested enforcement mode, if any.
 
-Load exactly one context root:
-
-- formal: `.specify/<category>/<work_id>/work-context.yml` and its
-  `permission-envelope.yml`;
-- Intake: `.specify/ai-team/intake/<intake_slug>/intake.yml` and its
-  `permission-envelope.yml`;
-- repository and AI integration rules.
+Load `.specify/<category>/<work_id>/work-context.yml`, its
+`permission-envelope.yml`, and the repository and AI integration rules.
 
 For `mode=implementation`, also resolve and read the authoritative
 `.specify/<category>/<work_id>/plan-and-task.md` and

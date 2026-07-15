@@ -169,7 +169,7 @@ After consolidation, future agents usually need a smaller artifact:
 - evidence rollup.
 
 The release archive capability is the release-scoped batch version of the same
-process. It may create `.specify/ai-team/releases/private/<release_id>/` and
+process. It may create `.specify/team/releases/private/<release_id>/` and
 then use the same promotion rules to decide what stays local, what is shared to department
 memory, and what becomes enterprise memory.
 
@@ -220,19 +220,19 @@ When sources disagree, use this order:
 ## Recommended Artifacts
 
 ```text
-.specify/ai-team/support/
+.specify/team/support/
 |-- skill-inventory.md
 |-- knowledge-map.md
 `-- memory-index.md
 
-.specify/ai-team/memory/
+.specify/team/memory/
 |-- local/
 |-- department/
 |   |-- decisions/
 |   `-- attempts/
 `-- service-sync-index.md
 
-.specify/ai-team/releases/
+.specify/team/releases/
 `-- <release_id>/
     |-- release-summary.md
     |-- shipped-work-index.md

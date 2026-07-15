@@ -46,7 +46,7 @@ owner: module-maintainer
 
 
 def _staged_card(tmp_path: Path, name: str, content: str) -> Path:
-    source = tmp_path / ".specify" / "ai-team" / "memory" / "staging" / name
+    source = tmp_path / ".specify" / "team" / "memory" / "staging" / name
     source.parent.mkdir(parents=True, exist_ok=True)
     source.write_text(content, encoding="utf-8")
     return source
@@ -139,7 +139,7 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["memory"]["tiers"]["enterprise"]["upload"] is True
     assert config["memory"]["tiers"]["enterprise"]["docs"] is True
     assert config["memory"]["tiers"]["enterprise"]["git_policy"] == "commit-after-review"
-    assert config["release_archive"]["private_root"] == ".specify/ai-team/releases/private"
+    assert config["release_archive"]["private_root"] == ".specify/team/releases/private"
     assert config["release_archive"]["enterprise_root"] == "docs/ai-team/memory/releases"
     assert config["release_archive"]["default_privacy"] == "department-internal"
     assert config["release_archive"]["default_target_tier"] == "department"
@@ -185,9 +185,9 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
         "revise-plan",
     ]
     assert config["planning"]["final_check_after_task_design"] is True
-    assert config["issue_publishing"]["default_adapter"] == "github-cli"
+    assert config["issue_publishing"]["default_adapter"] == "auto"
     assert config["issue_publishing"]["require_verified_issue_url"] is True
-    assert config["issue_publishing"]["require_approved_intake_gates"] is True
+    assert config["issue_publishing"]["require_feature_readiness_pass"] is True
     assert "root" not in config["code_graph"]
     assert set(config["code_graph"]["normalized_outputs"]) == {
         "nodes.jsonl",
@@ -211,16 +211,13 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     ] == ["type/feature"]
     assert set(config["issue_lifecycle"]["type_labels"]["coding_allowed"]) == {
         "type/feature",
-        "type/bug",
+        "type/bugfix",
     }
-    assert set(config["issue_lifecycle"]["state_labels"]) == {
-        "state/draft",
-        "state/accepted",
-        "state/working",
-        "state/finished",
-        "state/rejected",
-        "state/closed",
-        "state/superseded",
+    assert set(config["issue_lifecycle"]["status_labels"]) == {
+        "status/new-issue",
+        "status/accept",
+        "status/working",
+        "status/close",
     }
     assert config["issue_lifecycle"]["enhancement_internal_allows_bugfix"] is False
     assert (
@@ -300,7 +297,7 @@ def test_memory_adapter_mem0_mirrors_sanitized_non_private_card(tmp_path, monkey
       api_key_env: TEST_MEM0_KEY
   tiers:
     department:
-      path: .specify/ai-team/memory/department
+      path: .specify/team/memory/department
       namespace: ai-team/example/department
 """,
         encoding="utf-8",
@@ -399,7 +396,7 @@ def test_ai_team_repository_boundary_document_exists():
     assert "Handoff requirement" in text
     assert "Do not use a local path" in text
     assert "type/feature" in text
-    assert "type/bug" in text
+    assert "type/bugfix" in text
 
 
 def test_ai_team_issue_lifecycle_document_exists():
@@ -407,12 +404,12 @@ def test_ai_team_issue_lifecycle_document_exists():
 
     assert issue_doc.exists()
     text = issue_doc.read_text(encoding="utf-8")
-    assert "enhancement_internal" in text
-    assert "`type/feature` only" in text
-    assert "`type/bug`" in text
-    assert "state/draft" in text
-    assert "state/finished" in text
-    assert "state/superseded" in text
+    assert "enhancement repository" in text
+    assert "`type/feature`" in text
+    assert "`type/bugfix`" in text
+    assert "status/new-issue" in text
+    assert "status/accept" in text
+    assert "status/close" in text
 
 
 def test_ai_team_work_context_document_exists():
@@ -428,7 +425,7 @@ def test_ai_team_work_context_document_exists():
     assert ".specify/workflows/runs/<run-id>/state.json" not in text
     assert "plan-and-task.md" in text
     assert "plan-and-task-check.md" in text
-    assert "second index" in text
+    assert "resume anchor" in text
 
 
 def test_ai_team_reuses_native_sdd_artifacts_without_change_manifest():
@@ -455,9 +452,8 @@ def test_ai_team_uses_one_plan_review_then_task_decomposition_flow():
     command = EXTENSION_ROOT / "commands" / "speckit.team.plan-and-task.md"
     text = command.read_text(encoding="utf-8")
 
-    assert "continue to Task decomposition now" in text
-    assert "pause for Plan discussion" in text
-    assert "planning_stage: task-design" in text
+    assert "continue to Tasks" in text
+    assert "pause for discussion" in text
     assert "planning_stage: ready-for-check" in text
     assert not (EXTENSION_ROOT / "docs" / "compact-planning.md").exists()
 

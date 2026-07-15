@@ -20,14 +20,14 @@ import yaml
 IGNORE_START = "# BEGIN AI TEAM PRIVATE MEMORY"
 IGNORE_END = "# END AI TEAM PRIVATE MEMORY"
 IGNORE_PATHS = (
-    "/.specify/ai-team/memory/staging/",
-    "/.specify/ai-team/memory/local/",
-    "/.specify/ai-team/memory/department/",
-    "/.specify/ai-team/releases/private/",
+    "/.specify/team/memory/staging/",
+    "/.specify/team/memory/local/",
+    "/.specify/team/memory/department/",
+    "/.specify/team/releases/private/",
 )
 DEFAULT_TIER_PATHS = {
-    "local": ".specify/ai-team/memory/local",
-    "department": ".specify/ai-team/memory/department",
+    "local": ".specify/team/memory/local",
+    "department": ".specify/team/memory/department",
     "enterprise": "docs/ai-team/memory",
 }
 
@@ -187,7 +187,7 @@ def persist_memory(
     ensure_memory_gitignore(project_root)
     config = _load_config(project_root, config_path)
     allowed_source_roots = [
-        project_root / ".specify" / "ai-team" / "memory" / "staging",
+        project_root / ".specify" / "team" / "memory" / "staging",
         project_root / DEFAULT_TIER_PATHS[tier],
     ]
     if not any(_inside(source, root) for root in allowed_source_roots):

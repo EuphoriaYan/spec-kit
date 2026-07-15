@@ -19,83 +19,36 @@ def _module():
     return module
 
 
-def _spec(work_id: str, work_type: str, state: str = "accepted") -> str:
-    common = f"""---
-schema: ai-team-spec/v1
+def _spec(work_id: str, status: str = "accept") -> str:
+    return f"""---
+schema: ai-team-feature-spec/v1
 work_id: "{work_id}"
-work_type: {work_type}
+work_type: feature
 primary_issue: https://example.com/org/repo/issues/{work_id}
-issue_state: {state}
+issue_status: status/{status}
+issue_source:
+  repository: example.com/org/repo
+  issue_number: "{work_id}"
+  updated_at: "2026-07-15T10:00:00Z"
+  body_hash: sha256:accepted-body
 approval:
   decided_by: technical-committee@example.com
   evidence_url: https://example.com/org/repo/issues/{work_id}#accepted
 privacy_boundary: public-safe
 ---
 
-# Specification
+# Feature Specification
 
-## Common Specification
+## User Stories
 
-### Problem And Goal
-Deliver the requested behavior.
-
-### Acceptance Summary
-- AC-001: behavior is observable.
-
-### Scope
-One module.
-
-### Non-Goals
-No API change.
-
-### Open Questions
-None.
-"""
-    if work_type == "feature":
-        return (
-            common
-            + """
-
-## Feature Specification
-
-### User Stories
-
-#### US-001 [P1] Export
+### US-001 [P1] Export
 As an operator, I want an export, so that I can reconcile results.
 
-### Feature Acceptance
-| Acceptance ID | Given | When | Then |
-|---|---|---|---|
-| AC-001 | filtered rows | export runs | matching rows are returned |
+- Preconditions: selected rows exist.
+- Main scenario: export returns all selected rows.
+- Boundary or failure scenario: multi-page results remain complete.
+- Verification (`VER-001`): every selected row is present.
 """
-        )
-    return (
-        common
-        + """
-
-## Bugfix Specification
-
-### Observed Behavior
-The export omits one row.
-
-### Expected Behavior
-All matching rows are present.
-
-### Reproduction
-BUG-OBS-001 reproduces with a two-page result.
-
-### Environment
-Supported production profile.
-
-### Impact
-One export is incomplete.
-
-### Fix Acceptance
-| Acceptance ID | Reproduction ID | Expected result after fix |
-|---|---|---|
-| AC-001 | BUG-OBS-001 | all rows are present |
-"""
-    )
 
 
 def _plan(
@@ -116,9 +69,19 @@ def _plan(
     ownership_source: str = "src/export/README.md",
 ) -> str:
     common = f"""---
-schema: ai-team-plan-and-task/v3
+schema: ai-team-plan-and-task/v4
 work_id: "{work_id}"
 work_type: {work_type}
+primary_issue: https://example.com/org/repo/issues/{work_id}
+issue_status: status/accept
+issue_source:
+  repository: example.com/org/repo
+  issue_number: "{work_id}"
+  updated_at: "2026-07-15T10:00:00Z"
+  body_hash: sha256:accepted-body
+approval:
+  decided_by: technical-committee@example.com
+  evidence_url: https://example.com/org/repo/issues/{work_id}#accepted
 planning_stage: {stage}
 plan_review:
   decision: {plan_decision}
@@ -137,7 +100,7 @@ impact_analysis:
   cross_module: {str(cross_module).lower()}
   class_changes: {str(class_changes).lower()}
   public_contract_change: {contract_change}
-  contract_owner_approval:
+  contract_authority:
     decided_by: {owner}
     evidence_url: {owner_evidence}
 ---
@@ -150,9 +113,9 @@ impact_analysis:
 The export service and its test are the complete affected slice.
 
 ### Module Change Plan
-| Module | Ownership source | Owner | Current responsibility | Planned change | Contract impact |
+| Module | Module path | Current responsibility | Planned change | Contract impact | Review route (optional) |
 |---|---|---|---|---|---|
-| export | {ownership_source} | module-owner@example.com | export result production | preserve all result rows | none |
+| export | {ownership_source} | export result production | preserve all result rows | none | none |
 
 ### Architecture And Contract Impact
 The existing export path is reused and public behavior is compatible.
@@ -177,7 +140,7 @@ The architect approved immediate Task decomposition.
 ### Task Index
 | Task ID | Module | Requirement IDs | Planned paths | Depends on | Parallel group | Self-test IDs | LLD summary |
 |---|---|---|---|---|---|---|---|
-| T001 | export | AC-001 | src/export.py | {task_dependency} | P1 | {task_test} | preserve every selected result row |
+| T001 | export | VER-001 | src/export.py | {task_dependency} | P1 | {task_test} | preserve every selected result row |
 
 ### Task Details
 | Task ID | Goal and non-goals | Design and data flow | Inputs and contracts | Completion criteria |
@@ -203,9 +166,9 @@ None.
 ## Feature Delivery Plan
 
 ### User Story Delivery Mapping
-| User Story ID | Acceptance IDs | Task IDs |
+| User Story ID | Verification IDs | Task IDs |
 |---|---|---|
-| US-001 | AC-001 | T001 |
+| US-001 | VER-001 | T001 |
 """
         )
     return (
@@ -213,6 +176,14 @@ None.
         + """
 
 ## Bugfix Delivery Plan
+
+### Accepted Bug Summary
+The export omits one row in a supported production profile.
+
+### Bugfix Verification
+| Verification ID | Reproduction ID | Expected result |
+|---|---|---|
+| VER-001 | BUG-OBS-001 | all rows are present |
 
 ### Root Cause Evidence
 The page cursor is advanced before the last row is copied.
@@ -232,12 +203,8 @@ def _write_package(tmp_path: Path, work_id: str, work_type: str, **plan_kwargs) 
     graph = root / "codegraph" / "summary.md"
     graph.parent.mkdir()
     graph.write_text("source revision abc123 impact slice\n", encoding="utf-8")
-    module_readme = tmp_path / "src" / "export" / "README.md"
-    module_readme.parent.mkdir(parents=True, exist_ok=True)
-    module_readme.write_text(
-        "# Export\n\nOwner: module-owner@example.com\n", encoding="utf-8"
-    )
-    (root / "spec.md").write_text(_spec(work_id, work_type), encoding="utf-8")
+    if work_type == "feature":
+        (root / "spec.md").write_text(_spec(work_id), encoding="utf-8")
     (root / "plan-and-task.md").write_text(
         _plan(work_id, work_type, **plan_kwargs), encoding="utf-8"
     )
@@ -245,11 +212,6 @@ def _write_package(tmp_path: Path, work_id: str, work_type: str, **plan_kwargs) 
 
 
 def _add_parallel_report_task(tmp_path: Path, root: Path) -> None:
-    report_readme = tmp_path / "src" / "report" / "README.md"
-    report_readme.parent.mkdir(parents=True, exist_ok=True)
-    report_readme.write_text(
-        "# Report\n\nOwner: report-owner@example.com\n", encoding="utf-8"
-    )
     plan_path = root / "plan-and-task.md"
     plan = plan_path.read_text(encoding="utf-8")
     plan = plan.replace(
@@ -259,13 +221,13 @@ def _add_parallel_report_task(tmp_path: Path, root: Path) -> None:
         "affected_modules:\n  - export\n",
         "affected_modules:\n  - export\n  - report\n",
     ).replace(
-        "| export | src/export/README.md | module-owner@example.com | export result production | preserve all result rows | none |",
-        "| export | src/export/README.md | module-owner@example.com | export result production | preserve all result rows | none |\n"
-        "| report | src/report/README.md | report-owner@example.com | report rendering | add export summary | none |",
+        "| export | src/export/README.md | export result production | preserve all result rows | none | none |",
+        "| export | src/export/README.md | export result production | preserve all result rows | none | none |\n"
+        "| report | src/report | report rendering | add export summary | none | none |",
     ).replace(
-        "| T001 | export | AC-001 | src/export.py | none | P1 | TEST-001 | preserve every selected result row |",
-        "| T001 | export | AC-001 | src/export.py | none | P1 | TEST-001 | preserve every selected result row |\n"
-        "| T002 | report | AC-001 | src/report.py | none | P1 | TEST-002 | render the export summary |",
+        "| T001 | export | VER-001 | src/export.py | none | P1 | TEST-001 | preserve every selected result row |",
+        "| T001 | export | VER-001 | src/export.py | none | P1 | TEST-001 | preserve every selected result row |\n"
+        "| T002 | report | VER-001 | src/report.py | none | P1 | TEST-002 | render the export summary |",
     ).replace(
         "| T001 | include all rows; no format change | advance the cursor after copying | existing export result contract | regression test passes |",
         "| T001 | include all rows; no format change | advance the cursor after copying | existing export result contract | regression test passes |\n"
@@ -274,7 +236,7 @@ def _add_parallel_report_task(tmp_path: Path, root: Path) -> None:
         "| TEST-001 | unit | multi-page export fixture | pytest tests/test_export.py | passing regression output |",
         "| TEST-001 | unit | multi-page export fixture | pytest tests/test_export.py | passing regression output |\n"
         "| TEST-002 | unit | export result fixture | pytest tests/test_report.py | passing report output |",
-    ).replace("| US-001 | AC-001 | T001 |", "| US-001 | AC-001 | T001, T002 |")
+    ).replace("| US-001 | VER-001 | T001 |", "| US-001 | VER-001 | T001, T002 |")
     plan_path.write_text(plan, encoding="utf-8")
 
 
@@ -296,7 +258,7 @@ def test_independent_module_tasks_can_share_a_parallel_group(tmp_path: Path) -> 
     result, rendered = module.evaluate(tmp_path, "feature", "113")
 
     assert result == "ready", rendered
-    assert "| MODULE_OWNERSHIP | PASS |" in rendered
+    assert "| MODULE_SCOPE | PASS |" in rendered
     assert "| TASK_DEPENDENCIES | PASS |" in rendered
     assert "| PARALLEL_SCOPE | PASS |" in rendered
 
@@ -307,8 +269,8 @@ def test_parallel_tasks_cannot_claim_the_same_path(tmp_path: Path) -> None:
     _add_parallel_report_task(tmp_path, root)
     plan_path = root / "plan-and-task.md"
     plan = plan_path.read_text(encoding="utf-8").replace(
-        "| T002 | report | AC-001 | src/report.py |",
-        "| T002 | report | AC-001 | src/export.py |",
+        "| T002 | report | VER-001 | src/report.py |",
+        "| T002 | report | VER-001 | src/export.py |",
     )
     plan_path.write_text(plan, encoding="utf-8")
 
@@ -354,8 +316,10 @@ def test_check_is_deterministic_and_cli_detects_stale_output(tmp_path: Path) -> 
 def test_draft_issue_blocks_planning(tmp_path: Path) -> None:
     module = _module()
     root = _write_package(tmp_path, "104", "feature")
-    (root / "spec.md").write_text(
-        _spec("104", "feature", state="draft"), encoding="utf-8"
+    plan = (root / "plan-and-task.md").read_text(encoding="utf-8")
+    (root / "plan-and-task.md").write_text(
+        plan.replace("issue_status: status/accept", "issue_status: status/new-issue"),
+        encoding="utf-8",
     )
     result, rendered = module.evaluate(tmp_path, "feature", "104")
     assert result == "blocked"
@@ -400,9 +364,9 @@ def test_final_check_blocks_until_human_continues_to_tasks(tmp_path: Path) -> No
 def test_acceptance_requires_human_decision_reference(tmp_path: Path) -> None:
     module = _module()
     root = _write_package(tmp_path, "107", "feature")
-    spec = (root / "spec.md").read_text(encoding="utf-8")
-    (root / "spec.md").write_text(
-        spec.replace(
+    plan = (root / "plan-and-task.md").read_text(encoding="utf-8")
+    (root / "plan-and-task.md").write_text(
+        plan.replace(
             "technical-committee@example.com\n  evidence_url: https://example.com/org/repo/issues/107#accepted",
             "approved\n  evidence_url: pending",
         ),
@@ -435,7 +399,7 @@ def test_empty_sections_and_incomplete_delivery_mapping_require_revision(
     plan = plan.replace(
         "### Implementation Plan\nAdjust selection and verify the result.",
         "### Implementation Plan\n",
-    ).replace("| US-001 | AC-001 | T001 |", "| US-999 | AC-001 | T001 |")
+    ).replace("| US-001 | VER-001 | T001 |", "| US-999 | VER-001 | T001 |")
     (root / "plan-and-task.md").write_text(plan, encoding="utf-8")
 
     result, rendered = module.evaluate(tmp_path, "feature", "109")
@@ -453,19 +417,19 @@ def test_missing_self_test_mapping_requires_revision(tmp_path: Path) -> None:
     assert "| TRACEABILITY | FAIL |" in rendered
 
 
-def test_missing_module_ownership_source_blocks_planning(tmp_path: Path) -> None:
+def test_unsafe_module_path_blocks_planning(tmp_path: Path) -> None:
     module = _module()
     _write_package(
         tmp_path,
         "110",
         "feature",
-        ownership_source="src/missing/README.md",
+        ownership_source="../outside",
     )
 
     result, rendered = module.evaluate(tmp_path, "feature", "110")
 
     assert result == "blocked"
-    assert "| MODULE_OWNERSHIP | BLOCK |" in rendered
+    assert "| MODULE_SCOPE | BLOCK |" in rendered
 
 
 def test_cyclic_task_dependency_requires_revision(tmp_path: Path) -> None:

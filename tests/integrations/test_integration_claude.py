@@ -214,7 +214,7 @@ class TestClaudeIntegration:
         assert skill_file.exists()
         skill_content = skill_file.read_text(encoding="utf-8")
         assert "name: speckit-team-plan-and-task" in skill_content
-        assert "Architect/Module Owner role" in skill_content
+        assert "Architect role" in skill_content
 
         init_options = json.loads(
             (project / ".specify" / "init-options.json").read_text(encoding="utf-8")

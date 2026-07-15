@@ -1,189 +1,128 @@
 ---
-description: "Architect/Module Owner role for producing one source-grounded Plan-and-Task artifact plus its readiness check."
+description: "Architect role for turning an accepted Issue into a source-grounded Plan, parallel module Tasks, self-tests, and a deterministic readiness check."
 ---
 
 # Spec Kit Team Plan And Task
 
-Own the Architect/Module Owner role. Consume accepted documents, not hidden
-Business/Product chat. Produce the technical Plan and executable Tasks without
+Own the Architect role. Consume the accepted Issue and its discussion, not
+hidden Business/Product chat. Produce technical planning artifacts without
 editing product source.
+
+Resolve `references/` and `scripts/` relative to this installed `SKILL.md`, not
+relative to the repository working directory.
 
 ## Bootstrap
 
-1. Run `python .specify/extensions/team/scripts/init_role_context.py`.
-2. Read the invariant and Architect/Module Owner sections of
-   `.specify/extensions/team/docs/context-bootstrap.md`.
-3. Load the accepted Issue and Spec or Bug artifact.
-4. Progressively load only the needed internal references:
-   - `docs/work-item-layout.md` for the canonical directory and files;
-   - `references/internal/context.md` and `permissions.md`;
-   - `handoff-spec-sync.md` for confidential URL input;
-   - `codegraph.md`, `docs/code-graph-adapters.md`, and `impact.md`.
-   Resolve them under `.specify/extensions/team/`. They are internal
-   capabilities, not separate user skills.
+1. Run the installed `scripts/init_role_context.py` by its resolved path.
+2. Read the invariant and Architect sections of
+   `references/context-bootstrap.md`.
+3. Load progressively:
+   - `references/issue-lifecycle.md` and `references/work-item-layout.md`;
+   - `references/context.md` and `references/permissions.md`;
+   - `references/handoff-spec-sync.md` for authorized confidential input;
+   - `references/codegraph.md`, `references/code-graph-adapters.md`, and
+     `references/impact.md`;
+   - `references/feature-spec.md` for Feature work;
+   - `references/plan-and-task-format.md` before writing the Plan.
 
 ## Input Contract
 
-Users may invoke this skill with a natural-language sentence. `$ARGUMENTS` is
-the transport for that sentence, not the complete input model.
+The required user input is one primary Issue URL. Optional input may name User
+Stories, suspected modules, architecture documents, Code Graph evidence,
+constraints, or a request to pause after the Plan.
 
 ```text
 $ARGUMENTS
 ```
 
-### Required To Locate The Work
+Use an authenticated repository integration or CLI to read the Issue. GitHub
+may use a GitHub integration or `gh`; other hosts may use their API, CLI, or an
+authenticated browser. If the preferred tool is unavailable or fails, try an
+available read-only method for that host. Stop when the Issue body, comments,
+labels, and stable URL cannot be verified. Do not plan from a title or copied
+excerpt alone.
 
-Provide the primary Issue URL. As a resume convenience, a canonical `work_id`
-or `spec.md` path is also accepted only when it resolves to exactly one primary
-Issue URL recorded in `spec.md`. The effective input must contain all of:
+The Issue must have exactly one type label, `type/feature` or `type/bugfix`, and
+exactly one status label. Planning may start only at `status/accept` or resume
+at `status/working`.
 
-- one primary Issue URL for the Feature or Bugfix;
-- one canonical `.specify/<feature|bugfix>/<work_id>/spec.md`;
-- Issue state `accepted` or `working`, with named human decision maker and the
-  exact acceptance Issue/comment URL;
-- one coding repository, current branch, and source revision.
+## Issue Identity And Summary
 
-Stop when the Issue URL is absent, two locators disagree, the Spec is not
-accepted, or the selected repository/revision is ambiguous. Do not choose the
-newest Issue or work directory as a fallback.
-
-### Required Before Planning Can Finish
-
-The following evidence is mandatory, but the user does not have to supply it
-in the opening sentence. Discover or generate it during this skill:
-
-- Feature User Stories and acceptance IDs from the accepted `spec.md`, or
-  Bugfix observations, reproduction IDs, and fix acceptance IDs;
-- relevant project architecture guidance and module descriptions from source,
-  module `README.md` files, architecture docs, ownership files, and build
-  metadata;
-- a Code Graph slice tied to the exact source revision, or an explicit
-  source-structure fallback when no adapter is available;
-- affected and adjacent modules, owners, reuse candidates, callers/callees,
-  public contracts, dependencies, existing tests, and likely change paths.
-
-The Code Graph and module context are inputs to the final Plan even when this
-skill creates them as intermediate evidence.
-
-### Optional User Guidance
-
-The opening request may additionally provide:
-
-- a subset or priority order of User Story, acceptance, or reproduction IDs
-  already present in `spec.md`;
-- suspected modules, relevant architecture/module-document paths, or an
-  existing Code Graph artifact path;
-- planning constraints, non-goals, compatibility concerns, or required test
-  environments;
-- preferred discussion participants or a request to pause after the HLD.
-
-Optional guidance never overrides the accepted Spec, source evidence, module
-owners, or public contracts. A new or materially changed User Story is not a
-planning hint: return to `speckit.team.specify`, revise the Spec and Issue, and
-obtain the required acceptance before planning it.
-
-Example minimal request:
-
-```text
-Plan the accepted work at https://github.com/acme/project/issues/123.
-```
-
-Example request with optional guidance:
-
-```text
-Plan https://github.com/acme/project/issues/123 for US-002 first. Inspect the
-export and storage modules and reuse
-.specify/feature/123/codegraph/summary.md if its source revision still matches.
-```
+1. Treat the absolute Issue URL as the global identity.
+2. For an Issue in the coding repository, use its numeric Issue ID as
+   `work_id`. For an Issue in the configured enhancement repository, use
+   `enhancement-<issue-id>` to avoid cross-repository collisions.
+3. Read the current Issue body and all relevant discussion. The accepted Issue
+   body is primary. Merge a change from comments only when a human decision
+   comment clearly accepts it. Exclude rejected alternatives, suggestions, and
+   unresolved discussion.
+4. Record the Issue repository, number, remote update time, and a normalized
+   body hash so later runs can detect stale planning input.
+5. Record the named human or governance body and exact Issue/comment URL that
+   supports `status/accept`. The skill cannot grant acceptance.
 
 ## Flow
 
-1. Resolve the canonical category and `work_id` from the primary Issue URL. A
-   supplied `work_id` or `spec.md` path is only a locator for that same Issue;
-   compare every supplied locator and stop on mismatch. Never pick the newest
-   directory as a fallback. Open or resume that Work Context Package.
-2. Fetch an authorized confidential handoff and prefer gitignored
-   `spec.override.md` when present.
-3. Create the analysis Permission Envelope.
-4. Generate or attach a Code Graph slice. Fall back to explicit source
-   structure evidence when the adapter is unavailable. Persist the evidence
-   file and record its kind, project-relative path, and exact source revision.
-5. Resolve every affected module through its module `README.md` or equivalent
-   repository-owned module card. Record the ownership source, named owner,
-   responsibility, contracts, dependencies, tests, and declared file scope.
-   Stop when an affected module has no discoverable ownership source; do not
-   infer an accountable owner from code authorship alone.
-6. Read `.specify/<category>/<work_id>/spec.md`. Verify its Issue is already
-   `state/accepted` or `state/working`; this decision must exist before the
-   skill starts and cannot be granted inside the skill. Require a named human
-   decision maker and the exact Issue/comment URL; the local checker validates
-   that reference shape but does not claim remote authenticity. Create or update
-   `plan-and-task.md` in that same directory. Its Plan is an Issue-wide HLD:
-   architecture before/after, contract impact, change scope, and a per-module
-   change plan. Set `planning_stage: plan-review` and complete the Plan without
-   inventing Task decomposition. Update `work-context.yml` to
-   `phase: plan-review` and keep `speckit.team.plan-and-task` as the next skill.
-7. Present the complete Plan HLD, affected modules, contract changes, scope,
-   sequencing constraints, compatibility, risks, and rollback. Ask the user to
-   choose one action:
-   - `continue to Task decomposition now`;
-   - `pause for Plan discussion` with other maintainers or owners;
-   - `revise the Plan` before deciding.
-   Record the choice and named human in `plan_review`. When paused, set
-   `phase: plan-paused`, stop, and return the same `plan-and-task.md` path. When
-   revision is requested, update the Plan, keep `phase: plan-review`, and repeat
-   this decision point. On resume,
-   reload that file and current source evidence instead of rebuilding the Plan
-   from chat memory. Any material Plan change invalidates prior Tasks and
-   returns to this decision point.
-8. Only after `continue-to-tasks`, set `planning_stage: task-design`, update the
-   Work Context phase to `task-design`, and derive
-   single-module LLD Tasks with explicit paths, inputs/contracts, completion
-   criteria, and minimum self-tests. For Bugfix work, include root-cause
-   evidence and regression Tasks. For
-   Feature/new-project work, map each Task to a User Story and acceptance point.
-9. Design Tasks for parallel assignment by default. Every Task belongs to
-   exactly one module and must be small enough to assign to one contributor
-   without reopening architecture decisions. Record dependency edges only when
-   parallel execution is unsafe or impossible. When dependencies exist, the
-   Plan must explain the development chain, handoff artifact, reason for
-   serialization, and unblock evidence. Reject cyclic dependencies.
-10. Give every Task LLD-level design and at least one concrete self-verification
-   scenario with fixture or precondition, command or procedure, and expected
-   evidence. Map each through a test/evidence ID to an acceptance point.
-11. Set `planning_stage: ready-for-check`, then run `python
-    .specify/extensions/team/scripts/check_plan_and_task.py
-    --work-type <feature|bugfix> --work-id <work_id>`. The script owns
-    `plan-and-task-check.md`; never hand-write a passing result. Revise the Plan
-    and Tasks until the deterministic check returns `ready` or a human records
-    why a blocking finding remains.
-    On `ready`, set the Work Context phase to `tasks-ready` and hand off to the
-    later implementation role. On `revise` or `blocked`, preserve the failing
-    check and keep Plan-and-Task as the next skill.
+1. Resolve category and work ID, then create or resume
+   `.specify/<feature|bugfix>/<work_id>/`.
+2. For Feature work, summarize the accepted Issue and accepted discussion into
+   `spec.md` using `references/feature-spec.md`. For Bugfix work, do not create
+   `spec.md`; consume the Bugfix intake artifact supplied by its preceding
+   skill when available and preserve the Issue observations in the Bugfix
+   section of `plan-and-task.md`.
+3. Fetch an authorized confidential handoff when applicable. Never copy private
+   source text into committed public artifacts.
+4. Create the analysis Permission Envelope.
+5. Generate or attach a Code Graph slice tied to the exact source revision.
+   Use an explicit source-structure fallback when no adapter is available.
+6. Identify affected and adjacent modules from source layout, build metadata,
+   architecture guidance, and the Code Graph. Record module paths,
+   responsibilities, contracts, dependencies, existing tests, reuse candidates,
+   and likely change paths. Record an owner or review route when the repository
+   declares one, but do not block Task decomposition merely because none exists.
+7. Create or update `plan-and-task.md`. The Plan is Issue-wide HLD: architecture
+   before/after, contract impact, declared scope, per-module change, sequencing,
+   compatibility, risk, and rollback. Set `planning_stage: plan-review` without
+   inventing Tasks.
+8. Present the Plan and ask the user to continue to Tasks, pause for discussion,
+   or revise the Plan. Record the decision and named human. A material Plan
+   revision invalidates Tasks and returns to this decision.
+9. After `continue-to-tasks`, derive LLD-level Tasks. Every Task belongs to one
+   module, declares exact paths and completion criteria, and has at least one
+   concrete self-verification scenario. Design Tasks for parallel assignment by
+   default. When serialization is necessary, describe the dependency, handoff
+   artifact, reason, and unblock evidence in the Plan. Reject cycles.
+10. For Feature work, map every Task to User Stories and their Verification
+    behavior. For Bugfix work, map reproduction and root-cause evidence to
+    regression Tasks and self-tests.
+11. Set `planning_stage: ready-for-check`, then run the installed
+    `scripts/check_plan_and_task.py` by its resolved path with
+    `--work-type <feature|bugfix> --work-id <work_id>`. The script owns
+    `plan-and-task-check.md`; never hand-write a passing result. Revise until it
+    reports `ready` or preserve the blocking findings.
 
 ## Output
 
 ```text
 Team Plan And Task:
-- work item:
+- Issue URL, repository, ID, status, and source revision:
 - work ID and category:
-- planning stage:
-- Plan review decision and decider:
+- accepted Issue summary:
 - code graph or fallback:
-- affected modules and owners:
-- declared files:
+- affected modules and paths:
+- optional owners or review routes:
 - architecture and public-contract deltas:
 - plan and task: .specify/<feature|bugfix>/<work_id>/plan-and-task.md
+- feature spec: .specify/feature/<work_id>/spec.md or not-applicable
 - check: .specify/<feature|bugfix>/<work_id>/plan-and-task-check.md
 - minimum self-test mapping:
 - parallel groups and development chain:
 - compatibility and rollback:
-- unresolved findings:
-- human decision required:
-- next step: discuss Plan / decompose Tasks / later role skill / revise / blocked
+- unresolved findings and human decisions:
 - result: plan-awaiting-decision / plan-paused / ready / revise / blocked
 ```
 
-Stop when Feature acceptance is missing, Bug scope is unconfirmed, ownership or
-public-contract authority is unclear, scope exceeds the approved boundary, or
-Spec, Plan-and-Task, check, and self-test mappings disagree.
+Stop when the Issue cannot be read, labels are invalid, status is not accepted
+or working, accepted discussion cannot be distinguished from unresolved
+discussion, public-contract authority is missing, scope exceeds the accepted
+Issue, or the deterministic check remains blocked.

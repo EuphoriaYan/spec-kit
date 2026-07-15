@@ -11,18 +11,19 @@ Please add CSV export. Keep exported columns aligned with the result list.
 ```
 
 1. `speckit.team.specify` classifies the request, checks privacy, creates the
-   primary Feature Issue, and writes `spec.md` with testable User Stories.
-2. The requester approves publication of the exact Issue draft inside Specify;
-   the new Issue starts at `state/draft`.
+   primary Feature Issue with complete, verifiable User Stories.
+2. The requester approves publication of the exact Issue text inside Specify;
+   the new Issue starts at `status/new-issue`.
 3. Outside any skill, the Technical Committee decides whether to accept the
-   Feature and records scope, release/wave, owner, and `state/accepted`.
+   Feature and records scope and release/wave before setting `status/accept`.
 4. `speckit.team.plan-and-task` loads source and Code Graph evidence and writes
    the Issue-wide HLD into `plan-and-task.md`.
 5. A human chooses to continue to Task decomposition, pause for discussion, or
    revise the Plan. The same file is reused after resume.
 6. After continuation, Plan-and-Task writes single-module LLD Tasks, minimum
    self-tests, and the generated `plan-and-task-check.md`.
-7. An architect/module owner approves or revises the checked Plan and Tasks.
+7. An architect or delegated technical reviewer approves or revises the
+   checked Plan and Tasks.
 8. A later development role skill changes code, runs tests, compares
    actual scope with the Plan, and writes the Evidence Board.
 9. Named humans review and merge.
@@ -41,10 +42,10 @@ the URL within its Permission Envelope, combines allowed content with
 
 ## Bugfix
 
-1. `speckit.team.specify` creates or validates the coding Bug Issue and
-   captures observation, expected behavior, reproduction, and acceptance.
+1. The separate Bugfix intake skill creates or validates the coding Bug Issue
+   and captures observation, expected behavior, reproduction, and verification.
 2. Bugfix skips Technical Committee Feature acceptance, but a maintainer still
-   triages it and records `state/accepted` or `state/working` before planning.
+   triages it and records `status/accept` or `status/working` before planning.
 3. `speckit.team.plan-and-task` produces root-cause evidence, architecture
    impact, fix scope, regression Tasks, self-tests, and rollback.
 4. A later development role skill applies the fix and records
@@ -56,7 +57,7 @@ one root cause. Map every Issue to separate reproduction and verification.
 ## New Project
 
 New-project work uses the Feature journey. Plan-and-Task must define
-architecture boundaries, the runnable spine, module ownership,
+architecture boundaries, the runnable spine, module responsibilities,
 interfaces, dependency minimum, deployment, rollback, and first end-to-end
 verification before implementation.
 

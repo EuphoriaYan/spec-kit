@@ -21,11 +21,9 @@ record a fallback source-structure slice. It does not approve design changes.
 
 ## Required Inputs
 
-Select exactly one context root:
+Select exactly one formal context root:
 
-- formal work: `.specify/<category>/<work_id>/`;
-- pre-work-item analysis: `intake_mode=true`, `intake_slug=<slug>`, and
-  `.specify/ai-team/intake/<intake_slug>/`.
+- `.specify/<category>/<work_id>/` for the accepted Issue and active work.
 
 Read when present under the selected root:
 
@@ -59,7 +57,6 @@ Write or attach the code graph slice under the selected root:
 
 ```text
 .specify/<category>/<work_id>/codegraph/
-or .specify/ai-team/intake/<intake_slug>/codegraph/
 |-- nodes.jsonl
 |-- edges.jsonl
 |-- summary.md

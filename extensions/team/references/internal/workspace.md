@@ -70,7 +70,7 @@ Initialization installs the Team extension and refreshes managed agent rules.
    - confidential enterprise feature work uses an accepted enhancement-internal
      issue or handoff URL only where visibility allows it, otherwise a
      public-safe summary;
-   - enhancement-internal issues use `type/feature` only; bug fixes are routed
+   - enhancement-internal issues use `type/feature` only; Bugfixes are routed
      to coding repository issues.
 7. Record the role model:
    - specify role: product manager / customer manager;

@@ -51,12 +51,12 @@ PRs, evidence, comments, CI output         merge evidence
 After release archive:
 
 ```text
-.specify/ai-team/releases/private/<release_id>/ internal archive and privacy evidence
+.specify/team/releases/private/<release_id>/ internal archive and privacy evidence
 docs/ai-team/memory/releases/<release_id>/ reviewed enterprise release knowledge
-.specify/ai-team/support/knowledge-map.md  updated current project knowledge
-.specify/ai-team/support/memory-index.md   indexed decisions and attempt lessons
-.specify/ai-team/memory/local/...          local-only contributor memory
-.specify/ai-team/memory/department/...     uploaded internal team memory
+.specify/team/support/knowledge-map.md  updated current project knowledge
+.specify/team/support/memory-index.md   indexed decisions and attempt lessons
+.specify/team/memory/local/...          local-only contributor memory
+.specify/team/memory/department/...     uploaded internal team memory
 docs/ai-team/memory/...                    reviewed enterprise memory
 ```
 

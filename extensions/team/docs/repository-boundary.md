@@ -21,7 +21,7 @@ org/
    confidential feature demand; enterprise customers do not need visibility.
 3. Enhancement-internal issues must use `type/feature`; bug fixes are forbidden
    there and must be filed in the coding repository.
-4. Coding repository issues use `type/bug` for bug fixes and `type/feature` for
+4. Coding repository issues use `type/bugfix` for bug fixes and `type/feature` for
    feature work.
 5. Both repositories use the state label lifecycle in
    [issue-lifecycle.md](issue-lifecycle.md).

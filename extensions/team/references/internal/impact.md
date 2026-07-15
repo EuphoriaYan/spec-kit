@@ -23,9 +23,8 @@ normalized graph owned by `speckit.team.plan-and-task`.
 
 ## Procedure
 
-1. Select formal work context, or
-   `.specify/ai-team/intake/<intake_slug>/` when `intake_mode=true`. Locate the
-   coding repository and request from that selected context.
+1. Select the formal work context and accepted Issue. Locate the coding
+   repository and request from that context.
 2. Verify the analysis-mode `permission-envelope.yml` covers the source and
    code graph reads, commands, and network access needed for impact analysis.
 3. Run or load `speckit.team.plan-and-task` output for the task. If the graph is

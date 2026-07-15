@@ -63,7 +63,7 @@ context, or internal approval discussion into release archives.
 Create or update two explicitly different destinations:
 
 ```text
- .specify/ai-team/releases/private/<release_id>/
+ .specify/team/releases/private/<release_id>/
 |-- evidence-rollup.md
 |-- archived-work.yml
 `-- privacy-review.md
@@ -107,10 +107,10 @@ lesson card in `bugfix-lessons.md`:
 
 Promote a bugfix lesson into support artifacts when it is likely to repeat:
 
-- update `.specify/ai-team/support/knowledge-map.md` when it changes current
+- update `.specify/team/support/knowledge-map.md` when it changes current
   project facts, module boundaries, capability indexes, test maps, or known
   integration constraints;
-- add `.specify/ai-team/memory/department/attempts/<date>-<slug>.md` when it
+- add `.specify/team/memory/department/attempts/<date>-<slug>.md` when it
   is a reviewed internal episode lesson that is not formal guidance;
 - add `docs/ai-team/memory/decisions/<date>-<slug>.md` only when a human owner
   made a durable enterprise decision;
@@ -173,7 +173,7 @@ private customer examples in internal-only memory instead.
    - private/internal-only;
    - must remain because audit or incident policy requires it.
 4. Write private archive files first. Run the memory adapter ignore setup before
-   writing `.specify/ai-team/releases/private/`.
+   writing `.specify/team/releases/private/`.
 5. Promote durable knowledge:
    - bugfix lessons to department or enterprise attempt memory, knowledge map,
      tests, hooks, or skills;

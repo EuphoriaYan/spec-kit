@@ -26,7 +26,7 @@ Local memory is private contributor memory.
 Default path:
 
 ```text
-.specify/ai-team/memory/local/
+.specify/team/memory/local/
 ```
 
 Use local memory for:
@@ -53,7 +53,7 @@ Department memory is shared team memory that has not become formal guidance.
 Default path:
 
 ```text
-.specify/ai-team/memory/department/
+.specify/team/memory/department/
 ```
 
 Use department memory for:

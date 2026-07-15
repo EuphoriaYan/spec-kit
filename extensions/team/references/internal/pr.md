@@ -33,8 +33,9 @@ drafts or rely on local paths as the authoritative work item.
 2. Confirm the current repository role.
 3. Load the Work Context Package from `.specify/<category>/<work_id>/`
    when present.
-4. Resolve `spec.md`, `plan-and-task.md`, bug reports, and evidence from
-   their native locations. Load `permission-envelope.yml` and compare it with actual
+4. Resolve the Feature `spec.md` when applicable, `plan-and-task.md`, Bugfix
+   intake artifacts, and evidence from their native locations. Load
+   `permission-envelope.yml` and compare it with actual
    reads, writes, commands, dependency operations, and network access.
 5. Exclude:
    - `.ai-local/`;

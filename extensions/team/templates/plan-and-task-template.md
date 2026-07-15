@@ -1,7 +1,17 @@
 ---
-schema: ai-team-plan-and-task/v3
+schema: ai-team-plan-and-task/v4
 work_id: ""
 work_type: feature
+primary_issue: ""
+issue_status: status/accept
+issue_source:
+  repository: ""
+  issue_number: ""
+  updated_at: ""
+  body_hash: ""
+approval:
+  decided_by: ""
+  evidence_url: ""
 planning_stage: plan-review
 plan_review:
   decision: pending
@@ -17,7 +27,7 @@ impact_analysis:
   cross_module: false
   class_changes: false
   public_contract_change: none
-  contract_owner_approval:
+  contract_authority:
     decided_by: not-required
     evidence_url: not-required
 ---
@@ -33,13 +43,13 @@ revision it describes.
 
 ### Module Change Plan
 
-Each module must point to its authoritative module `README.md`. Keep ownership,
-responsibility, public contracts, dependencies, and test entry points current in
-that file; use `templates/module-readme-template.md` when creating a module card.
+Identify modules from the repository's actual source layout, build metadata,
+architecture guidance, and Code Graph. A named owner or review route is useful
+when the repository declares one, but it is not required for Task decomposition.
 
-| Module | Ownership source | Owner | Current responsibility | Planned change | Contract impact |
+| Module | Module path | Current responsibility | Planned change | Contract impact | Review route (optional) |
 |---|---|---|---|---|---|
-| module-name | path/to/module/README.md | team-or-person |  |  | none |
+| module-name | path/to/module |  |  | none | none |
 
 ### Architecture And Contract Impact
 
@@ -90,7 +100,7 @@ same parallel group are intended to be assigned concurrently.
 
 | Task ID | Module | Requirement IDs | Planned paths | Depends on | Parallel group | Self-test IDs | LLD summary |
 |---|---|---|---|---|---|---|---|
-| T001 | module-name | AC-001 | path/to/file | none | P1 | TEST-001 |  |
+| T001 | module-name | VER-001 | path/to/file | none | P1 | TEST-001 |  |
 
 ### Task Details
 
@@ -107,7 +117,8 @@ same parallel group are intended to be assigned concurrently.
 ### Compatibility Migration And Rollback
 
 State how existing behavior remains compatible. When compatibility changes,
-link the responsible owner's approval and give migration and rollback steps.
+link the responsible architecture or contract authority's approval and give
+migration and rollback steps.
 
 ### Risks And Deviations
 
@@ -119,13 +130,24 @@ Complete for `work_type: feature`.
 
 ### User Story Delivery Mapping
 
-| User Story ID | Acceptance IDs | Task IDs |
+| User Story ID | Verification IDs | Task IDs |
 |---|---|---|
-| US-001 | AC-001 | T001 |
+| US-001 | VER-001 | T001 |
 
 ## Bugfix Delivery Plan
 
 Complete for `work_type: bugfix`.
+
+### Accepted Bug Summary
+
+Summarize observed behavior, expected behavior, environment, impact, and the
+accepted Issue discussion without inventing a root cause.
+
+### Bugfix Verification
+
+| Verification ID | Reproduction ID | Expected result |
+|---|---|---|
+| VER-001 | BUG-OBS-001 |  |
 
 ### Root Cause Evidence
 
