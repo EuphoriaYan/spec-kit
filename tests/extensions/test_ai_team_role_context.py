@@ -40,6 +40,7 @@ def test_exactly_two_role_commands_are_registered() -> None:
 def test_context_initializer_merges_supported_agent_files_idempotently(tmp_path: Path) -> None:
     _install_bootstrap(tmp_path)
     (tmp_path / "AGENTS.md").write_text("# Existing project rules\n", encoding="utf-8")
+    (tmp_path / ".gitignore").write_text("dist/\n", encoding="utf-8")
     specify = tmp_path / ".specify"
     specify.mkdir(exist_ok=True)
     (specify / "integration.json").write_text(
@@ -73,6 +74,10 @@ def test_context_initializer_merges_supported_agent_files_idempotently(tmp_path:
     cursor = (tmp_path / ".cursor/rules/specify-rules.mdc").read_text(encoding="utf-8")
     assert "alwaysApply: true" in cursor
     assert cursor.count(module.START) == 1
+    gitignore = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+    assert "dist/" in gitignore
+    assert gitignore.count(module.INTAKE_IGNORE_START) == 1
+    assert module.INTAKE_IGNORE in gitignore
 
 
 def test_context_initializer_always_writes_agents_without_detected_tool(tmp_path: Path) -> None:
@@ -198,11 +203,26 @@ def test_specify_role_contract_keeps_issue_and_user_story_model() -> None:
     assert ".specify/<category>/<work_id>/spec.md" in text
 
 
+def test_specify_progressively_clarifies_and_can_resume_a_saved_draft() -> None:
+    text = (AI_TEAM / "commands/speckit.team.specify.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "specify-checklist.md" in text
+    assert "ask one focused blocking question at a time" in text
+    assert "update the checklist and Issue draft after every answer" in text
+    assert "publish automatically" in text
+    assert "save draft only" in text
+    assert "do not publish and return the retained local draft path" in text
+    assert "resume from the first blocking checklist item" in text
+
+
 def test_publication_approval_is_not_feature_acceptance() -> None:
     specify = (AI_TEAM / "commands/speckit.team.specify.md").read_text(
         encoding="utf-8"
     )
-    assert "`approve publication`, `revise`, or `reject`" in specify
+    for action in ("publish automatically", "save draft only", "revise", "stop"):
+        assert f"`{action}`" in specify
     assert "Publication approval must\n   not add `state/accepted`" in specify
     assert "decision is outside this skill" in specify
 
@@ -263,6 +283,8 @@ def test_team_work_item_layout_and_templates_are_unified() -> None:
         "plan-and-task-template.md",
         "plan-and-task-check-template.md",
         "module-readme-template.md",
+        "specify-checklist-template.md",
+        "issue-draft-template.md",
         "work-context-template.yml",
     }
     assert {path.name for path in (AI_TEAM / "templates").iterdir() if path.is_file()} == expected

@@ -12,6 +12,9 @@ from pathlib import Path
 START = "<!-- AI TEAM CONTEXT START -->"
 END = "<!-- AI TEAM CONTEXT END -->"
 BOOTSTRAP = ".specify/extensions/team/docs/context-bootstrap.md"
+INTAKE_IGNORE_START = "# AI TEAM LOCAL INTAKE START"
+INTAKE_IGNORE_END = "# AI TEAM LOCAL INTAKE END"
+INTAKE_IGNORE = "/.specify/ai-team/intake/"
 AGENT_FILES = {
     "codex": "AGENTS.md",
     "claude": "CLAUDE.md",
@@ -154,6 +157,22 @@ def _merge(path: Path, target: str) -> None:
     path.write_text(merged.replace("\r\n", "\n"), encoding="utf-8")
 
 
+def _merge_intake_ignore(path: Path) -> None:
+    content = path.read_text(encoding="utf-8-sig") if path.exists() else ""
+    start = content.find(INTAKE_IGNORE_START)
+    end = content.find(INTAKE_IGNORE_END, start + len(INTAKE_IGNORE_START)) if start >= 0 else -1
+    if (start >= 0) != (end >= 0):
+        raise ValueError("Unbalanced AI Team local Intake markers in .gitignore")
+    block = f"{INTAKE_IGNORE_START}\n{INTAKE_IGNORE}\n{INTAKE_IGNORE_END}\n"
+    if start >= 0:
+        end += len(INTAKE_IGNORE_END)
+        merged = content[:start] + block.rstrip("\n") + content[end:]
+    else:
+        separator = "" if not content or content.endswith("\n\n") else "\n"
+        merged = content + separator + block
+    path.write_text(merged.replace("\r\n", "\n"), encoding="utf-8")
+
+
 def initialize(root: Path) -> list[str]:
     root = root.resolve()
     bootstrap = (root / BOOTSTRAP).resolve()
@@ -172,12 +191,15 @@ def initialize(root: Path) -> list[str]:
         if target not in targets:
             targets.append(target)
     paths = [(target, _safe_target(root, target)) for target in targets]
+    gitignore = _safe_target(root, ".gitignore")
     snapshots = {
-        path: path.read_bytes() if path.exists() else None for _, path in paths
+        path: path.read_bytes() if path.exists() else None
+        for path in [path for _, path in paths] + [gitignore]
     }
     try:
         for target, path in paths:
             _merge(path, target)
+        _merge_intake_ignore(gitignore)
     except (OSError, UnicodeError, ValueError):
         for path, content in snapshots.items():
             if content is None:

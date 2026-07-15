@@ -22,13 +22,15 @@ Use `.specify/ai-team/intake/<intake_slug>/`:
 ```text
 intake.yml              # resolved classification, privacy, recommendation, approval evidence
 request.md              # concise user wording; never copy confidential text publicly
+specify-checklist.md    # progressive clarification state and evidence
 impact-summary.md       # links to Code Graph or source-structure evidence
 issue-draft.md          # proposed issue body and labels
 result.yml              # optional adapter result after Issue publication
 ```
 
-These are provisional local intake artifacts. Do not commit them merely to
-start work. Durable formal context begins under
+These are provisional local intake artifacts. The role initializer adds the
+entire Intake root to `.gitignore`; do not commit it merely to start work.
+Durable formal context begins under
 `.specify/<category>/<work_id>/` after a work item exists.
 
 ## Mode: Analyze
@@ -64,7 +66,10 @@ uses Standard planning and publishes a `type/feature` work item.
 
 ## Mode: Draft
 
-Create `issue-draft.md` from the request and impact evidence. It must contain:
+Create `specify-checklist.md` and `issue-draft.md` from the request and impact
+evidence. Fill known checklist answers first, ask one blocking question at a
+time, and update both files after each answer. Create the Issue draft only from
+confirmed answers and labeled assumptions. It must contain:
 
 ```yaml
 ---
@@ -84,6 +89,11 @@ target_repository: owner/repository
 - validation expected and known unknowns;
 - proposed labels: exactly one `type/*` and `state/draft`;
 - recommended planning mode with reasons and mandatory fallback conditions.
+
+When the checklist is ready, present `publish automatically`, `save draft
+only`, `revise`, and `stop`. Both save and stop retain the local draft path and
+create no Issue. A later `speckit.team.specify` invocation may receive that path
+and resume from the first pending checklist item.
 
 Recommend Compact only for an existing project when evidence shows a local or
 single-module change, a clear reuse path, no public-contract or migration
@@ -106,6 +116,7 @@ AI Team Intake Result:
 - classification:
 - privacy class:
 - issue draft path:
+- Specify Checklist path:
 - impact evidence path:
 - planning recommendation:
 - feature acceptance evidence, if supplied:

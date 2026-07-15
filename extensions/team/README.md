@@ -157,3 +157,11 @@ The AI tool should select `speckit.team.specify`, classify the work, and stop at
 the appropriate human decision boundary. After acceptance, start
 `speckit.team.plan-and-task` with the Issue URL or Work ID. The two roles share
 documents and Issues, not hidden chat context.
+
+Specify progressively fills a local checklist and asks one blocking question at
+a time. Before publication, the user can publish automatically, save the draft,
+revise it, or stop. An unpublished draft remains at
+`.specify/ai-team/intake/<intake_slug>/issue-draft.md` and can be passed back to
+`speckit.team.specify` in a later chat to continue. Local Intake files are
+gitignored and do not become formal project context until a stable Issue or
+approved requirement ID exists.

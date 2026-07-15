@@ -33,6 +33,11 @@ implementation plan as product intent. Produce one `spec.md` for one primary
 Issue; that specification may contain multiple independently testable user
 stories.
 
+When no stable Issue exists, resume or create the gitignored local Intake
+Checklist and Issue draft. Fill known answers first and ask one blocking
+question at a time. Create formal `spec.md` only after publication produces a
+stable Issue or an approved requirement identifier.
+
 ### Architect / Module Owner: Plan And Task
 
 Load the accepted Issue, `spec.md` (or gitignored `spec.override.md` when the
