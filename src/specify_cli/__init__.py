@@ -136,13 +136,16 @@ def _install_shared_infra(
     invoke_separator: str = ".",
     refresh_managed: bool = False,
     refresh_hint: str | None = None,
+    install_scripts: bool = True,
+    install_templates: bool = True,
 ) -> bool:
     """Install shared infrastructure files into *project_path*.
 
-    Copies ``.specify/scripts/<variant>/`` and ``.specify/templates/`` from
-    the bundled core_pack or source checkout, where ``<variant>`` is
-    ``bash`` when *script_type* is ``"sh"`` and ``powershell`` when it is
-    ``"ps"``.  Tracks all installed files in ``speckit.manifest.json``.
+    Copies ``.specify/scripts/<variant>/`` when *install_scripts* is true and
+    ``.specify/templates/`` when *install_templates* is true from the bundled
+    core pack or source checkout, where ``<variant>`` is ``bash`` when
+    *script_type* is ``"sh"`` and ``powershell`` when it is ``"ps"``. Tracks
+    all installed files in ``speckit.manifest.json``.
 
     Shared scripts and page templates are processed to resolve
     ``__SPECKIT_COMMAND_<NAME>__`` placeholders using *invoke_separator*
@@ -179,6 +182,8 @@ def _install_shared_infra(
         invoke_separator=invoke_separator,
         refresh_managed=refresh_managed,
         refresh_hint=refresh_hint,
+        install_scripts=install_scripts,
+        install_templates=install_templates,
     )
 
 
@@ -190,6 +195,8 @@ def _install_shared_infra_or_exit(
     invoke_separator: str = ".",
     refresh_managed: bool = False,
     refresh_hint: str | None = None,
+    install_scripts: bool = True,
+    install_templates: bool = True,
 ) -> bool:
     try:
         return _install_shared_infra(
@@ -200,6 +207,8 @@ def _install_shared_infra_or_exit(
             invoke_separator=invoke_separator,
             refresh_managed=refresh_managed,
             refresh_hint=refresh_hint,
+            install_scripts=install_scripts,
+            install_templates=install_templates,
         )
     except (ValueError, OSError) as exc:
         console.print(f"[red]Error:[/red] Failed to install shared infrastructure: {exc}")

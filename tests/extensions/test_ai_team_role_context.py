@@ -22,7 +22,7 @@ def _load_init_module():
 
 
 def _install_bootstrap(project: Path) -> None:
-    target = project / ".specify/extensions/team/docs/context-bootstrap.md"
+    target = project / ".specify/team/context-bootstrap.md"
     target.parent.mkdir(parents=True)
     target.write_text("# Installed bootstrap\n", encoding="utf-8")
 
@@ -140,7 +140,7 @@ def test_direct_team_setup_rolls_back_extension_when_rules_fail(
     (tmp_path / ".claude" / "skills").mkdir(parents=True)
     monkeypatch.setattr(team_setup, "_locate_bundled_extension", lambda _id: AI_TEAM)
 
-    def fail_rules(_root: Path) -> list[str]:
+    def fail_rules(_root: Path, _source: Path) -> list[str]:
         raise RuntimeError("rule failure")
 
     monkeypatch.setattr(team_setup, "_initialize_rules", fail_rules)
@@ -152,6 +152,7 @@ def test_direct_team_setup_rolls_back_extension_when_rules_fail(
     assert not (specify / "extensions" / ".backup" / "team").exists()
     assert not (tmp_path / ".agents" / "skills" / "speckit-team-specify").exists()
     assert not (tmp_path / ".claude" / "skills" / "speckit-team-specify").exists()
+    assert not (specify / "team" / "context-bootstrap.md").exists()
 
 
 @pytest.mark.parametrize(
@@ -183,6 +184,9 @@ def test_team_skills_install_with_local_references_and_scripts(
 
     team_setup.install_bundled_team(tmp_path)
 
+    assert not (specify / "extensions" / "team").exists()
+    assert (specify / "team" / "context-bootstrap.md").is_file()
+    assert (specify / "team" / "ai-team-config.yml").is_file()
     root = tmp_path / skills_dir
     specify_skill = root / "speckit-team-specify"
     plan_skill = root / "speckit-team-plan-and-task"
@@ -218,6 +222,41 @@ def test_team_skills_install_with_local_references_and_scripts(
     } == {"implement-pr.md"}
     assert (implement_skill / "scripts/check_permission_envelope.py").is_file()
     assert (implement_skill / "scripts/work_item_paths.py").is_file()
+
+
+def test_packaged_team_resolves_for_listing_reregistration_and_removal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from specify_cli import team_setup
+    from specify_cli.extensions import ExtensionManager
+
+    specify = tmp_path / ".specify"
+    specify.mkdir()
+    (specify / "init-options.json").write_text(
+        json.dumps({"ai": "codex", "integration": "codex", "ai_skills": True}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(team_setup, "_locate_bundled_extension", lambda _id: AI_TEAM)
+    monkeypatch.setattr(
+        "specify_cli._assets._locate_bundled_extension", lambda _id: AI_TEAM
+    )
+
+    team_setup.install_bundled_team(tmp_path)
+    manager = ExtensionManager(tmp_path)
+
+    assert manager.get_extension("team") is not None
+    listed = manager.list_installed()
+    assert listed[0]["id"] == "team"
+    assert listed[0]["enabled"] is True
+
+    manager.register_enabled_extensions_for_agent("claude")
+    assert (tmp_path / ".claude/skills/speckit-team-specify/SKILL.md").is_file()
+
+    assert manager.remove("team") is True
+    assert not (tmp_path / ".agents/skills/speckit-team-specify").exists()
+    assert not (tmp_path / ".claude/skills/speckit-team-specify").exists()
+    assert not (specify / "team/context-bootstrap.md").exists()
+    assert not (specify / "team/ai-team-config.yml").exists()
 
 
 def test_context_initializer_repairs_cursor_auto_load(tmp_path: Path) -> None:
@@ -343,7 +382,7 @@ def test_team_work_item_layout_and_templates_are_unified() -> None:
     assert "bugfix/" in layout
     assert "<work_id>/" in layout
 
-    expected = {"plan-and-task-template.md", "work-context-template.yml"}
+    expected = {"plan-and-task-template.md"}
     assert {path.name for path in (AI_TEAM / "templates").iterdir() if path.is_file()} == expected
     assert "plan-and-task.md" in layout
     assert "plan-and-task-check.md" in layout

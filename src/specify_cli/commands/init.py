@@ -150,8 +150,8 @@ def register(app: typer.Typer) -> None:
         1. Check that required tools are installed
         2. Let you choose your coding agent integration, or default to Copilot
            in non-interactive sessions
-        3. Install bundled Spec Kit templates, scripts, workflow, and shared
-           project infrastructure
+        3. Install profile-selected shared infrastructure; the full profile
+           includes bundled Spec Kit scripts, templates, constitution, and workflow
         4. Set up coding agent integration commands and optional presets
         5. Install the built-in AI Team extension and managed agent rules
 
@@ -461,12 +461,22 @@ def register(app: typer.Typer) -> None:
                     invoke_separator=resolved_integration.effective_invoke_separator(
                         integration_parsed_options
                     ),
+                    install_scripts=skill_profile == "full",
+                    install_templates=skill_profile == "full",
                 )
                 tracker.complete(
-                    "shared-infra", f"scripts ({selected_script}) + templates"
+                    "shared-infra",
+                    (
+                        f"scripts ({selected_script}) + templates"
+                        if skill_profile == "full"
+                        else "Team skills own scripts and templates"
+                    ),
                 )
 
-                ensure_constitution_from_template(project_path, tracker=tracker)
+                if skill_profile == "full":
+                    ensure_constitution_from_template(project_path, tracker=tracker)
+                else:
+                    tracker.skip("constitution", "Team profile uses role artifacts")
 
                 if skill_profile == "team":
                     tracker.skip("workflow", "Team profile uses role skills")

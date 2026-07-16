@@ -133,6 +133,9 @@ speckit-team-implement/
 Each Skill resolves declared resources relative to its own `SKILL.md`.
 Specify installs only its conditional repository-boundary reference. Assess,
 Fix, and Review install no role references or scripts.
+The extension implementation remains in the installed Specify CLI package and
+is not copied into the project. Editable configuration and the stable context
+bootstrap live under `.specify/team/`.
 `init_role_context.py` runs during project initialization and is not copied
 into individual Skills.
 
@@ -171,8 +174,10 @@ credentials, and local memory.
 
 ## Installation
 
-The default Team-minimal profile keeps the Spec Kit engine and installs the
-Team role skills:
+The default Team-minimal profile installs only the self-contained Team role
+skills plus `.specify/team/` state. It does not copy core scripts, the Team
+extension implementation, native Spec Kit page templates, constitution,
+skills, or workflow:
 
 ```bash
 specify init . --integration codex

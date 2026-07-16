@@ -124,12 +124,15 @@ def integration_install(
             _, infra_parsed = _resolve_integration_options(
                 default_integration, current, default_key, None
             )
+    install_core = _install_core_skills_for_project(project_root)
     _install_shared_infra_or_exit(
         project_root,
         selected_script,
         invoke_separator=_invoke_separator_for_integration(
             infra_integration, current, infra_key, infra_parsed
         ),
+        install_scripts=install_core,
+        install_templates=install_core,
     )
     if os.name != "nt":
         from .. import ensure_executable_scripts

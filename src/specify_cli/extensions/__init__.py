@@ -715,6 +715,24 @@ class ExtensionManager:
         self.extensions_dir = project_root / ".specify" / "extensions"
         self.registry = ExtensionRegistry(self.extensions_dir)
 
+    def _extension_source_dir(
+        self, extension_id: str, metadata: Optional[Dict[str, Any]] = None
+    ) -> Optional[Path]:
+        """Resolve materialized or bundled extension content."""
+        installed_dir = self.extensions_dir / extension_id
+        if (installed_dir / "extension.yml").is_file():
+            return installed_dir
+
+        if metadata is None:
+            metadata = self.registry.get(extension_id)
+        if isinstance(metadata, dict) and metadata.get("source") == "bundled":
+            from .._assets import _locate_bundled_extension
+
+            bundled = _locate_bundled_extension(extension_id)
+            if bundled is not None and (bundled / "extension.yml").is_file():
+                return bundled
+        return None
+
     @staticmethod
     def _collect_manifest_command_names(manifest: ExtensionManifest) -> Dict[str, str]:
         """Collect command and alias names declared by a manifest.
@@ -1502,6 +1520,54 @@ class ExtensionManager:
 
         return manifest
 
+    def install_bundled_from_directory(
+        self,
+        source_dir: Path,
+        speckit_version: str,
+        *,
+        priority: int = 10,
+    ) -> ExtensionManifest:
+        """Register a packaged extension without copying its implementation.
+
+        Bundled commands and resources are read from the installed Specify CLI
+        package. Only generated agent artifacts and registry metadata are
+        written to the project.
+        """
+        if priority < 1:
+            raise ValidationError("Priority must be a positive integer (1 or higher)")
+
+        manifest = ExtensionManifest(source_dir / "extension.yml")
+        self.check_compatibility(manifest, speckit_version)
+        if self.registry.is_installed(manifest.id):
+            raise ExtensionError(f"Extension '{manifest.id}' is already installed.")
+        self._validate_install_conflicts(manifest)
+
+        registrar = CommandRegistrar()
+        registered_commands = registrar.register_commands_for_all_agents(
+            manifest,
+            source_dir,
+            self.project_root,
+            create_missing_active_skills_dir=True,
+        )
+        registered_skills = self._register_extension_skills(manifest, source_dir)
+
+        if manifest.hooks:
+            HookExecutor(self.project_root).register_hooks(manifest)
+
+        self.registry.add(
+            manifest.id,
+            {
+                "version": manifest.version,
+                "source": "bundled",
+                "manifest_hash": manifest.get_hash(),
+                "enabled": True,
+                "priority": priority,
+                "registered_commands": registered_commands,
+                "registered_skills": registered_skills,
+            },
+        )
+        return manifest
+
     def install_from_zip(
         self,
         zip_path: Path,
@@ -1668,6 +1734,32 @@ class ExtensionManager:
         hook_executor = HookExecutor(self.project_root)
         hook_executor.unregister_hooks(extension_id)
 
+        # Bundled extensions may keep small project-owned state outside the
+        # implementation directory. Remove only registry-declared safe paths;
+        # ``keep_config`` preserves editable config files.
+        state_files = self._valid_name_list(
+            metadata.get("state_files", []) if metadata else []
+        )
+        for relative in state_files:
+            rel = Path(relative)
+            if rel.is_absolute() or ".." in rel.parts:
+                continue
+            if keep_config and rel.name.endswith("-config.yml"):
+                continue
+            target = self.project_root / rel
+            try:
+                target.resolve(strict=False).relative_to(self.project_root.resolve())
+            except (OSError, ValueError):
+                continue
+            if target.is_file() or target.is_symlink():
+                target.unlink()
+        state_dir = self.project_root / ".specify" / extension_id
+        if state_dir.is_dir() and not state_dir.is_symlink():
+            try:
+                state_dir.rmdir()
+            except OSError:
+                pass
+
         # Update registry
         self.registry.remove(extension_id)
 
@@ -1798,7 +1890,9 @@ class ExtensionManager:
             if manifest is None:
                 continue
 
-            ext_dir = self.extensions_dir / ext_id
+            ext_dir = self._extension_source_dir(ext_id, metadata)
+            if ext_dir is None:
+                continue
 
             # Isolate per-extension failures: one extension that fails to
             # register (e.g. an OSError writing a command file) must not abort
@@ -1894,8 +1988,12 @@ class ExtensionManager:
             # Ensure metadata is a dictionary to avoid AttributeError when using .get()
             if not isinstance(metadata, dict):
                 metadata = {}
-            ext_dir = self.extensions_dir / ext_id
-            manifest_path = ext_dir / "extension.yml"
+            ext_dir = self._extension_source_dir(ext_id, metadata)
+            manifest_path = (
+                ext_dir / "extension.yml"
+                if ext_dir is not None
+                else self.extensions_dir / ext_id / "extension.yml"
+            )
 
             try:
                 manifest = ExtensionManifest(manifest_path)
@@ -1942,7 +2040,9 @@ class ExtensionManager:
         if not self.registry.is_installed(extension_id):
             return None
 
-        ext_dir = self.extensions_dir / extension_id
+        ext_dir = self._extension_source_dir(extension_id)
+        if ext_dir is None:
+            return None
         manifest_path = ext_dir / "extension.yml"
 
         try:

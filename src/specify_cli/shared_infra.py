@@ -362,8 +362,10 @@ def install_shared_infra(
     invoke_separator: str = ".",
     refresh_managed: bool = False,
     refresh_hint: str | None = None,
+    install_scripts: bool = True,
+    install_templates: bool = True,
 ) -> bool:
-    """Install shared scripts and templates into *project_path*.
+    """Install optional shared scripts and templates into *project_path*.
 
     When ``refresh_managed`` is True, files whose on-disk hash still matches
     the previously recorded manifest hash are overwritten with the bundled
@@ -452,7 +454,7 @@ def install_shared_infra(
         return True
 
     scripts_src = shared_scripts_source(core_pack=core_pack, repo_root=repo_root)
-    if scripts_src.is_dir():
+    if install_scripts and scripts_src.is_dir():
         dest_scripts = project_path / ".specify" / "scripts"
         if _ensure_or_bucket_dir(dest_scripts):
             variant_src = scripts_src / variant_dir
@@ -516,7 +518,7 @@ def install_shared_infra(
                         )
 
     templates_src = shared_templates_source(core_pack=core_pack, repo_root=repo_root)
-    if templates_src.is_dir():
+    if install_templates and templates_src.is_dir():
         dest_templates = project_path / ".specify" / "templates"
         if _ensure_or_bucket_dir(dest_templates):
             for src in templates_src.iterdir():

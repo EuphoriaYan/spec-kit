@@ -64,6 +64,7 @@ class TestInitIntegrationFlag:
             os.chdir(project)
             result = runner.invoke(app, [
                 "init", "--here", "--integration", "copilot", "--script", "sh",
+                "--skill-profile", "full",
             ], catch_exceptions=False)
         finally:
             os.chdir(old_cwd)
@@ -80,8 +81,10 @@ class TestInitIntegrationFlag:
         # init must not leave any legacy agent-context keys in init-options.json
         assert "context_file" not in opts
 
-        # AI Team is installed directly; agent-context remains opt-in.
-        assert (project / ".specify" / "extensions" / "team").is_dir()
+        # AI Team is registered from the package; only project-owned state is copied.
+        assert not (project / ".specify" / "extensions" / "team").exists()
+        assert (project / ".specify" / "team" / "context-bootstrap.md").is_file()
+        assert (project / ".specify" / "team" / "ai-team-config.yml").is_file()
         assert not (project / ".specify" / "extensions" / "agent-context").exists()
 
         assert (project / ".specify" / "integrations" / "copilot.manifest.json").exists()
@@ -830,6 +833,7 @@ class TestInitIntegrationFlag:
                 "init", "--here", "--force",
                 "--integration", "copilot",
                 "--script", "sh",
+                "--skill-profile", "full",
             ], catch_exceptions=False)
         finally:
             os.chdir(old_cwd)
@@ -859,6 +863,7 @@ class TestInitIntegrationFlag:
                 "init", "--here",
                 "--integration", "copilot",
                 "--script", "sh",
+                "--skill-profile", "full",
             ], input="y\n", catch_exceptions=False)
         finally:
             os.chdir(old_cwd)
@@ -895,9 +900,9 @@ class TestForceExistingDirectory:
         # Pre-existing file should survive
         assert marker.read_text(encoding="utf-8") == "keep me"
 
-        # Spec Kit files should be installed
+        # Team profile installs its role skills without native page templates.
         assert (target / ".specify" / "init-options.json").exists()
-        assert (target / ".specify" / "templates" / "spec-template.md").exists()
+        assert not (target / ".specify" / "templates").exists()
 
     def test_without_force_errors_on_existing_dir(self, tmp_path):
         """specify init <dir> without --force errors when directory exists."""
@@ -1109,6 +1114,7 @@ class TestSharedInfraCommandRefs:
                 "--integration", "claude",
                 "--script", "sh",
                 "--ignore-agent-tools",
+                "--skill-profile", "full",
             ], catch_exceptions=False)
         finally:
             os.chdir(old_cwd)
@@ -1139,6 +1145,7 @@ class TestSharedInfraCommandRefs:
                 "--integration", "copilot",
                 "--script", "sh",
                 "--ignore-agent-tools",
+                "--skill-profile", "full",
             ], catch_exceptions=False)
         finally:
             os.chdir(old_cwd)
@@ -1170,6 +1177,7 @@ class TestSharedInfraCommandRefs:
                 "--integration-options", "--skills",
                 "--script", "sh",
                 "--ignore-agent-tools",
+                "--skill-profile", "full",
             ], catch_exceptions=False)
         finally:
             os.chdir(old_cwd)

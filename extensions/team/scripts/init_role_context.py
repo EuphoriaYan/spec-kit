@@ -11,7 +11,7 @@ from pathlib import Path
 
 START = "<!-- AI TEAM CONTEXT START -->"
 END = "<!-- AI TEAM CONTEXT END -->"
-BOOTSTRAP = ".specify/extensions/team/docs/context-bootstrap.md"
+BOOTSTRAP = ".specify/team/context-bootstrap.md"
 AGENT_FILES = {
     "codex": "AGENTS.md",
     "claude": "CLAUDE.md",
@@ -87,16 +87,7 @@ def _integrations(root: Path) -> list[str]:
 
 
 def _installed_routes(root: Path | None = None) -> list[tuple[str, str, str]]:
-    installed_commands = (
-        root / ".specify/extensions/team/commands"
-        if root is not None
-        else Path(__file__).resolve().parent.parent / "commands"
-    )
-    commands = (
-        installed_commands
-        if installed_commands.is_dir()
-        else Path(__file__).resolve().parent.parent / "commands"
-    )
+    commands = Path(__file__).resolve().parent.parent / "commands"
     return [
         route
         for route in ROUTES

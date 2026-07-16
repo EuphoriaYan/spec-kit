@@ -88,10 +88,12 @@ original behavior when used independently.
 specify init . --integration codex
 ```
 
-The default `team` skill profile keeps the complete Spec Kit engine but exposes
-only the role skills supplied by the built-in `team` extension and does not
-install the native workflow. Advanced users may add `--skill-profile full` to
-also register the native Spec Kit skills and workflow.
+The default `team` skill profile registers the built-in role skills directly
+from the Specify CLI package. It does not copy extension implementation, core
+scripts, native page templates, constitution, skills, or workflow into the
+project. Only generated agent skills, `.specify/team/` configuration/context,
+and extension registry state remain. Advanced users may add
+`--skill-profile full` to install the complete native Spec Kit surface.
 Initialization writes a short natural-language router into the active AI tools'
 rule files before the first chat. AI Team does not install a workflow; users
 invoke the role skills naturally from chat.

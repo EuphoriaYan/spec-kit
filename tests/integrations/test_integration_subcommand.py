@@ -1811,6 +1811,9 @@ class TestIntegrationSwitch:
         claude_skills = project / ".claude" / "skills"
         assert (claude_skills / "speckit-team-specify" / "SKILL.md").exists()
         assert not (claude_skills / "speckit-plan").exists()
+        assert not (project / ".specify" / "scripts").exists()
+        assert not (project / ".specify" / "templates").exists()
+        assert not (project / ".specify" / "extensions" / "team").exists()
 
         result = _run_in_project(
             project,
@@ -1821,6 +1824,9 @@ class TestIntegrationSwitch:
         codex_skills = project / ".agents" / "skills"
         assert (codex_skills / "speckit-team-specify" / "SKILL.md").exists()
         assert not (codex_skills / "speckit-plan").exists()
+        assert not (project / ".specify" / "scripts").exists()
+        assert not (project / ".specify" / "templates").exists()
+        assert not (project / ".specify" / "extensions" / "team").exists()
 
     def test_switch_migrates_extension_commands(self, tmp_path):
         """Switching should migrate extension commands to the new agent directory."""
