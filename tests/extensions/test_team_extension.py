@@ -20,6 +20,8 @@ def test_team_manifest_is_valid_and_declares_execution_commands():
     assert manifest.requires_speckit_version == ">=0.12.4"
     commands = {command["name"]: command["file"] for command in manifest.commands}
     assert commands == {
+        "speckit.team.specify": "commands/speckit.team.specify.md",
+        "speckit.team.plan-and-task": "commands/speckit.team.plan-and-task.md",
         "speckit.team.implement": "commands/speckit.team.implement.md",
         "speckit.team.review": "commands/speckit.team.review.md",
     }
@@ -39,7 +41,7 @@ def test_implement_contract_uses_unified_root_and_lazy_pr_prompt():
     assert "only=T001-T010" in command
     assert "submit_pr=true" in command
     assert "Readiness blocked. Do not proceed with implementation." in command
-    assert ".specify/extensions/team/commands/prompts/implement-pr.md" in command
+    assert "references/implement-pr.md" in command
     assert "phase: verified" in command
 
 

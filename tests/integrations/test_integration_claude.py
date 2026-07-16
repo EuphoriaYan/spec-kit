@@ -123,7 +123,14 @@ class TestClaudeIntegration:
             os.chdir(old_cwd)
 
         assert result.exit_code == 0, result.output
-        assert (project / ".claude" / "skills" / "speckit-plan" / "SKILL.md").exists()
+        assert (
+            project
+            / ".claude"
+            / "skills"
+            / "speckit-team-plan-and-task"
+            / "SKILL.md"
+        ).exists()
+        assert not (project / ".claude" / "skills" / "speckit-plan").exists()
         assert not (project / ".claude" / "commands").exists()
 
         init_options = json.loads(
@@ -160,7 +167,9 @@ class TestClaudeIntegration:
             os.chdir(old_cwd)
 
         assert result.exit_code == 0, result.output
-        assert (project / ".claude" / "skills" / "speckit-specify" / "SKILL.md").exists()
+        assert (
+            project / ".claude" / "skills" / "speckit-team-specify" / "SKILL.md"
+        ).exists()
         assert (project / ".specify" / "integrations" / "claude.manifest.json").exists()
 
     def test_interactive_claude_selection_uses_integration_path(self, tmp_path):
@@ -195,11 +204,17 @@ class TestClaudeIntegration:
         assert (project / ".specify" / "integration.json").exists()
         assert (project / ".specify" / "integrations" / "claude.manifest.json").exists()
 
-        skill_file = project / ".claude" / "skills" / "speckit-plan" / "SKILL.md"
+        skill_file = (
+            project
+            / ".claude"
+            / "skills"
+            / "speckit-team-plan-and-task"
+            / "SKILL.md"
+        )
         assert skill_file.exists()
         skill_content = skill_file.read_text(encoding="utf-8")
-        assert "user-invocable: true" in skill_content
-        assert "disable-model-invocation: false" in skill_content
+        assert "name: speckit-team-plan-and-task" in skill_content
+        assert "Architect role" in skill_content
 
         init_options = json.loads(
             (project / ".specify" / "init-options.json").read_text(encoding="utf-8")
@@ -222,7 +237,9 @@ class TestClaudeIntegration:
         )
 
         assert result.exit_code == 0
-        assert (target / ".claude" / "skills" / "speckit-specify" / "SKILL.md").exists()
+        assert (
+            target / ".claude" / "skills" / "speckit-team-specify" / "SKILL.md"
+        ).exists()
 
     def test_claude_hooks_render_skill_invocation(self, tmp_path):
         from specify_cli.extensions import HookExecutor

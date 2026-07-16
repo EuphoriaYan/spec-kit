@@ -8,6 +8,17 @@ Review an existing pull request and help a human reviewer decide whether it is
 merge-ready. This command never creates, edits, approves, merges, or resolves
 conversations on a pull request.
 
+Resolve `references/` and `scripts/` relative to this installed `SKILL.md`, not
+relative to the repository working directory.
+
+## Bootstrap
+
+1. Run the installed `scripts/init_role_context.py` by its resolved path.
+2. Read the invariant and Reviewer sections of
+   `references/context-bootstrap.md`.
+3. Load `references/work-item-layout.md` and `references/permissions.md` before
+   resolving feature artifacts or assessing authorization.
+
 ## User Input
 
 ```text

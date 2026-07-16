@@ -1,50 +1,167 @@
-# Team Implement & Review
+# AI Team Role Extension
 
-The `team` extension provides a small execution layer for task-ready Spec Kit
-features. It is independent of the existing `ai-team` workflows and does not
-replace their collaboration infrastructure.
+The `team` extension provides four role-oriented skills without changing native
+Spec Kit commands:
 
-## Commands
+| Skill | Role | Input | Durable output |
+|---|---|---|---|
+| `speckit.team.specify` | Business / Product | plain-language Feature or new-project demand | published Feature Issue, or Issue text in the current response |
+| `speckit.team.plan-and-task` | Architect | accepted/working Issue plus source | Feature spec when applicable, Code Graph impact, Plan, parallel Tasks, self-tests, generated check |
+| `speckit.team.implement` | Developer | task-ready Feature artifacts and permission envelope | source changes, completed Tasks, verification evidence, optional PR |
+| `speckit.team.review` | Reviewer | PR URL or number | prioritized findings and merge recommendation |
 
-| Command | Purpose |
-|---|---|
-| `speckit.team.implement` | Load a feature, check readiness and permissions, implement its tasks, verify the result, and optionally open a pull request. |
-| `speckit.team.review` | Review an existing pull request for code quality and alignment with the feature artifacts. |
+Bugfix intake is owned by a separate preceding skill. Plan-and-Task accepts its
+reviewed `type/bugfix` Issue but does not require a Bugfix `spec.md`.
 
-Both commands use one artifact root:
+## Role Boundary
+
+Roles do not share hidden chat context. Specify publishes complete User Stories
+to the Issue. The Technical Committee or delegated authority discusses the
+demand and applies `status/accept` outside the skill. Plan-and-Task reads the
+accepted Issue and current source, while Implement and Review consume the
+durable planning and evidence artifacts rather than prior role chat.
+
+An accepted Issue body is primary. Suggestions and rejected alternatives in
+comments are not requirements. Before acceptance, maintainers should consolidate
+accepted changes into the Issue body; an explicit decision comment may
+supplement it.
+
+## Labels And Identity
+
+Use exactly one type and one status label:
 
 ```text
-.specify/feature/<feature-slug>/
+type/feature | type/bugfix
+status/new-issue | status/accept | status/working | status/close
 ```
 
-The implementation command requires `spec.md`, `plan.md`, and `tasks.md` in
-that directory. A `permission-envelope.yml` must authorize implementation
-writes. `work-context.yml`, `context-pack.md`, handoffs, and code graph data are
-loaded when present.
+The Issue URL is the global identity. Coding-repository work uses the numeric
+Issue ID as `work_id`; enhancement-repository work uses
+`enhancement-<issue-id>` to avoid collisions.
 
-## Usage
+## Feature Flow
 
-Install the extension from a source checkout while it is under development:
+```text
+plain-language demand
+-> speckit.team.specify
+-> publish Issue and complete governance acceptance
+-> speckit.team.plan-and-task
+-> create .specify/feature/<work_id>/ artifacts
+-> Code Graph, Plan HLD, parallel Tasks, self-tests, generated check
+-> speckit.team.implement
+-> source changes and verification evidence
+-> optional pull request
+-> speckit.team.review
+-> findings and merge recommendation
+```
+
+Specify writes no local checklist, Issue draft, Work Context, or `spec.md`.
+Plan-and-Task pauses at its human decision boundary before Task decomposition.
+Implement stops when readiness, permissions, or verification fails and creates
+a PR only after explicit confirmation. Review never creates, approves, merges,
+or resolves conversations on a PR.
+
+## Bugfix Flow Boundary
+
+```text
+observed defect
+-> separate Bugfix intake skill
+-> reviewed type/bugfix Issue
+-> status/accept or status/working
+-> speckit.team.plan-and-task
+-> Bugfix summary in plan-and-task.md, without spec.md
+-> Code Graph, root-cause evidence, regression Tasks, self-tests, check
+```
+
+Several Bug Issues may map to one change only when they are symptoms of the
+same root cause and each has separate reproduction and verification evidence.
+
+## Planning And Delivery Rules
+
+The Plan is Issue-wide HLD. Each Task is a small LLD unit scoped to one module
+and designed for parallel assignment. When Tasks cannot run in parallel, the
+Plan records the dependency, handoff artifact, serialization reason, and unblock
+evidence.
+
+Implementation requires task-ready artifacts and a permission envelope. It
+marks only completed Task checkboxes, records commands and test results in
+`evidence/implementation-report.md`, and reaches `phase: verified` without
+requiring a PR. PR submission details are loaded progressively only after
+verification and user confirmation.
+
+Public API, SPI, configuration, protocol, schema, database ownership, or
+cross-module semantics still require the appropriate human architecture or
+contract authority.
+
+## Installed Skill Layout
+
+Each supported skills-based integration receives a self-contained directory:
+
+```text
+speckit-team-<role>/
+|-- SKILL.md
+|-- references/
+`-- scripts/
+```
+
+The Skill resolves declared resources relative to its own `SKILL.md`. The
+complete extension remains under `.specify/extensions/team/` for registration,
+upgrade, shared configuration, and progressively loaded delivery prompts.
+
+Plan-and-Task must run its installed `scripts/check_plan_and_task.py`. The
+script generates `plan-and-task-check.md`; a model may fix source artifacts but
+may not hand-write a passing result. Human decisions remain in the Issue and
+Plan review record.
+
+## Work Directories
+
+```text
+.specify/feature/<work_id>/   # includes spec.md
+.specify/bugfix/<work_id>/    # no spec.md
+```
+
+Commit Feature Specs, Plans, generated checks, and reviewed evidence according
+to repository policy. Ignore `spec.override.md`, private customer text,
+credentials, and local memory. Delivery commands never fall back to legacy
+repository-root `specs/` or `.specify/ai-team/work/` paths.
+
+## Installation
+
+The default Team-minimal profile keeps the Spec Kit engine and installs the
+Team role skills:
+
+```bash
+specify init . --integration codex
+```
+
+For extension development:
 
 ```bash
 specify extension add team --dev extensions/team
 ```
 
-Then run it through the command syntax supported by the active integration:
+Use `--skill-profile full` only when native Spec Kit skills are also wanted.
+Codex, Claude Code, Cursor Agent, and Trae receive the same role behavior and
+their own installed Skill resources.
+
+## Chat Entry
+
+Users do not need to name a skill. A new Feature starts naturally:
 
 ```text
-/speckit.team.implement feature_slug=003-search-export
-/speckit.team.implement feature_slug=003-search-export only=T001-T010
-/speckit.team.implement feature_slug=003-search-export submit_pr=true
-/speckit.team.review https://github.com/org/repo/pull/123
-/speckit.team.review pr=123 feature_slug=003-search-export
+Please add CSV export to the current project. Export the same fields shown in
+the result list, and help me turn this into a reviewable requirement.
 ```
 
-Implementation is complete after the selected tasks are implemented and the
-verification phase passes. Opening a pull request is optional and happens only
-after explicit confirmation or `submit_pr=true`. Pull request operations and
-review require GitHub CLI access; without `gh`, implementation can still finish
-and the commands provide manual guidance for the GitHub-specific steps.
+After governance acceptance, continue with the Issue URL. Once planning is
+task-ready, delivery can be invoked directly:
 
-The commands deliberately never read or write the legacy repository-root
-`specs/` or `.specify/ai-team/work/` paths.
+```text
+/speckit.team.implement feature_slug=123
+/speckit.team.implement feature_slug=123 only=T001-T010
+/speckit.team.implement feature_slug=123 submit_pr=true
+/speckit.team.review https://github.com/org/repo/pull/123
+```
+
+Pull request operations and Review require GitHub CLI access. Without `gh`,
+Implement can still finish and provide a manual PR checklist.

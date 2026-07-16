@@ -7,6 +7,17 @@ description: "Implement task-ready feature work, verify it, and optionally submi
 Implement the selected tasks and produce durable verification evidence. A pull
 request is optional; implementation is complete when Phase 5 passes.
 
+Resolve `references/` and `scripts/` relative to this installed `SKILL.md`, not
+relative to the repository working directory.
+
+## Bootstrap
+
+1. Run the installed `scripts/init_role_context.py` by its resolved path.
+2. Read the invariant and Developer sections of
+   `references/context-bootstrap.md`.
+3. Load `references/work-item-layout.md` and `references/permissions.md` before
+   resolving artifacts or checking the implementation envelope.
+
 ## User Input
 
 ```text
@@ -148,9 +159,9 @@ After verification passes:
 - continue only after an explicit yes. A no or absent confirmation ends with
   `phase: verified`.
 
-When continuing, read and execute
-`.specify/extensions/team/commands/prompts/implement-pr.md`. Do not reproduce,
-guess, or preload its instructions before confirmation.
+When continuing, read and execute the installed
+`references/implement-pr.md`. Do not reproduce, guess, or preload its
+instructions before confirmation.
 
 ## Output Order
 
