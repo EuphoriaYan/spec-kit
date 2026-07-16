@@ -37,7 +37,7 @@ Prepare a concise title and a body containing:
 - ...
 
 ## Feature
-- Feature slug: ...
+- Work ID: ...
 - Feature root: `.specify/feature/.../`
 - Work item: ...
 
@@ -70,8 +70,8 @@ not supported by the diff and implementation report.
 5. Read the created PR URL from `gh`; do not infer it.
 6. Only after successful creation, minimally update `work-context.yml` with
    `pr_url`, `phase: pr-open`,
-   `last_completed_command: speckit.team.implement`,
-   `next_command: speckit.team.review`, and an ISO 8601 UTC `updated_at`.
+   `last_completed_skill: speckit.team.implement`,
+   `next_skill: speckit.team.review`, and an ISO 8601 UTC `updated_at`.
 
 ## Pull Request Output
 
@@ -79,7 +79,7 @@ Output `## Pull Request` with the URL, title, linked work item, submitted files,
 verification summary, and this next step:
 
 ```text
-/speckit.team.review {pr_url} feature_slug={feature-slug}
+/speckit.team.review {pr_url} work_id={work_id}
 ```
 
 Stop before submission when the branch, repository route, work-item link,

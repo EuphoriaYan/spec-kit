@@ -1,7 +1,8 @@
 # Team Work Item Layout
 
-Plan-and-Task creates the formal work directory after a primary Issue is
-visible at `status/accept` or `status/working`.
+Plan-and-Task creates a Feature work directory after a primary Issue is visible
+at `status/accept` or `status/working`. Assess creates a separate Bugfix work
+directory; Bugfix does not use planning artifacts.
 
 ```text
 .specify/
@@ -16,38 +17,47 @@ visible at `status/accept` or `status/working`.
 |       |-- codegraph/
 |       `-- evidence/
 `-- bugfix/
-    `-- <work_id>/
-        |-- plan-and-task.md
-        |-- plan-and-task-check.md
+    `-- <bug_slug>/
+        |-- assessment.md
+        |-- fix.md
+        |-- test.md
         |-- work-context.yml
         |-- context-pack.md
-        |-- permission-envelope.yml
-        |-- codegraph/
         `-- evidence/
 ```
 
-Bugfix intake may create `assessment.md` under a slug-based Bugfix intake root
-before formal planning. The assessment is intake evidence; it does not by
-itself establish an accepted Issue identity. Bugfix work does not use
-`spec.md`.
+Bugfix uses `assessment.md` as the human-approved handoff into Fix. Fix records
+the actual change and verification in `fix.md` and `test.md`; Review may add
+review evidence. Bugfix does not use `spec.md`, `plan-and-task.md`, or
+`plan-and-task-check.md`.
 
 ## Identity
 
-- coding-repository Issue: `<work_id>` is its numeric Issue ID;
-- enhancement-repository Issue: `<work_id>` is `enhancement-<issue-id>`;
-- absolute Issue URL remains the global authority.
+- Feature in a coding repository: `<work_id>` is its numeric Issue ID;
+- Feature in an enhancement repository: `<work_id>` is
+  `enhancement-<issue-id>`;
+- Bugfix: `<bug_slug>` is the stable local artifact key created by Assess
+  before or after Issue publication;
+- when a Bugfix Issue is linked, its absolute URL is the repository-tracking
+  identity and is recorded in the approved assessment before Fix.
 
-Never derive identity from a mutable title or silently select the newest work
-directory.
+Never silently select the newest work directory. A generated Bug Slug may be
+derived from the initial symptom, but it must remain stable after assessment
+approval even when the Issue title changes.
 
 ## Core Files
 
 - Feature `spec.md`: reviewed snapshot of accepted User Stories and their
   Verification behavior, generated from the Issue by Plan-and-Task.
-- `plan-and-task.md`: Issue-wide HLD followed by single-module LLD Tasks,
+- Feature `plan-and-task.md`: Issue-wide HLD followed by single-module LLD Tasks,
   parallel/dependency design, minimum self-tests, compatibility, and rollback.
-- `plan-and-task-check.md`: generated readiness result; never hand-edit a
+- Feature `plan-and-task-check.md`: generated readiness result; never hand-edit a
   passing result.
+- Bugfix `assessment.md`: observed evidence, impact, permission boundary, fix
+  strategy, test strategy, and human approval state.
+- Bugfix `fix.md` and `test.md`: actual change scope and verification evidence.
+- `work-context.yml` and `context-pack.md`: small resume indexes for both
+  Feature and Bugfix; they point to native artifacts without duplicating them.
 
 `spec.override.md` may sit beside a Feature `spec.md` for an authorized
 confidential handoff, but it must be ignored by Git and read first. It is not

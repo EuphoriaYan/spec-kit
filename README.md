@@ -42,7 +42,7 @@ provides.
 
 ```text
 Feature: Specify -> status/new-issue -> Technical Committee acceptance -> Plan-and-Task -> Implement -> optional PR -> Review
-Bugfix: Assess -> human approval -> optional tracked Issue -> status/working -> Fix -> optional PR -> Review
+Bugfix: Assess -> human approval -> Fix -> optional PR -> Review
 ```
 
 Feature Issue creation belongs to Specify, where User Stories and their
@@ -64,14 +64,16 @@ Team work uses one directory convention with type-specific artifacts:
   plan-and-task.md
   plan-and-task-check.md
 
-.specify/bugfix/<work_id>/
-  plan-and-task.md           # no Feature spec.md
-  plan-and-task-check.md
+.specify/bugfix/<bug_slug>/
+  assessment.md
+  fix.md
+  test.md
+  evidence/                  # optional review evidence
 ```
 
 ### Module Context
 
-During `speckit.team.plan-and-task`, the Issue-wide Plan identifies modules from
+During Feature `speckit.team.plan-and-task`, the Issue-wide Plan identifies modules from
 the repository's source layout, build metadata, architecture guidance, and Code
 Graph. A repository may document owners or review routes, but they are not
 required for Task decomposition. Tasks are single-module and parallel by

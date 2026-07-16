@@ -51,6 +51,11 @@ def test_assess_contract_uses_bugfix_root_and_merges_analysis():
     assert "Issue Creation" in command
     assert "status/new-issue" in command
     assert "type/bugfix" in command
+    assert "Primary Issue" not in command
+    assert "Issue Status" not in command
+    assert "references/context.md" in command
+    assert "work-context.yml" in command
+    assert "context-pack.md" in command
     assert "workflow_run_id" not in command
 
 
@@ -67,11 +72,32 @@ def test_fix_contract_writes_reports_and_asks_before_pr():
     assert "ask the user whether to create a pull request" in command
     assert "gh pr create" in command
     assert "Do not create a pull request without asking the user first" in command
-    assert "Issue State Gate" in command
+    assert "Conditional Issue State Gate" in command
     assert "status/working" in command
     assert "status/new-issue" in command
     assert "status/accept" in command
     assert "Do not change issue labels automatically" in command
+    assert "Apply this section only when the user supplies an Issue URL" in command
+    assert "Proceed only when the Issue has label `status/working`" in command
+    assert "Primary Issue**: <supplied coding Issue URL or not-provided>" in command
+    assert "references/context.md" in command
+    assert "Use the exact labels `Bug Slug:` and `Bug Root:`" in command
+    assert "stop if the current branch is the default branch" in command
+    assert "Exclude local prompts, scratch files, private demand" in command
+    assert "symptoms of the same root cause" in command
+
+
+def test_bugfix_issue_is_created_by_assess_and_gated_only_when_fix_receives_it():
+    commands = EXTENSION_ROOT / "commands"
+    assess = _normalized_markdown(commands / "speckit.team.assess.md")
+    fix = _normalized_markdown(commands / "speckit.team.fix.md")
+    review = _normalized_markdown(commands / "speckit.team.review.md")
+
+    assert "ask whether the user wants to create or update a tracking Issue" in assess
+    assert "Primary Issue" not in assess
+    assert "Without Issue input, skip this section" in fix
+    assert "an absent Issue is not a Bugfix blocker" in review
+    assert "Require the Issue to belong to the coding repository" in fix
 
 
 def test_bugfix_commands_use_canonical_bugfix_root():
@@ -81,12 +107,57 @@ def test_bugfix_commands_use_canonical_bugfix_root():
         assert ".specify/bugs/" not in command
 
 
+def test_bugfix_flow_has_its_own_resume_context():
+    layout = _normalized_markdown(EXTENSION_ROOT / "docs" / "work-item-layout.md")
+    journey = _normalized_markdown(EXTENSION_ROOT / "docs" / "user-journeys.md")
+
+    context = _normalized_markdown(
+        EXTENSION_ROOT / "docs" / "work-context-package.md"
+    )
+
+    assert "work-context.yml" in layout
+    assert "context-pack.md" in layout
+    assert ".specify/bugfix/<bug_slug>/" in context
+    assert "last_completed_skill: speckit.team.assess" in context
+    assert "next_skill: speckit.team.fix" in context
+    assert "Bugfix work starts with Assess" in journey
+    assert "both `type/bugfix` and `status/new-issue`" in journey
+
+
+def test_feature_and_bugfix_delivery_chains_are_disjoint():
+    commands = EXTENSION_ROOT / "commands"
+    specify = _normalized_markdown(commands / "speckit.team.specify.md")
+    plan = _normalized_markdown(commands / "speckit.team.plan-and-task.md")
+    implement = _normalized_markdown(commands / "speckit.team.implement.md")
+    assess = _normalized_markdown(commands / "speckit.team.assess.md")
+    fix = _normalized_markdown(commands / "speckit.team.fix.md")
+    review = _normalized_markdown(commands / "speckit.team.review.md")
+
+    assert ".specify/bugfix/" not in plan
+    assert "assessment.md" not in plan
+    assert ".specify/bugfix/" not in implement
+    assert "assessment.md" not in implement
+    assert ".specify/feature/" not in assess
+    assert "plan-and-task.md" not in assess
+    assert ".specify/feature/" not in fix
+    assert "plan-and-task.md" not in fix
+    assert "belongs to the Bugfix intake skill" in specify
+
+    assert "never both" in review
+    assert ".specify/feature/{work_id}" in review
+    assert ".specify/bugfix/{bug-slug}" in review
+    assert "For Feature" in review
+    assert "For Bugfix" in review
+
+
 def test_implement_contract_uses_unified_root_and_lazy_pr_prompt():
     command = (EXTENSION_ROOT / "commands" / "speckit.team.implement.md").read_text(
         encoding="utf-8"
     )
 
-    assert ".specify/feature/{feature-slug}" in command
+    assert ".specify/feature/{work_id}" in command
+    assert "required `work_id=<id>`" in command
+    assert "feature_slug" not in command
     assert "only=T001-T010" in command
     assert "submit_pr=true" in command
     assert "Readiness blocked. Do not proceed with implementation." in command
@@ -135,38 +206,40 @@ def test_review_contract_treats_pr_as_primary_input():
     assert "gh pr diff" in command
     assert "## Review Findings" in command
     assert "## Merge Recommendation" in command
+    assert "## Durable Follow-up" in command
+    assert "test, mechanical gate, role Skill correction" in command
     assert "evidence/review-report.md" in command
+    assert "`bug_slug=<slug>`" in command
+    assert "require `assessment.md`, `fix.md`, and `test.md`" in command
+    assert "same root cause" in command
     assert "`plan-and-task.md`" in command
     assert "`plan-and-task-check.md`" in command
     assert "`plan.md`" not in command
     assert "`tasks.md`" not in command
+    assert not (
+        EXTENSION_ROOT / "references" / "internal" / "review.md"
+    ).exists()
 
 
-def test_internal_references_are_installed_or_explicitly_reserved():
+def test_every_internal_reference_is_installed_and_read_by_its_skill():
     manifest = yaml.safe_load(
         (EXTENSION_ROOT / "extension.yml").read_text(encoding="utf-8")
     )
     commands = {item["name"]: item for item in manifest["provides"]["commands"]}
 
-    active: dict[str, tuple[str, str]] = {}
+    active: dict[str, list[tuple[str, str]]] = {}
     for command_name, command in commands.items():
         for resource in command.get("resources", []):
             prefix = "references/internal/"
             if resource["source"].startswith(prefix):
-                active[Path(resource["source"]).name] = (
-                    command_name,
-                    resource["target"],
+                active.setdefault(Path(resource["source"]).name, []).append(
+                    (command_name, resource["target"])
                 )
 
     lifecycle = (
         EXTENSION_ROOT / "references" / "internal" / "README.md"
     ).read_text(encoding="utf-8")
-    active_section, reserved_section = lifecycle.split(
-        "## Reserved Capability Sources", maxsplit=1
-    )
-    reserved_section = reserved_section.split("## Migrated Sources", maxsplit=1)[0]
-    listed_active = set(re.findall(r"\| `([^`]+\.md)` \|", active_section))
-    listed_reserved = set(re.findall(r"\| `([^`]+\.md)` \|", reserved_section))
+    listed_active = set(re.findall(r"\| `([^`]+\.md)` \|", lifecycle))
 
     files = {
         path.name
@@ -174,14 +247,16 @@ def test_internal_references_are_installed_or_explicitly_reserved():
         if path.name != "README.md"
     }
     assert listed_active == set(active)
-    assert files == listed_active | listed_reserved
-    assert listed_active.isdisjoint(listed_reserved)
+    assert files == listed_active
+    assert files == set(active)
     assert "init-context.md" not in files
+    assert "Reserved Capability Sources" not in lifecycle
 
-    for source_name, (command_name, target) in active.items():
-        command_file = EXTENSION_ROOT / commands[command_name]["file"]
-        command_text = command_file.read_text(encoding="utf-8")
-        assert target in command_text, (
-            f"{source_name} is installed as {target} but {command_name} "
-            "does not explicitly load it"
-        )
+    for source_name, bindings in active.items():
+        for command_name, target in bindings:
+            command_file = EXTENSION_ROOT / commands[command_name]["file"]
+            command_text = command_file.read_text(encoding="utf-8")
+            assert target in command_text, (
+                f"{source_name} is installed as {target} but {command_name} "
+                "does not explicitly load it"
+            )

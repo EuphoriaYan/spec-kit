@@ -26,16 +26,26 @@ Resolve `BUG_SLUG` in this order:
 1. Use explicit `bug_slug=<bug-slug>` when provided.
 2. For a GitHub issue URL, derive a concise slug from repository and issue number, for example `owner-repo-123`.
 3. For free-form text, derive a 2-4 word kebab-case slug from the symptom.
-4. If the resolved directory already exists, ask before reusing it in interactive mode; in non-interactive mode, append the shortest unique suffix (`-2`, `-3`, ...).
+4. Resume an existing directory when an explicit Bug Slug or matching saved
+   context identifies the same bug. For an unrelated name collision, ask in
+   interactive mode; in non-interactive mode append the shortest unique suffix
+   (`-2`, `-3`, ...).
 
 Set:
 
 ```text
 BUG_ROOT={repository root}/.specify/bugfix/{bug-slug}
 ASSESSMENT={BUG_ROOT}/assessment.md
+WORK_CONTEXT={BUG_ROOT}/work-context.yml
+CONTEXT_PACK={BUG_ROOT}/context-pack.md
 ```
 
 Create `BUG_ROOT` when needed. All bugfix artifacts created by this command MUST stay under `BUG_ROOT`.
+
+When `BUG_ROOT` already contains `work-context.yml`, read
+`references/context.md` and resume from that package. Reconcile a conflicting
+Bug Slug or source with the user instead of selecting the newest directory or
+recovering facts from chat history.
 
 ## URL Safety
 
@@ -138,16 +148,28 @@ Write `ASSESSMENT` using this structure:
 
 Set `Status: approved` only after the user approves the assessment. Set `Status: needs-info` when the assessment cannot safely proceed to a fix. Use `Status: draft` when written without explicit user approval.
 
+## Resume Context
+
+Create or minimally update `WORK_CONTEXT` and `CONTEXT_PACK` after writing the
+assessment. Record the Bug Slug, source summary, assessment status, current
+phase, artifact paths, last completed Skill, next Skill, and unresolved items.
+Keep the package concise; do not duplicate the full assessment, logs, or Issue.
+Use `phase: assessment-approved` and `next_skill: speckit.team.fix` only after
+human approval. Otherwise keep the next Skill as `speckit.team.assess`.
+
 ## Issue Creation
 
-After the assessment is approved, ask whether the user wants to create or update a tracking issue. Do not create an issue without explicit user confirmation.
+After the assessment is approved, ask whether the user wants to create or
+update a tracking Issue. Do not create an Issue without explicit user
+confirmation.
 
 If creating a new issue, use a concise title and a body that references `assessment.md`, summarizes the verdict, severity, root-cause hypothesis, proposed write paths, verification commands, risks, and open questions. The issue MUST have both labels:
 
 - `status/new-issue`
 - `type/bugfix`
 
-If issue creation fails or `gh` is unavailable, provide manual issue creation instructions with the same required labels.
+If Issue creation fails or an authenticated repository tool is unavailable,
+provide manual Issue creation instructions with the same required labels.
 
 ## Final Response
 
@@ -155,6 +177,7 @@ Report:
 
 - bug slug;
 - assessment path;
+- Work Context Package paths;
 - status;
 - verdict and severity;
 - whether `speckit.team.fix bug_slug=<bug-slug>` may proceed.

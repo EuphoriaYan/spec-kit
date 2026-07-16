@@ -19,9 +19,10 @@ agent_tools:
   auto_detect_from_specify_init: true
 
 work_artifacts:
-  # Feature and Bugfix work use the same directory depth. Only Feature uses Spec.
+  # Feature and Bugfix use the same depth but different lifecycle identities.
   root: .specify
-  path_template: .specify/{category}/{work_id}
+  feature_path_template: .specify/feature/{work_id}
+  bugfix_path_template: .specify/bugfix/{bug_slug}
   categories:
     - feature
     - bugfix
@@ -33,6 +34,7 @@ work_artifacts:
   permission_envelope_file: permission-envelope.yml
   allow_reconstruct_from_handoff_requirement_url: true
   allow_reconstruct_from_work_id: true
+  allow_reconstruct_from_bug_slug: true
 
 memory:
   # Three-tier memory keeps contributor scratch, department learning, and
@@ -110,6 +112,8 @@ release_archive:
     - docs/ai-team/memory/decisions
     - migration-playbook.md
 planning:
+  applies_to:
+    - feature
   artifact: plan-and-task.md
   stages:
     - plan-review

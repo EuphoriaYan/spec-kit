@@ -25,9 +25,9 @@ available read-only method for that host. Stop when the Issue body, comments,
 labels, and stable URL cannot be verified. Do not plan from a title or copied
 excerpt alone.
 
-The Issue must have exactly one type label, `type/feature` or `type/bugfix`, and
-exactly one status label. Planning may start only at `status/accept` or resume
-at `status/working`.
+The Issue must have type label `type/feature` and exactly one status label.
+Planning may start only at `status/accept` or resume at `status/working`.
+If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
 
 ## Issue Identity And Summary
 
@@ -46,15 +46,11 @@ at `status/working`.
 
 ## Flow
 
-1. Resolve category and work ID, then create or resume
-   `.specify/<feature|bugfix>/<work_id>/`. When resuming an existing work root,
+1. Resolve the work ID, then create or resume
+   `.specify/feature/<work_id>/`. When resuming an existing work root,
    read `references/context.md`; do not load it for a new work root.
-2. For Feature work, summarize the accepted Issue and accepted discussion into
+2. Summarize the accepted Issue and accepted discussion into
    `spec.md`. Read `references/feature-spec.md` immediately before writing it.
-   For Bugfix work, do not load that reference or create `spec.md`; consume the
-   Bugfix intake artifact supplied by its preceding skill when available and
-   preserve the Issue observations in the Bugfix section of
-   `plan-and-task.md`.
 3. When an authorized confidential handoff is in scope, read and execute
    `references/handoff-spec-sync.md`. Otherwise do not load it. Never copy
    private source text into committed public artifacts.
@@ -66,7 +62,7 @@ at `status/working`.
    return to `pending-review` or `blocked` and clear both approval fields. Run
    the installed
    `scripts/check_permission_envelope.py` by its resolved path with
-   `--work-type <feature|bugfix> --work-id <work_id> --mode analysis
+   `--work-type feature --work-id <work_id> --mode analysis
    --require-approved`. Stop before source or Code Graph analysis when it is
    blocked; the script validates but never grants approval.
 5. Read `references/code-graph-contract.md`, then generate or attach the
@@ -92,12 +88,10 @@ at `status/working`.
    concrete self-verification scenario. Design Tasks for parallel assignment by
    default. When serialization is necessary, describe the dependency, handoff
    artifact, reason, and unblock evidence in the Plan. Reject cycles.
-10. For Feature work, map every Task to User Stories and their Verification
-    behavior. For Bugfix work, map reproduction and root-cause evidence to
-    regression Tasks and self-tests.
+10. Map every Task to User Stories and their Verification behavior.
 11. Set `planning_stage: ready-for-check`, then run the installed
     `scripts/check_plan_and_task.py` by its resolved path with
-    `--work-type <feature|bugfix> --work-id <work_id>`. The script owns
+    `--work-type feature --work-id <work_id>`. The script owns
     `plan-and-task-check.md`; never hand-write a passing result. Revise until it
     reports `ready` or preserve the blocking findings.
 
@@ -106,15 +100,15 @@ at `status/working`.
 ```text
 Team Plan And Task:
 - Issue URL, repository, ID, status, and source revision:
-- work ID and category:
+- work ID and category (`feature`):
 - accepted Issue summary:
 - code graph or fallback:
 - affected modules and paths:
 - optional owners or review routes:
 - architecture and public-contract deltas:
-- plan and task: .specify/<feature|bugfix>/<work_id>/plan-and-task.md
-- feature spec: .specify/feature/<work_id>/spec.md or not-applicable
-- check: .specify/<feature|bugfix>/<work_id>/plan-and-task-check.md
+- plan and task: .specify/feature/<work_id>/plan-and-task.md
+- feature spec: .specify/feature/<work_id>/spec.md
+- check: .specify/feature/<work_id>/plan-and-task-check.md
 - minimum self-test mapping:
 - parallel groups and development chain:
 - compatibility and rollback:

@@ -10,7 +10,8 @@ a service, MCP tool, or commercial platform later.
 Every adapter should produce the same normalized artifact shape:
 
 ```text
-.specify/<category>/<work_id>/codegraph/
+.specify/feature/<work_id>/codegraph/
+.specify/bugfix/<bug_slug>/codegraph/
 |-- nodes.jsonl
 |-- edges.jsonl
 |-- summary.md

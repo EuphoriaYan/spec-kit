@@ -152,6 +152,10 @@ def _named_decider(value: object) -> bool:
 
 def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str]:
     category = normalize_category(work_type)
+    if category != "feature":
+        raise ValueError(
+            "Plan-and-Task supports Feature work only; use Assess -> Fix -> Review for Bugfix"
+        )
     work_root = resolve_work_root(project_root, category, work_id)
     spec_path = work_root / "spec.md"
     plan_path = work_root / "plan-and-task.md"
@@ -162,9 +166,7 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             Check(check_id, "PASS" if ok else ("BLOCK" if blocked else "FAIL"), detail)
         )
 
-    required_paths = [plan_path]
-    if category == "feature":
-        required_paths.insert(0, spec_path)
+    required_paths = [spec_path, plan_path]
     missing = [path.name for path in required_paths if not path.is_file()]
     record(
         "ARTIFACTS",
@@ -179,9 +181,7 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
     plan_body = ""
     parse_errors: list[str] = []
     if not missing:
-        parse_targets = [(plan_path, "plan")]
-        if category == "feature":
-            parse_targets.insert(0, (spec_path, "spec"))
+        parse_targets = [(spec_path, "spec"), (plan_path, "plan")]
         for path, target in parse_targets:
             try:
                 metadata, body = _frontmatter(path)
@@ -200,11 +200,7 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
     if not missing and not parse_errors:
         try:
             plan_category = normalize_category(str(plan_meta.get("work_type", "")))
-            spec_category = (
-                normalize_category(str(spec_meta.get("work_type", "")))
-                if category == "feature"
-                else category
-            )
+            spec_category = normalize_category(str(spec_meta.get("work_type", "")))
         except ValueError:
             spec_category = plan_category = "invalid"
         issue_source = plan_meta.get("issue_source")
@@ -220,14 +216,9 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             and plan_category == category
             and _decision_evidence(plan_meta.get("primary_issue"))
             and source_ok
-            and (
-                category != "feature"
-                or (
-                    spec_meta.get("schema") == SPEC_SCHEMA
-                    and str(spec_meta.get("work_id", "")) == work_id
-                    and spec_meta.get("primary_issue") == plan_meta.get("primary_issue")
-                )
-            )
+            and spec_meta.get("schema") == SPEC_SCHEMA
+            and str(spec_meta.get("work_id", "")) == work_id
+            and spec_meta.get("primary_issue") == plan_meta.get("primary_issue")
         )
         record(
             "IDENTITY", identity_ok, "schema, work ID, type, and primary Issue agree"
@@ -258,53 +249,22 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             blocked=True,
         )
 
-        if category == "feature":
-            story_ids = set(re.findall(r"(?m)^#{3,4}\s+(US-\d+)\b", spec_body))
-            known_acceptance = set(re.findall(r"\bVER-\d+\b", spec_body))
-            missing_spec = sorted({"User Stories"} - _headings(spec_body))
-            spec_ok = (
-                not missing_spec
-                and _meaningful(_section(spec_body, "User Stories"))
-                and bool(story_ids)
-                and bool(known_acceptance)
-            )
-            record(
-                "SPEC_STRUCTURE",
-                spec_ok,
-                "Feature Spec contains User Stories and Verification IDs"
-                if spec_ok
-                else "Feature Spec requires User Stories and VER-### Verification IDs",
-            )
-            reproduction_ids: set[str] = set()
-        else:
-            story_ids = set()
-            bug_rows = _table(plan_body, "Bugfix Verification")
-            bug_columns = {"Verification ID", "Reproduction ID", "Expected result"}
-            bug_shape = bool(bug_rows) and bug_columns.issubset(bug_rows[0])
-            known_acceptance = (
-                {row["Verification ID"] for row in bug_rows} if bug_shape else set()
-            )
-            reproduction_ids = (
-                {row["Reproduction ID"] for row in bug_rows} if bug_shape else set()
-            )
-            bug_shape = (
-                bug_shape
-                and bool(known_acceptance)
-                and all(re.fullmatch(r"VER-\d+", item) for item in known_acceptance)
-                and all(re.fullmatch(r"BUG-OBS-\d+", item) for item in reproduction_ids)
-                and all(
-                    all(value.strip() for value in row.values())
-                    and not PLACEHOLDER.search(" ".join(row.values()))
-                    for row in bug_rows
-                )
-            )
-            record(
-                "BUGFIX_INPUT",
-                bug_shape,
-                "Bugfix reproduction and Verification IDs are parseable"
-                if bug_shape
-                else "Bugfix Verification requires VER-### and BUG-OBS-### mappings",
-            )
+        story_ids = set(re.findall(r"(?m)^#{3,4}\s+(US-\d+)\b", spec_body))
+        known_acceptance = set(re.findall(r"\bVER-\d+\b", spec_body))
+        missing_spec = sorted({"User Stories"} - _headings(spec_body))
+        spec_ok = (
+            not missing_spec
+            and _meaningful(_section(spec_body, "User Stories"))
+            and bool(story_ids)
+            and bool(known_acceptance)
+        )
+        record(
+            "SPEC_STRUCTURE",
+            spec_ok,
+            "Feature Spec contains User Stories and Verification IDs"
+            if spec_ok
+            else "Feature Spec requires User Stories and VER-### Verification IDs",
+        )
 
         plan_common = {
             "Plan (HLD)",
@@ -323,17 +283,7 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             "Compatibility Migration And Rollback",
             "Risks And Deviations",
         }
-        plan_specific = (
-            {"Feature Delivery Plan", "User Story Delivery Mapping"}
-            if category == "feature"
-            else {
-                "Bugfix Delivery Plan",
-                "Accepted Bug Summary",
-                "Bugfix Verification",
-                "Root Cause Evidence",
-                "Reproduction And Regression Mapping",
-            }
-        )
+        plan_specific = {"Feature Delivery Plan", "User Story Delivery Mapping"}
         missing_plan = sorted((plan_common | plan_specific) - _headings(plan_body))
         record(
             "PLAN_STRUCTURE",
@@ -352,16 +302,7 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             "Plan Review Decision",
             "Compatibility Migration And Rollback",
             "Risks And Deviations",
-        } | (
-            {"User Story Delivery Mapping"}
-            if category == "feature"
-            else {
-                "Accepted Bug Summary",
-                "Bugfix Verification",
-                "Root Cause Evidence",
-                "Reproduction And Regression Mapping",
-            }
-        )
+        } | {"User Story Delivery Mapping"}
         empty_plan = sorted(
             heading
             for heading in plan_leaf_sections
@@ -642,64 +583,31 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
                 else "Tasks in one parallel group must not edit the same declared path",
             )
 
-            if category == "feature":
-                delivery = _table(plan_body, "User Story Delivery Mapping")
-                columns = {"User Story ID", "Verification IDs", "Task IDs"}
-                delivery_ok = bool(delivery) and columns.issubset(delivery[0])
-                if delivery_ok:
-                    mapped_acceptance = {
-                        item
-                        for row in delivery
-                        for item in _ids(row["Verification IDs"])
-                    }
-                    delivery_ok = (
-                        {row["User Story ID"] for row in delivery} == story_ids
-                        and mapped_acceptance == known_acceptance
-                        and all(
-                            set(_ids(row["Task IDs"])).issubset(task_ids)
-                            for row in delivery
-                        )
-                        and set(task_ids)
-                        == {item for row in delivery for item in _ids(row["Task IDs"])}
-                    )
-            else:
-                delivery = _table(plan_body, "Reproduction And Regression Mapping")
-                columns = {
-                    "Reproduction ID",
-                    "Root-cause evidence",
-                    "Task IDs",
-                    "Regression test IDs",
+            delivery = _table(plan_body, "User Story Delivery Mapping")
+            columns = {"User Story ID", "Verification IDs", "Task IDs"}
+            delivery_ok = bool(delivery) and columns.issubset(delivery[0])
+            if delivery_ok:
+                mapped_acceptance = {
+                    item
+                    for row in delivery
+                    for item in _ids(row["Verification IDs"])
                 }
-                delivery_ok = bool(delivery) and columns.issubset(delivery[0])
-                if delivery_ok:
-                    mapped_tests = {
-                        item
+                delivery_ok = (
+                    {row["User Story ID"] for row in delivery} == story_ids
+                    and mapped_acceptance == known_acceptance
+                    and all(
+                        set(_ids(row["Task IDs"])).issubset(task_ids)
                         for row in delivery
-                        for item in _ids(row["Regression test IDs"])
-                    }
-                    delivery_ok = (
-                        {row["Reproduction ID"] for row in delivery} == reproduction_ids
-                        and all(
-                            _meaningful(row["Root-cause evidence"]) for row in delivery
-                        )
-                        and all(
-                            set(_ids(row["Task IDs"])).issubset(task_ids)
-                            for row in delivery
-                        )
-                        and all(
-                            set(_ids(row["Regression test IDs"])).issubset(test_ids)
-                            for row in delivery
-                        )
-                        and set(task_ids)
-                        == {item for row in delivery for item in _ids(row["Task IDs"])}
-                        and mapped_tests == set(test_ids)
                     )
+                    and set(task_ids)
+                    == {item for row in delivery for item in _ids(row["Task IDs"])}
+                )
             record(
                 "DELIVERY_MAPPING",
                 delivery_ok,
-                "type-specific delivery mapping covers the declared work"
+                "Feature delivery mapping covers the declared work"
                 if delivery_ok
-                else "Feature User Stories or Bugfix reproductions are not fully mapped to Tasks and tests",
+                else "Feature User Stories are not fully mapped to Tasks and tests",
             )
 
         compatibility_ok = _meaningful(

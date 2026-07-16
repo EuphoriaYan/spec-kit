@@ -27,13 +27,13 @@ ROUTES = (
     ),
     (
         "speckit.team.plan-and-task",
-        "An accepted Feature or Bugfix Issue needs architecture, scope, tasks, and self-tests",
+        "An accepted Feature Issue needs architecture, scope, tasks, and self-tests",
         "summarize the Issue and create and check `plan-and-task.md`",
     ),
     (
         "speckit.team.assess",
         "A defect report needs source-grounded assessment before implementation",
-        "write and review `.specify/bugfix/<work_id>/assessment.md`",
+        "write and review `.specify/bugfix/<bug_slug>/assessment.md`",
     ),
     (
         "speckit.team.fix",
@@ -113,7 +113,8 @@ def _managed_section(target: str, root: Path | None = None) -> str:
         f"{routes}\n"
         "If a required artifact or human decision is missing, stop and return "
         "to the preceding role. Canonical work artifacts live under "
-        "`.specify/<feature|bugfix>/<work_id>/`.\n"
+        "`.specify/feature/<work_id>/` for Features and "
+        "`.specify/bugfix/<bug_slug>/` for Bugfixes.\n"
         f"{END}\n"
     )
 

@@ -6,11 +6,11 @@ Spec Kit commands:
 | Skill | Role | Input | Durable output |
 |---|---|---|---|
 | `speckit.team.specify` | Business / Product | plain-language Feature or new-project demand | published Feature Issue, or Issue text in the current response |
-| `speckit.team.plan-and-task` | Architect | primary Issue URL at `status/accept` or `status/working` | Feature spec when applicable, Code Graph impact, Plan, parallel Tasks, self-tests, generated check |
+| `speckit.team.plan-and-task` | Architect | accepted/working Feature Issue plus source | Feature spec, Code Graph impact, Plan, parallel Tasks, self-tests, generated check |
 | `speckit.team.assess` | Bug Assessor | Issue URL, defect description, or `bug_slug` | `assessment.md` with `draft`, `approved`, or `needs-info` status |
 | `speckit.team.fix` | Bug Fixer | approved assessment and optional tracked Issue | source fix, `fix.md`, `test.md`, optional PR |
-| `speckit.team.implement` | Developer | Feature slug, checked Plan-and-Task, and permission envelope | source changes, completed Task status, implementation evidence, optional PR |
-| `speckit.team.review` | Reviewer | PR URL or number; optional Feature slug | code findings, optional Feature SDD alignment/report, and merge recommendation |
+| `speckit.team.implement` | Developer | Feature `work_id`, checked Plan-and-Task, and permission envelope | source changes, completed Task status, implementation evidence, optional PR |
+| `speckit.team.review` | Reviewer | PR URL or number; optional Feature `work_id` or Bugfix `bug_slug` | code findings, lifecycle alignment/report, and merge recommendation |
 
 ## Role Boundary
 
@@ -19,6 +19,8 @@ to the Issue. The Technical Committee or delegated authority discusses the
 demand and applies `status/accept` outside the skill. Plan-and-Task reads the
 accepted Issue and current source, while Implement and Review consume the
 durable planning and evidence artifacts rather than prior role chat.
+
+Bugfix uses the independent Assess -> Fix -> Review flow.
 
 An accepted Issue body is primary. Suggestions and rejected alternatives in
 comments are not requirements. Before acceptance, maintainers should consolidate
@@ -46,8 +48,9 @@ Issue ID.
 Feature delivery uses `.specify/feature/<work_id>/`. Bugfix assessment and fix
 delivery use `.specify/bugfix/<bug_slug>/`: Assess writes `assessment.md` and
 sets `approved` only after explicit user approval; Fix requires that approved
-status, then writes `fix.md` and `test.md`. For a tracked Issue, Fix also
-requires `status/working` and never changes labels automatically.
+status, then writes `fix.md` and `test.md`. A coding Issue is optional; when one
+is linked, Fix verifies `type/bugfix` and `status/working` without changing
+labels automatically.
 
 ## Feature Flow
 
@@ -70,7 +73,8 @@ Plan-and-Task pauses at its human decision boundary before Task decomposition.
 Implement stops when readiness, permissions, or verification fails and creates
 a PR only after explicit confirmation. Review never creates, approves, merges,
 or resolves conversations on a PR. Review can review any PR; Feature SDD
-alignment is assessed only when a Feature root can be resolved.
+or Bugfix lifecycle alignment is assessed only when the corresponding work root
+can be resolved.
 
 ## Bugfix Flow
 
@@ -80,12 +84,12 @@ observed defect
 -> assessment with draft, approved, or needs-info status
 -> impact, proposed permission boundary, fix strategy, and test strategy
 -> human approval
--> optionally create a type/bugfix Issue at status/new-issue
--> when an Issue is used, a maintainer moves claimed work to status/working
+-> optionally create or verify a coding Issue with type/bugfix
+-> when linked, a maintainer moves accepted and claimed work to status/working
 -> speckit.team.fix
 -> source fix, regression verification, fix.md and test.md
 -> optional pull request
--> speckit.team.review
+-> speckit.team.review checks assessment, fix, tests, diff, and any linked Issue
 ```
 
 Several Bug Issues may map to one change only when they are symptoms of the
@@ -131,8 +135,10 @@ speckit-team-implement/
 ```
 
 Each Skill resolves declared resources relative to its own `SKILL.md`.
-Specify installs only its conditional repository-boundary reference. Assess,
-Fix, and Review install no role references or scripts.
+Specify installs its conditional repository-boundary reference. Plan-and-Task,
+Assess, Fix, Implement, and Review install the shared Context Resume reference;
+Plan-and-Task and Implement also install their phase-specific checks or PR
+reference.
 The extension implementation remains in the installed Specify CLI package and
 is not copied into the project. Editable configuration and the stable context
 bootstrap live under `.specify/team/`.
@@ -162,11 +168,11 @@ Plan review record.
 .specify/bugfix/<bug_slug>/
 |-- assessment.md
 |-- fix.md
-`-- test.md
+|-- test.md
+|-- work-context.yml
+|-- context-pack.md
+`-- evidence/
 ```
-
-Plan-and-Task may also use `.specify/bugfix/<work_id>/` for an accepted Bugfix
-Issue's formal planning package; Bugfix planning does not create `spec.md`.
 
 Commit Feature Specs, Plans, generated checks, and reviewed evidence according
 to repository policy. Ignore `spec.override.md`, private customer text,
@@ -214,9 +220,9 @@ task-ready, delivery can be invoked directly:
 /speckit.team.assess https://github.com/org/repo/issues/123
 /speckit.team.assess "Login returns 500 after session expiry" bug_slug=login-session-expiry
 /speckit.team.fix bug_slug=login-session-expiry
-/speckit.team.implement feature_slug=123
-/speckit.team.implement feature_slug=123 only=T001-T010
-/speckit.team.implement feature_slug=123 submit_pr=true
+/speckit.team.implement work_id=123
+/speckit.team.implement work_id=123 only=T001-T010
+/speckit.team.implement work_id=123 submit_pr=true
 /speckit.team.review https://github.com/org/repo/pull/123
 ```
 

@@ -126,35 +126,10 @@ Use `None` when no known deviation exists.
 
 ## Feature Delivery Plan
 
-Complete for `work_type: feature`.
+Map every accepted User Story and Verification ID to the Tasks that deliver it.
 
 ### User Story Delivery Mapping
 
 | User Story ID | Verification IDs | Task IDs |
 |---|---|---|
 | US-001 | VER-001 | T001 |
-
-## Bugfix Delivery Plan
-
-Complete for `work_type: bugfix`.
-
-### Accepted Bug Summary
-
-Summarize observed behavior, expected behavior, environment, impact, and the
-accepted Issue discussion without inventing a root cause.
-
-### Bugfix Verification
-
-| Verification ID | Reproduction ID | Expected result |
-|---|---|---|
-| VER-001 | BUG-OBS-001 |  |
-
-### Root Cause Evidence
-
-Separate observed evidence from the root-cause conclusion.
-
-### Reproduction And Regression Mapping
-
-| Reproduction ID | Root-cause evidence | Task IDs | Regression test IDs |
-|---|---|---|---|
-| BUG-OBS-001 |  | T001 | TEST-001 |

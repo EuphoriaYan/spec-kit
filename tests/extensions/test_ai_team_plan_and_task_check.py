@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "extensions" / "team" / "scripts" / "check_plan_and_task.py"
@@ -68,6 +70,7 @@ def _plan(
     development_chain: str = "None. All Tasks are independent.",
     ownership_source: str = "src/export/README.md",
 ) -> str:
+    assert work_type == "feature"
     common = f"""---
 schema: ai-team-plan-and-task/v5
 work_id: "{work_id}"
@@ -95,7 +98,7 @@ affected_modules:
 impact_analysis:
   code_graph:
     kind: code-graph
-    evidence_path: .specify/{"feature" if work_type == "feature" else "bugfix"}/{work_id}/codegraph/summary.md
+    evidence_path: .specify/feature/{work_id}/codegraph/summary.md
     source_revision: abc123
   cross_module: {str(cross_module).lower()}
   class_changes: {str(class_changes).lower()}
@@ -158,10 +161,9 @@ Existing callers remain compatible. Revert src/export.py to roll back.
 ### Risks And Deviations
 None.
 """
-    if work_type == "feature":
-        return (
-            common
-            + """
+    return (
+        common
+        + """
 
 ## Feature Delivery Plan
 
@@ -170,41 +172,17 @@ None.
 |---|---|---|
 | US-001 | VER-001 | T001 |
 """
-        )
-    return (
-        common
-        + """
-
-## Bugfix Delivery Plan
-
-### Accepted Bug Summary
-The export omits one row in a supported production profile.
-
-### Bugfix Verification
-| Verification ID | Reproduction ID | Expected result |
-|---|---|---|
-| VER-001 | BUG-OBS-001 | all rows are present |
-
-### Root Cause Evidence
-The page cursor is advanced before the last row is copied.
-
-### Reproduction And Regression Mapping
-| Reproduction ID | Root-cause evidence | Task IDs | Regression test IDs |
-|---|---|---|---|
-| BUG-OBS-001 | cursor trace | T001 | TEST-001 |
-"""
     )
 
 
 def _write_package(tmp_path: Path, work_id: str, work_type: str, **plan_kwargs) -> Path:
-    category = "feature" if work_type == "feature" else "bugfix"
-    root = tmp_path / ".specify" / category / work_id
+    assert work_type == "feature"
+    root = tmp_path / ".specify" / "feature" / work_id
     root.mkdir(parents=True)
     graph = root / "codegraph" / "summary.md"
     graph.parent.mkdir()
     graph.write_text("source revision abc123 impact slice\n", encoding="utf-8")
-    if work_type == "feature":
-        (root / "spec.md").write_text(_spec(work_id), encoding="utf-8")
+    (root / "spec.md").write_text(_spec(work_id), encoding="utf-8")
     (root / "plan-and-task.md").write_text(
         _plan(work_id, work_type, **plan_kwargs), encoding="utf-8"
     )
@@ -240,14 +218,16 @@ def _add_parallel_report_task(tmp_path: Path, root: Path) -> None:
     plan_path.write_text(plan, encoding="utf-8")
 
 
-def test_feature_and_bugfix_packages_can_be_ready(tmp_path: Path) -> None:
+def test_feature_package_can_be_ready_and_bugfix_is_rejected(tmp_path: Path) -> None:
     module = _module()
-    for work_id, work_type in (("101", "feature"), ("102", "bugfix")):
-        _write_package(tmp_path, work_id, work_type)
-        result, rendered = module.evaluate(tmp_path, work_type, work_id)
-        assert result == "ready", rendered
-        assert "| TRACEABILITY | PASS |" in rendered
-        assert "| ISSUE_STATE | PASS |" in rendered
+    _write_package(tmp_path, "101", "feature")
+    result, rendered = module.evaluate(tmp_path, "feature", "101")
+    assert result == "ready", rendered
+    assert "| TRACEABILITY | PASS |" in rendered
+    assert "| ISSUE_STATE | PASS |" in rendered
+
+    with pytest.raises(ValueError, match="Feature work only"):
+        module.evaluate(tmp_path, "bugfix", "102")
 
 
 def test_independent_module_tasks_can_share_a_parallel_group(tmp_path: Path) -> None:
@@ -381,10 +361,10 @@ def test_acceptance_requires_human_decision_reference(tmp_path: Path) -> None:
 
 def test_code_graph_evidence_must_exist_and_match_revision(tmp_path: Path) -> None:
     module = _module()
-    root = _write_package(tmp_path, "108", "bugfix")
+    root = _write_package(tmp_path, "108", "feature")
     (root / "codegraph" / "summary.md").unlink()
 
-    result, rendered = module.evaluate(tmp_path, "bugfix", "108")
+    result, rendered = module.evaluate(tmp_path, "feature", "108")
 
     assert result == "blocked"
     assert "| IMPACT_EVIDENCE | BLOCK |" in rendered
@@ -411,8 +391,8 @@ def test_empty_sections_and_incomplete_delivery_mapping_require_revision(
 
 def test_missing_self_test_mapping_requires_revision(tmp_path: Path) -> None:
     module = _module()
-    _write_package(tmp_path, "106", "bugfix", task_test="TEST-404")
-    result, rendered = module.evaluate(tmp_path, "bugfix", "106")
+    _write_package(tmp_path, "106", "feature", task_test="TEST-404")
+    result, rendered = module.evaluate(tmp_path, "feature", "106")
     assert result == "revise"
     assert "| TRACEABILITY | FAIL |" in rendered
 

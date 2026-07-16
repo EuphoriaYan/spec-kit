@@ -103,7 +103,8 @@ def test_context_initializer_writes_natural_language_skill_router(tmp_path: Path
     assert "speckit.team.fix" in agents
     assert "speckit.team.implement" in agents
     assert "speckit.team.review" in agents
-    assert ".specify/<feature|bugfix>/<work_id>/" in agents
+    assert ".specify/feature/<work_id>/" in agents
+    assert ".specify/bugfix/<bug_slug>/" in agents
 
 
 def test_router_only_includes_approved_role_skills(
@@ -215,11 +216,13 @@ def test_team_skills_install_with_local_references_and_scripts(
     assert (plan_skill / "scripts/work_item_paths.py").is_file()
     for skill in (assess_skill, fix_skill, review_skill):
         assert (skill / "SKILL.md").is_file()
-        assert not (skill / "references").exists()
+        assert {
+            path.name for path in (skill / "references").glob("*.md")
+        } == {"context.md"}
         assert not (skill / "scripts").exists()
     assert {
         path.name for path in (implement_skill / "references").glob("*.md")
-    } == {"implement-pr.md"}
+    } == {"context.md", "implement-pr.md"}
     assert (implement_skill / "scripts/check_permission_envelope.py").is_file()
     assert (implement_skill / "scripts/work_item_paths.py").is_file()
 
@@ -356,7 +359,9 @@ def test_plan_and_task_role_uses_core_artifact_scripts_without_prompt_chain() ->
     assert "LLD-level" in text
     assert "self-verification scenario" in text
     assert "plan-and-task-check.md" in text
-    assert ".specify/<feature|bugfix>/<work_id>/plan-and-task.md" in text
+    assert ".specify/feature/<work_id>/plan-and-task.md" in text
+    assert "type/feature" in text
+    assert "direct the user to the Bugfix path" in text
     assert "Produce technical planning artifacts without" in text
 
 
@@ -386,6 +391,9 @@ def test_team_work_item_layout_and_templates_are_unified() -> None:
     assert {path.name for path in (AI_TEAM / "templates").iterdir() if path.is_file()} == expected
     assert "plan-and-task.md" in layout
     assert "plan-and-task-check.md" in layout
+    assert "assessment.md" in layout
+    assert "fix.md" in layout
+    assert "test.md" in layout
 
 
 def test_role_commands_require_repeatable_progressive_bootstrap() -> None:
@@ -448,10 +456,11 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
     assert commands["speckit.team.specify"] == {
         "references/repository-boundary.md"
     }
-    assert commands["speckit.team.assess"] == set()
-    assert commands["speckit.team.fix"] == set()
-    assert commands["speckit.team.review"] == set()
+    assert commands["speckit.team.assess"] == {"references/context.md"}
+    assert commands["speckit.team.fix"] == {"references/context.md"}
+    assert commands["speckit.team.review"] == {"references/context.md"}
     assert commands["speckit.team.implement"] == {
+        "references/context.md",
         "references/implement-pr.md",
         "scripts/check_permission_envelope.py",
         "scripts/work_item_paths.py",
