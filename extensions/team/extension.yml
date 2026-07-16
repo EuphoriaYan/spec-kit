@@ -99,7 +99,7 @@ provides:
           target: references/work-item-layout.md
         - source: references/internal/permissions.md
           target: references/permissions.md
-        - source: commands/prompts/implement-pr.md
+        - source: references/internal/implement-pr.md
           target: references/implement-pr.md
     - name: speckit.team.review
       file: commands/speckit.team.review.md

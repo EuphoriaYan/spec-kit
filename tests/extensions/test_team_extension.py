@@ -106,7 +106,7 @@ def test_pr_details_are_isolated_from_main_implementation_command():
         encoding="utf-8"
     )
     prompt = (
-        EXTENSION_ROOT / "commands" / "prompts" / "implement-pr.md"
+        EXTENSION_ROOT / "references" / "internal" / "implement-pr.md"
     ).read_text(encoding="utf-8")
 
     assert "gh pr create" not in command
