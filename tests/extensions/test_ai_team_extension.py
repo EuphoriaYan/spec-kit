@@ -95,6 +95,10 @@ def test_ai_team_extension_command_files_exist():
     assert command_names == {
         "speckit.team.specify",
         "speckit.team.plan-and-task",
+        "speckit.team.assess",
+        "speckit.team.fix",
+        "speckit.team.implement",
+        "speckit.team.review",
     }
 
     for command in manifest["provides"]["commands"]:
@@ -436,6 +440,18 @@ def test_ai_team_reuses_native_sdd_artifacts_without_change_manifest():
     assert "change-package.yml" not in readme
 
 
+def test_ai_team_readme_matches_current_role_contracts():
+    readme = (EXTENSION_ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "`draft`, `approved`, or `needs-info`" in readme
+    assert ".specify/bugfix/<bug_slug>/" in readme
+    assert "passing `plan-and-task-check.md`" in readme
+    assert "Assess,\nFix, and Review install no role references or scripts" in readme
+    assert "init_role_context.py` runs during project initialization" in readme
+    assert "specify extension add extensions/team --dev" in readme
+    assert "specify extension add team --dev extensions/team" not in readme
+
+
 def test_ai_team_permission_envelope_document_exists():
     permission_doc = EXTENSION_ROOT / "docs" / "permission-envelope.md"
 
@@ -445,7 +461,22 @@ def test_ai_team_permission_envelope_document_exists():
     assert "policy-only" in text
     assert "agent-native" in text
     assert "wrapper-enforced" in text
+    assert "status: pending-review" in text
+    assert "approved_at" in text
+    assert "approved_by" in text
+    assert "updated_at" in text
     assert "do not sandbox shell commands" in text
+
+
+def test_ai_team_code_graph_contract_is_reference_not_nested_command():
+    contract = EXTENSION_ROOT / "docs" / "code-graph-contract.md"
+
+    text = contract.read_text(encoding="utf-8")
+    assert "## Required Evidence" in text
+    assert "## Fallback Rule" in text
+    assert "source-structure-fallback" in text
+    assert "$ARGUMENTS" not in text
+    assert "## User Input" not in text
 
 
 def test_ai_team_uses_one_plan_review_then_task_decomposition_flow():
@@ -515,6 +546,10 @@ def test_ai_team_user_journeys_document_exists():
     for command in (
         "speckit.team.specify",
         "speckit.team.plan-and-task",
+        "speckit.team.assess",
+        "speckit.team.fix",
+        "speckit.team.implement",
+        "speckit.team.review",
     ):
         assert command in text
 

@@ -4,19 +4,15 @@ description: "Initialize or refresh progressive AI Team context pointers for the
 
 # AI Team Init Context
 
-Run this command automatically before every AI Team role command. Users should
-not need to invoke it manually.
+Specify CLI runs this initializer during project initialization. It is not a
+runtime dependency of individual AI Team role skills.
 
-1. From the repository root, run:
-
-   ```text
-   python .specify/extensions/team/scripts/init_role_context.py
-   ```
-
-2. Read and execute
+1. During `specify init`, execute the packaged Team context initializer once.
+2. The managed agent rule makes the agent read and execute
    `.specify/extensions/team/docs/context-bootstrap.md` through the level
-   required by the active role.
-3. If the script reports that the Team extension is absent, stop and repair the
+   required by the active role before routing to a role skill. Role skills do
+   not package or re-read bootstrap copies.
+3. If initialization reports that the Team extension is absent, stop and repair the
    installation. Do not continue with an ungoverned role prompt.
 
 The script merges a short managed pointer into `AGENTS.md` and the rule file of

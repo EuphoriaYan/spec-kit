@@ -26,30 +26,34 @@ under [`extensions/team/`](extensions/team/).
 
 ### Role Skills
 
-AI Team currently provides two large, role-isolated skills rather than one
-workflow. Later delivery roles are intentionally unnamed until their contracts
-are agreed; the installer advertises only commands that this distribution
-actually provides.
+AI Team provides six role-oriented skills rather than one workflow. Each role
+consumes durable artifacts from the preceding role instead of hidden chat
+context; the installer advertises only commands that this distribution actually
+provides.
 
 | Skill | Responsibility |
 |---|---|
 | `speckit.team.specify` | clarify a Feature through User Stories, then publish or print the primary Issue |
 | `speckit.team.plan-and-task` | produce Code Graph grounded Plan, LLD-capable Tasks, and self-test design |
+| `speckit.team.assess` | assess a defect, its impact, permission boundary, fix strategy, and test strategy |
+| `speckit.team.fix` | apply an approved Bugfix assessment, verify it, and optionally create a pull request |
+| `speckit.team.implement` | implement task-ready work, verify it, and optionally create a pull request |
+| `speckit.team.review` | review a pull request for correctness, evidence, permissions, and SDD alignment |
 
 ```text
-Feature: Specify -> status/new-issue -> Technical Committee acceptance -> Plan-and-Task
-Bugfix: separate preceding intake -> reviewed coding Issue -> Plan-and-Task
+Feature: Specify -> status/new-issue -> Technical Committee acceptance -> Plan-and-Task -> Implement -> optional PR -> Review
+Bugfix: Assess -> human approval -> optional tracked Issue -> status/working -> Fix -> optional PR -> Review
 ```
 
 Feature Issue creation belongs to Specify, where User Stories and their
 verifiable outcomes are established. Bugfix intake is a separate preceding
-capability and is not defined by these two skills. Tasks are later engineering
+capability and is not defined by the Feature skills. Tasks are later engineering
 decomposition and may reach LLD detail. The native `speckit.taskstoissues`
 command is not used to create the primary work item.
 
 Supporting context, permissions, private-requirement synchronization, Code
 Graph, impact, evidence, memory, and release knowledge remain internal
-extension capabilities. They are loaded progressively by the two skills and
+extension capabilities. They are loaded progressively by the active role and
 do not clutter the AI tool with additional user-facing skills.
 
 Team work uses one directory convention with type-specific artifacts:

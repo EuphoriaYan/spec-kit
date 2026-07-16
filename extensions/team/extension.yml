@@ -3,14 +3,17 @@ schema_version: "1.0"
 extension:
   id: team
   name: "AI Team SDD Skills"
-  version: "0.3.0"
-  description: "Two role-isolated enterprise SDD skills for specification and architecture planning."
+  version: "0.5.0"
+  description: "Six role-oriented enterprise SDD skills for feature and bugfix work from intake through pull request review."
   author: AI Team Template
   repository: https://github.com/EuphoriaYan/spec-kit
   license: MIT
 
 requires:
   speckit_version: ">=0.12.4"
+  tools:
+    - name: gh
+      required: false
 
 provides:
   commands:
@@ -18,44 +21,30 @@ provides:
       file: commands/speckit.team.specify.md
       description: "Business/Product role: clarify Feature User Stories and publish or print the primary Issue."
       resources:
-        - source: docs/context-bootstrap.md
-          target: references/context-bootstrap.md
-        - source: docs/issue-lifecycle.md
-          target: references/issue-lifecycle.md
         - source: docs/repository-boundary.md
           target: references/repository-boundary.md
-        - source: scripts/init_role_context.py
-          target: scripts/init_role_context.py
     - name: speckit.team.plan-and-task
       file: commands/speckit.team.plan-and-task.md
       description: "Architect role: summarize an accepted Issue and produce Code Graph grounded Plan, parallel Tasks, self-tests, and one readiness check."
       resources:
-        - source: docs/context-bootstrap.md
-          target: references/context-bootstrap.md
-        - source: docs/issue-lifecycle.md
-          target: references/issue-lifecycle.md
-        - source: docs/work-item-layout.md
-          target: references/work-item-layout.md
+        - source: docs/code-graph-contract.md
+          target: references/code-graph-contract.md
         - source: docs/code-graph-adapters.md
           target: references/code-graph-adapters.md
+        - source: docs/permission-envelope.md
+          target: references/permission-envelope.md
         - source: references/internal/context.md
           target: references/context.md
-        - source: references/internal/permissions.md
-          target: references/permissions.md
         - source: references/internal/handoff-spec-sync.md
           target: references/handoff-spec-sync.md
-        - source: references/internal/codegraph.md
-          target: references/codegraph.md
-        - source: references/internal/impact.md
-          target: references/impact.md
         - source: references/internal/feature-spec.md
           target: references/feature-spec.md
         - source: templates/plan-and-task-template.md
           target: references/plan-and-task-format.md
-        - source: scripts/init_role_context.py
-          target: scripts/init_role_context.py
         - source: scripts/check_plan_and_task.py
           target: scripts/check_plan_and_task.py
+        - source: scripts/check_permission_envelope.py
+          target: scripts/check_permission_envelope.py
         - source: scripts/work_item_paths.py
           target: scripts/work_item_paths.py
         - source: scripts/bash/handoff-spec-common.sh
@@ -66,6 +55,25 @@ provides:
           target: scripts/powershell/HandoffSpecCommon.ps1
         - source: scripts/powershell/Sync-HandoffSpec.ps1
           target: scripts/powershell/Sync-HandoffSpec.ps1
+    - name: speckit.team.assess
+      file: commands/speckit.team.assess.md
+      description: "Bug assessor role: analyze a report, define impact and permissions, and write an approved assessment."
+    - name: speckit.team.fix
+      file: commands/speckit.team.fix.md
+      description: "Bug fixer role: apply an approved assessment, verify it, write fix evidence, and optionally create a PR."
+    - name: speckit.team.implement
+      file: commands/speckit.team.implement.md
+      description: "Developer role: implement task-ready Feature work, verify it, and optionally create a pull request."
+      resources:
+        - source: references/internal/implement-pr.md
+          target: references/implement-pr.md
+        - source: scripts/check_permission_envelope.py
+          target: scripts/check_permission_envelope.py
+        - source: scripts/work_item_paths.py
+          target: scripts/work_item_paths.py
+    - name: speckit.team.review
+      file: commands/speckit.team.review.md
+      description: "Reviewer role: assess a pull request for correctness, evidence, permissions, and SDD alignment."
 
   config:
     - name: ai-team-config.yml
@@ -81,3 +89,7 @@ tags:
   - collaboration
   - evidence
   - code-graph
+  - implementation
+  - review
+  - bugfix
+  - assessment

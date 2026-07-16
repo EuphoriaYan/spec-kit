@@ -1,8 +1,10 @@
 # AI Team User Journeys
 
-The target model has four role skills. This iteration exposes only Specify and
-Plan-and-Task; later role skills remain unnamed. Internal capability documents
-and scripts are loaded by the active role and are not separate user commands.
+The extension exposes six role-oriented skills: Specify, Plan-and-Task, Assess,
+Fix, Implement, and Review. Internal capability documents and scripts are loaded by
+the active role and are not separate user commands. The natural-language router
+starts new work with Specify or Plan-and-Task; durable artifacts and explicit
+commands route later delivery phases.
 
 ## One-Sentence Feature
 
@@ -24,9 +26,11 @@ Please add CSV export. Keep exported columns aligned with the result list.
    self-tests, and the generated `plan-and-task-check.md`.
 7. An architect or delegated technical reviewer approves or revises the
    checked Plan and Tasks.
-8. A later development role skill changes code, runs tests, compares
-   actual scope with the Plan, and writes the Evidence Board.
-9. Named humans review and merge.
+8. `speckit.team.implement` changes code, runs tests, compares actual scope with
+   the Plan, writes implementation evidence, and optionally creates a PR after
+   explicit confirmation.
+9. `speckit.team.review` checks the PR against code, permissions, planning, and
+   evidence, then gives a merge recommendation. Named humans review and merge.
 
 ## Existing Public Feature Issue
 
@@ -42,14 +46,16 @@ the URL within its Permission Envelope, combines allowed content with
 
 ## Bugfix
 
-1. The separate Bugfix intake skill creates or validates the coding Bug Issue
-   and captures observation, expected behavior, reproduction, and verification.
-2. Bugfix skips Technical Committee Feature acceptance, but a maintainer still
-   triages it and records `status/accept` or `status/working` before planning.
-3. `speckit.team.plan-and-task` produces root-cause evidence, architecture
-   impact, fix scope, regression Tasks, self-tests, and rollback.
-4. A later development role skill applies the fix and records
-   regression tests, actual scope, Evidence Board, and residual risk.
+1. `speckit.team.assess` captures observation, expected behavior, reproduction,
+   relevant code paths, impact, proposed permissions, fix strategy, and tests in
+   `.specify/bugfix/<work_id>/assessment.md`.
+2. A human approves the assessment. If tracking is requested, Assess creates or
+   updates a `type/bugfix` Issue at `status/new-issue` only after confirmation.
+3. A maintainer claims approved work by moving the Issue to `status/working`.
+4. `speckit.team.fix` applies the approved strategy inside its permission
+   boundary and records `fix.md`, `test.md`, regression results, and residual risk.
+5. Fix optionally creates a PR after confirmation; `speckit.team.review` checks
+   that PR when its artifacts satisfy the Review input contract.
 
 Several Issues may share one change only when they are different symptoms of
 one root cause. Map every Issue to separate reproduction and verification.

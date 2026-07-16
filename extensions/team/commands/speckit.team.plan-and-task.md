@@ -8,23 +8,6 @@ Own the Architect role. Consume the accepted Issue and its discussion, not
 hidden Business/Product chat. Produce technical planning artifacts without
 editing product source.
 
-Resolve `references/` and `scripts/` relative to this installed `SKILL.md`, not
-relative to the repository working directory.
-
-## Bootstrap
-
-1. Run the installed `scripts/init_role_context.py` by its resolved path.
-2. Read the invariant and Architect sections of
-   `references/context-bootstrap.md`.
-3. Load progressively:
-   - `references/issue-lifecycle.md` and `references/work-item-layout.md`;
-   - `references/context.md` and `references/permissions.md`;
-   - `references/handoff-spec-sync.md` for authorized confidential input;
-   - `references/codegraph.md`, `references/code-graph-adapters.md`, and
-     `references/impact.md`;
-   - `references/feature-spec.md` for Feature work;
-   - `references/plan-and-task-format.md` before writing the Plan.
-
 ## Input Contract
 
 The required user input is one primary Issue URL. Optional input may name User
@@ -64,26 +47,43 @@ at `status/working`.
 ## Flow
 
 1. Resolve category and work ID, then create or resume
-   `.specify/<feature|bugfix>/<work_id>/`.
+   `.specify/<feature|bugfix>/<work_id>/`. When resuming an existing work root,
+   read `references/context.md`; do not load it for a new work root.
 2. For Feature work, summarize the accepted Issue and accepted discussion into
-   `spec.md` using `references/feature-spec.md`. For Bugfix work, do not create
-   `spec.md`; consume the Bugfix intake artifact supplied by its preceding
-   skill when available and preserve the Issue observations in the Bugfix
-   section of `plan-and-task.md`.
-3. Fetch an authorized confidential handoff when applicable. Never copy private
-   source text into committed public artifacts.
-4. Create the analysis Permission Envelope.
-5. Generate or attach a Code Graph slice tied to the exact source revision.
-   Use an explicit source-structure fallback when no adapter is available.
+   `spec.md`. Read `references/feature-spec.md` immediately before writing it.
+   For Bugfix work, do not load that reference or create `spec.md`; consume the
+   Bugfix intake artifact supplied by its preceding skill when available and
+   preserve the Issue observations in the Bugfix section of
+   `plan-and-task.md`.
+3. When an authorized confidential handoff is in scope, read and execute
+   `references/handoff-spec-sync.md`. Otherwise do not load it. Never copy
+   private source text into committed public artifacts.
+4. Read `references/permission-envelope.md`, then create or update the analysis
+   Permission Envelope with `status: pending-review` and empty `approved_by`
+   and `approved_at`. Never self-approve it. After a named human approves the
+   exact envelope, record `status: approved`, `approved_by`, and `approved_at`.
+   Any change to `mode`, `allow`, `deny`, or scope invalidates that approval;
+   return to `pending-review` or `blocked` and clear both approval fields. Run
+   the installed
+   `scripts/check_permission_envelope.py` by its resolved path with
+   `--work-type <feature|bugfix> --work-id <work_id> --mode analysis
+   --require-approved`. Stop before source or Code Graph analysis when it is
+   blocked; the script validates but never grants approval.
+5. Read `references/code-graph-contract.md`, then generate or attach the
+   smallest Code Graph slice tied to the exact source revision. Read
+   `references/code-graph-adapters.md` only when an adapter must be selected or
+   its license, installation, or network behavior must be evaluated. Use an
+   explicit source-structure fallback when no adapter is available.
 6. Identify affected and adjacent modules from source layout, build metadata,
    architecture guidance, and the Code Graph. Record module paths,
    responsibilities, contracts, dependencies, existing tests, reuse candidates,
    and likely change paths. Record an owner or review route when the repository
    declares one, but do not block Task decomposition merely because none exists.
-7. Create or update `plan-and-task.md`. The Plan is Issue-wide HLD: architecture
-   before/after, contract impact, declared scope, per-module change, sequencing,
-   compatibility, risk, and rollback. Set `planning_stage: plan-review` without
-   inventing Tasks.
+7. Read `references/plan-and-task-format.md` immediately before creating or
+   updating `plan-and-task.md`. The Plan is Issue-wide HLD: architecture
+   before/after, contract impact, declared scope, per-module change,
+   sequencing, compatibility, risk, and rollback. Set `planning_stage:
+   plan-review` without inventing Tasks.
 8. Present the Plan and ask the user to continue to Tasks, pause for discussion,
    or revise the Plan. Record the decision and named human. A material Plan
    revision invalidates Tasks and returns to this decision.
