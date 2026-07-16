@@ -7,8 +7,10 @@ projection tied to one exact source revision.
 ## Preconditions
 
 1. Run `codegraph version` and require a supported 1.x release.
-2. For an existing project, run `codegraph init` when `.codegraph/codegraph.db`
-   does not exist.
+2. For an existing project, when `.codegraph/codegraph.db` does not exist, stop
+   and ask the user whether to initialize the local derived index. Run
+   `codegraph init` only after explicit confirmation, or give the command to the
+   user to run themselves.
 3. Run `codegraph status`. If it reports pending files, run `codegraph sync` and
    check status again before analysis.
 4. Stop when the index is incomplete, tied to a different checkout, or still

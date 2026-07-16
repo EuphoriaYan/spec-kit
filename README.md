@@ -108,9 +108,10 @@ Initialization writes a short natural-language router into the active AI tools'
 rule files before the first chat. AI Team does not install a workflow; users
 invoke the role skills naturally from chat.
 
-For an existing coding repository, run `codegraph init` once. Plan-and-Task and
-Assess check `codegraph status`, synchronize pending changes, and stop rather
-than guessing architecture impact from an unavailable or stale graph.
+For an existing coding repository, run `codegraph init` once. When the index is
+missing, Plan-and-Task and Assess ask before initializing it. They check
+`codegraph status`, synchronize pending changes, and stop rather than guessing
+architecture impact from an unavailable or stale graph.
 
 After installation, users can remain in chat:
 
