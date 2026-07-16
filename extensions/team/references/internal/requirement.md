@@ -39,7 +39,7 @@ Feature implementation references either:
 
 ## Required Reading
 
-- `.specify/extensions/team/ai-team-config.yml`;
+- `.specify/team/ai-team-config.yml`;
 - `.specify/<category>/<work_id>/work-context.yml` and `context-pack.md` when
   the feature was already routed from a coding workspace;
 - [docs/issue-lifecycle.md](../../docs/issue-lifecycle.md) or installed equivalent;

@@ -126,9 +126,11 @@ speckit-team-plan-and-task/
 `-- scripts/              # readiness check and confidential handoff helpers
 ```
 
-Each Skill resolves declared resources relative to its own `SKILL.md`.
-`init_role_context.py` runs during project initialization and is not copied
-into individual Skills.
+Each Skill resolves declared resources relative to its own `SKILL.md`. The
+extension implementation remains in the installed Specify CLI package and is
+not copied into the project. Editable configuration and the stable context
+bootstrap live under `.specify/team/`. `init_role_context.py` runs during
+project initialization and is not copied into individual Skills.
 
 Plan-and-Task must run its installed `scripts/check_plan_and_task.py`. The
 script generates `plan-and-task-check.md`; a model may fix source artifacts but
@@ -165,8 +167,10 @@ credentials, and local memory.
 
 ## Installation
 
-The default Team-minimal profile keeps the Spec Kit engine and installs the
-Team role skills:
+The default Team-minimal profile installs only the self-contained Team role
+skills plus `.specify/team/` state. It does not copy core scripts, the Team
+extension implementation, native Spec Kit page templates, constitution,
+skills, or workflow:
 
 ```bash
 specify init . --integration codex

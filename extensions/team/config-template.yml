@@ -1,5 +1,5 @@
 # AI Team SDD Collaboration configuration.
-# Copy is installed to `.specify/extensions/team/ai-team-config.yml`.
+# The editable copy is installed to `.specify/team/ai-team-config.yml`.
 
 bootstrap:
   # Workspace creation must reuse Spec Kit init instead of copying template

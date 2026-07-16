@@ -447,7 +447,8 @@ def test_ai_team_readme_matches_current_role_contracts():
     assert ".specify/bugfix/<bug_slug>/" in readme
     assert "passing `plan-and-task-check.md`" in readme
     assert "only Plan-and-Task currently has" in readme
-    assert "init_role_context.py` runs during project initialization" in readme
+    assert "init_role_context.py` runs during" in readme
+    assert "project initialization" in readme
     assert "specify extension add extensions/team --dev" in readme
     assert "specify extension add team --dev extensions/team" not in readme
 

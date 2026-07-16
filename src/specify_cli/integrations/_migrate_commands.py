@@ -231,6 +231,7 @@ def integration_switch(
     # recorded hash are overwritten — user customizations are detected via
     # hash divergence and preserved with a warning. Pass
     # --refresh-shared-infra to overwrite customizations as well. See #2293.
+    install_core = _install_core_skills_for_project(project_root)
     _install_shared_infra_or_exit(
         project_root,
         selected_script,
@@ -243,6 +244,8 @@ def integration_switch(
             "To overwrite customizations, re-run with "
             "[cyan]specify integration switch ... --refresh-shared-infra[/cyan]."
         ),
+        install_scripts=install_core,
+        install_templates=install_core,
     )
     if os.name != "nt":
         from .. import ensure_executable_scripts
@@ -412,6 +415,7 @@ def integration_upgrade(
             _, infra_parsed = _resolve_integration_options(
                 default_integration, current, installed_key, None
             )
+    install_core = _install_core_skills_for_project(project_root)
     _install_shared_infra_or_exit(
         project_root,
         selected_script,
@@ -419,6 +423,8 @@ def integration_upgrade(
         invoke_separator=_invoke_separator_for_integration(
             infra_integration, current, infra_key, infra_parsed
         ),
+        install_scripts=install_core,
+        install_templates=install_core,
     )
     if os.name != "nt":
         from .. import ensure_executable_scripts
@@ -447,6 +453,7 @@ def integration_upgrade(
         )
         if installed_key == key:
             try:
+                install_core = _install_core_skills_for_project(project_root)
                 _install_shared_infra(
                     project_root,
                     selected_script,
@@ -455,6 +462,8 @@ def integration_upgrade(
                     ),
                     force=force,
                     refresh_managed=True,
+                    install_scripts=install_core,
+                    install_templates=install_core,
                 )
             except (ValueError, OSError) as exc:
                 raise _SharedTemplateRefreshError(

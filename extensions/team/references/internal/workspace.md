@@ -16,7 +16,7 @@ $ARGUMENTS
 
 ## Goal
 
-Create or update `.specify/extensions/team/ai-team-config.yml` so every
+Create or update `.specify/team/ai-team-config.yml` so every
 agent can distinguish:
 
 - the coding repository: source code, public issues, public-safe plan, tasks,
@@ -53,7 +53,7 @@ Initialization installs the Team extension and refreshes managed agent rules.
 2. Read `.specify/init-options.json` and `.specify/integration.json` when
    present. Record the active AI integration instead of asking again when it is
    one of `codex`, `claude`, `cursor-agent`, or `trae`.
-3. Read `.specify/extensions/team/ai-team-config.yml` if it exists. If it is
+3. Read `.specify/team/ai-team-config.yml` if it exists. If it is
    missing, create it from the extension config template.
 4. Ask for or infer only the repository facts that are safe to record:
    - coding repository path or URL;

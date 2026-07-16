@@ -310,6 +310,7 @@ def _set_default_integration(
 
     if refresh_templates:
         try:
+            install_core = _install_core_skills_for_project(project_root)
             _install_shared_infra(
                 project_root,
                 resolved_script,
@@ -319,6 +320,8 @@ def _set_default_integration(
                 force=refresh_templates_force,
                 refresh_managed=True,
                 refresh_hint=refresh_hint,
+                install_scripts=install_core,
+                install_templates=install_core,
             )
         except (ValueError, OSError) as exc:
             raise _SharedTemplateRefreshError(

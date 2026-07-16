@@ -23,7 +23,7 @@ lessons without relying on hidden chat context.
 
 1. Locate the project root and `.specify/`.
 2. Read:
-   - `.specify/extensions/team/ai-team-config.yml` when present;
+   - `.specify/team/ai-team-config.yml` when present;
    - current feature spec, plan, tasks, and gate files when present;
    - project agent files such as `AGENTS.md`, `CLAUDE.md`, Cursor rules, or
      equivalent;

@@ -30,7 +30,7 @@ Read when present under the selected root:
 - `.specify/<category>/<work_id>/work-context.yml`;
 - `.specify/<category>/<work_id>/permission-envelope.yml`;
 - `.specify/<category>/<work_id>/context-pack.md`;
-- `.specify/extensions/team/ai-team-config.yml`;
+- `.specify/team/ai-team-config.yml`;
 - coding issue or handoff requirement URL for feature work;
 - coding issue or bug slug for bug fixes;
 - project source files, build files, module docs, and existing tests.

@@ -135,7 +135,7 @@ def test_load_bundled_manifests_uses_packaged_core_without_network(
     assert [manifest.bundle.id for manifest in manifests] == ["packaged"]
 
 
-def test_init_installs_only_team_extension_and_managed_rules(
+def test_init_registers_packaged_team_and_managed_rules(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from typer.testing import CliRunner
@@ -158,7 +158,7 @@ def test_init_installs_only_team_extension_and_managed_rules(
     )
 
     assert result.exit_code == 0, result.stdout
-    assert (tmp_path / ".specify" / "extensions" / "team").is_dir()
+    assert not (tmp_path / ".specify" / "extensions" / "team").exists()
     assert not (tmp_path / ".specify" / "extensions" / "bug").exists()
     assert not (tmp_path / ".specify" / "extensions" / "agent-context").exists()
     assert not (
@@ -168,6 +168,10 @@ def test_init_installs_only_team_extension_and_managed_rules(
     assert not (tmp_path / ".specify" / "workflows" / "ai-team-sdd").exists()
     assert not (tmp_path / ".specify" / "workflows" / "ai-team-bugfix").exists()
     assert not (tmp_path / ".specify" / "workflows" / "speckit").exists()
+    assert not (tmp_path / ".specify" / "templates").exists()
+    assert not (tmp_path / ".specify" / "scripts").exists()
+    assert (tmp_path / ".specify" / "team" / "context-bootstrap.md").is_file()
+    assert (tmp_path / ".specify" / "team" / "ai-team-config.yml").is_file()
     assert "AI TEAM CONTEXT START" in (tmp_path / "AGENTS.md").read_text(
         encoding="utf-8"
     )
@@ -275,4 +279,8 @@ def test_team_profile_hides_native_skills_and_full_profile_keeps_them(
     assert team_skills < full_skills
     assert "speckit-plan" in full_skills
     assert "speckit-implement" in full_skills
+    assert (full_root / ".specify" / "templates" / "spec-template.md").is_file()
+    assert not (team_root / ".specify" / "templates").exists()
+    assert not (team_root / ".specify" / "scripts").exists()
+    assert (full_root / ".specify" / "scripts" / "bash").is_dir()
     assert (full_root / ".specify" / "workflows" / "speckit" / "workflow.yml").is_file()
