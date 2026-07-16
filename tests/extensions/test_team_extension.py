@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import yaml
@@ -139,3 +140,48 @@ def test_review_contract_treats_pr_as_primary_input():
     assert "`plan-and-task-check.md`" in command
     assert "`plan.md`" not in command
     assert "`tasks.md`" not in command
+
+
+def test_internal_references_are_installed_or_explicitly_reserved():
+    manifest = yaml.safe_load(
+        (EXTENSION_ROOT / "extension.yml").read_text(encoding="utf-8")
+    )
+    commands = {item["name"]: item for item in manifest["provides"]["commands"]}
+
+    active: dict[str, tuple[str, str]] = {}
+    for command_name, command in commands.items():
+        for resource in command.get("resources", []):
+            prefix = "references/internal/"
+            if resource["source"].startswith(prefix):
+                active[Path(resource["source"]).name] = (
+                    command_name,
+                    resource["target"],
+                )
+
+    lifecycle = (
+        EXTENSION_ROOT / "references" / "internal" / "README.md"
+    ).read_text(encoding="utf-8")
+    active_section, reserved_section = lifecycle.split(
+        "## Reserved Capability Sources", maxsplit=1
+    )
+    reserved_section = reserved_section.split("## Migrated Sources", maxsplit=1)[0]
+    listed_active = set(re.findall(r"\| `([^`]+\.md)` \|", active_section))
+    listed_reserved = set(re.findall(r"\| `([^`]+\.md)` \|", reserved_section))
+
+    files = {
+        path.name
+        for path in (EXTENSION_ROOT / "references" / "internal").glob("*.md")
+        if path.name != "README.md"
+    }
+    assert listed_active == set(active)
+    assert files == listed_active | listed_reserved
+    assert listed_active.isdisjoint(listed_reserved)
+    assert "init-context.md" not in files
+
+    for source_name, (command_name, target) in active.items():
+        command_file = EXTENSION_ROOT / commands[command_name]["file"]
+        command_text = command_file.read_text(encoding="utf-8")
+        assert target in command_text, (
+            f"{source_name} is installed as {target} but {command_name} "
+            "does not explicitly load it"
+        )
