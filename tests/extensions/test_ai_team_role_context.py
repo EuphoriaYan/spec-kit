@@ -391,6 +391,8 @@ def test_role_skills_load_references_only_at_the_phase_that_needs_them() -> None
     assert "When resuming an existing work root" in plan
     assert "immediately before writing it" in plan
     assert "only when an adapter must be selected" in plan
+    assert "approved_at" in plan
+    assert "--require-approved" in plan
     assert "immediately before creating or\n   updating `plan-and-task.md`" in plan
     assert "Do not reproduce, guess, or preload" in implement
 

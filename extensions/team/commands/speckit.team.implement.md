@@ -87,7 +87,8 @@ Require `permission-envelope.yml`. Run the installed
 `scripts/check_permission_envelope.py` by its resolved path with
 `--work-type feature --work-id <feature-slug> --mode implementation
 --require-approved`. Stop if the deterministic check is blocked; do not
-hand-wave or replace its result.
+hand-wave or replace its result. The check verifies the approval identity and
+timestamps as well as the envelope structure.
 
 Then compare the selected Tasks and intended operations with the validated
 envelope and confirm that it:

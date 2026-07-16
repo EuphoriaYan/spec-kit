@@ -463,6 +463,8 @@ def test_ai_team_permission_envelope_document_exists():
     assert "wrapper-enforced" in text
     assert "status: pending-review" in text
     assert "approved_at" in text
+    assert "approved_by" in text
+    assert "updated_at" in text
     assert "do not sandbox shell commands" in text
 
 

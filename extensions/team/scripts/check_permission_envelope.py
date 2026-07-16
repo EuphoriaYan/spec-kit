@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timedelta
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
@@ -47,6 +48,21 @@ def _safe_relative_path(value: str) -> bool:
     )
 
 
+def _utc_timestamp(value: Any, field: str, errors: list[str]) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        errors.append(f"{field} must be a non-empty ISO 8601 UTC timestamp")
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError:
+        errors.append(f"{field} must be a valid ISO 8601 UTC timestamp")
+        return None
+    if parsed.utcoffset() != timedelta(0):
+        errors.append(f"{field} must use UTC")
+        return None
+    return parsed
+
+
 def validate_envelope(
     path: Path,
     *,
@@ -75,11 +91,23 @@ def validate_envelope(
         errors.append("status must be pending-review, approved, blocked, or expired")
     if require_approved and status != "approved":
         errors.append("status must be approved")
+    updated_at = _utc_timestamp(root.get("updated_at"), "updated_at", errors)
     if status == "approved":
         if not str(root.get("approved_by", "")).strip():
             errors.append("approved envelopes require approved_by")
-        if not str(root.get("approved_at", "")).strip():
-            errors.append("approved envelopes require approved_at")
+        approved_at = _utc_timestamp(
+            root.get("approved_at"), "approved_at", errors
+        )
+        if (
+            approved_at is not None
+            and updated_at is not None
+            and updated_at < approved_at
+        ):
+            errors.append("updated_at cannot be earlier than approved_at")
+    elif str(root.get("approved_by", "")).strip() or str(
+        root.get("approved_at", "")
+    ).strip():
+        errors.append("non-approved envelopes must clear approved_by and approved_at")
     if status == "blocked":
         blockers = _string_list(root.get("blockers"), "blockers", errors)
         if not blockers:
@@ -108,7 +136,10 @@ def validate_envelope(
     if not isinstance(runtime.get("verified"), bool):
         errors.append("runtime.verified must be true or false")
     _string_list(runtime.get("gaps"), "runtime.gaps", errors)
-    if root.get("enforcement_mode") == "policy-only" and runtime.get("verified") is True:
+    if (
+        root.get("enforcement_mode") == "policy-only"
+        and runtime.get("verified") is True
+    ):
         errors.append("policy-only enforcement cannot claim runtime verification")
     if root.get("enforcement_mode") in {"agent-native", "wrapper-enforced"}:
         if not str(runtime.get("adapter", "")).strip():

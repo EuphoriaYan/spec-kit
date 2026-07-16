@@ -57,7 +57,7 @@ runtime:
     - policy is not a runtime sandbox
 approved_by: ""
 approved_at: ""
-updated_at: ""
+updated_at: "2026-07-16T10:00:00Z"
 ```
 
 Paths must be repository-relative and as narrow as practical. Do not use broad
@@ -66,14 +66,17 @@ wildcards when the affected module is known.
 `status` must be one of:
 
 - `pending-review`: structurally ready for a human decision;
-- `approved`: approved by the named human in `approved_by` and timestamped in
-  `approved_at`;
+- `approved`: approved by the named human in `approved_by` at `approved_at`;
 - `blocked`: unsafe or incomplete; record concrete `blockers`;
 - `expired`: approval no longer matches the work, source revision, or scope.
 
-An approved envelope must have non-empty `approved_by` and `approved_at`.
-Changing `mode`, allowed operations, or scope invalidates prior approval and
-returns the envelope to `pending-review` or `blocked`.
+An approved envelope must have non-empty `approved_by`, `approved_at`, and
+`updated_at`. Both timestamps use ISO 8601 UTC, and `updated_at` cannot be
+earlier than `approved_at`.
+
+Changing `mode`, allowed operations, or scope invalidates prior approval. Set
+`status` to `pending-review` or `blocked`, clear `approved_by` and
+`approved_at`, and refresh `updated_at`.
 
 ## Enforcement Modes
 
@@ -99,7 +102,8 @@ constrains it.
 3. After plan and task review, revise the envelope for the smallest write paths,
    commands, and dependency operations needed for implementation.
 4. Before implementation, a human approves the revised envelope and records
-   `approved_by` and `approved_at`.
+   `approved_by` and `approved_at`; refresh `updated_at` for that approved
+   revision.
 5. Evidence records the effective enforcement mode and any operations that
    required approval.
 6. Expanding the envelope requires another human decision; AI agents cannot

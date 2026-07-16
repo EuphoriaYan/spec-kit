@@ -96,6 +96,46 @@ def test_permission_envelope_check_does_not_treat_pending_as_approved(
     assert "status must be approved" in result.stdout
 
 
+def test_permission_envelope_check_requires_approved_at(tmp_path: Path) -> None:
+    path = _write_envelope(tmp_path)
+    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    document["approved_at"] = ""
+    path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+
+    result = _run(tmp_path, "--require-approved")
+
+    assert result.returncode == 1
+    assert "approved_at must be a non-empty ISO 8601 UTC timestamp" in result.stdout
+
+
+def test_permission_envelope_check_rejects_approval_after_update(
+    tmp_path: Path,
+) -> None:
+    path = _write_envelope(tmp_path)
+    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    document["approved_at"] = "2026-07-16T11:00:00Z"
+    path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+
+    result = _run(tmp_path, "--require-approved")
+
+    assert result.returncode == 1
+    assert "updated_at cannot be earlier than approved_at" in result.stdout
+
+
+def test_permission_envelope_check_requires_utc_approval_time(
+    tmp_path: Path,
+) -> None:
+    path = _write_envelope(tmp_path)
+    document = yaml.safe_load(path.read_text(encoding="utf-8"))
+    document["approved_at"] = "2026-07-16T18:00:00+08:00"
+    path.write_text(yaml.safe_dump(document, sort_keys=False), encoding="utf-8")
+
+    result = _run(tmp_path, "--require-approved")
+
+    assert result.returncode == 1
+    assert "approved_at must use UTC" in result.stdout
+
+
 @pytest.mark.parametrize("unsafe_path", ["../outside.py", "C:/outside.py", "src/**"])
 def test_permission_envelope_check_rejects_unsafe_paths(
     tmp_path: Path, unsafe_path: str

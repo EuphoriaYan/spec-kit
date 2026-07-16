@@ -59,11 +59,16 @@ at `status/working`.
    `references/handoff-spec-sync.md`. Otherwise do not load it. Never copy
    private source text into committed public artifacts.
 4. Read `references/permission-envelope.md`, then create or update the analysis
-   Permission Envelope. Run the installed
+   Permission Envelope with `status: pending-review` and empty `approved_by`
+   and `approved_at`. Never self-approve it. After a named human approves the
+   exact envelope, record `status: approved`, `approved_by`, and `approved_at`.
+   Any change to `mode`, `allow`, `deny`, or scope invalidates that approval;
+   return to `pending-review` or `blocked` and clear both approval fields. Run
+   the installed
    `scripts/check_permission_envelope.py` by its resolved path with
-   `--work-type <feature|bugfix> --work-id <work_id> --mode analysis`. Stop on
-   structural validation errors; the script validates but never grants
-   approval.
+   `--work-type <feature|bugfix> --work-id <work_id> --mode analysis
+   --require-approved`. Stop before source or Code Graph analysis when it is
+   blocked; the script validates but never grants approval.
 5. Read `references/code-graph-contract.md`, then generate or attach the
    smallest Code Graph slice tied to the exact source revision. Read
    `references/code-graph-adapters.md` only when an adapter must be selected or
