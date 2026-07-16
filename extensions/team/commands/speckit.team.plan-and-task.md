@@ -8,9 +8,6 @@ Own the Architect role. Consume the accepted Issue and its discussion, not
 hidden Business/Product chat. Produce technical planning artifacts without
 editing product source.
 
-Resolve `references/` and `scripts/` relative to this installed `SKILL.md`, not
-relative to the repository working directory.
-
 ## Input Contract
 
 The required user input is one primary Issue URL. Optional input may name User

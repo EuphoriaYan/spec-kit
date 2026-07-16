@@ -7,9 +7,6 @@ description: "Implement task-ready feature work, verify it, and optionally submi
 Implement the selected tasks and produce durable verification evidence. A pull
 request is optional; implementation is complete when Phase 5 passes.
 
-Resolve `references/` and `scripts/` relative to this installed `SKILL.md`, not
-relative to the repository working directory.
-
 ## User Input
 
 ```text

@@ -9,9 +9,6 @@ natural conversation, clarify complete User Stories, and publish or print one
 primary Issue. Do not create local requirement drafts, `spec.md`, architecture
 plans, Tasks, or Bugfix artifacts.
 
-Resolve `references/` and `scripts/` relative to this installed `SKILL.md`, not
-relative to the repository working directory.
-
 Do not load architecture or implementation chat history.
 
 ## Input

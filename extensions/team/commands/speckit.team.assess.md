@@ -6,9 +6,6 @@ description: "Assess an issue URL or bug description and write .specify/bugfix/<
 
 Assess a bug report from an issue URL or free-form problem description. Produce a reviewed, fix-ready assessment at `.specify/bugfix/{bug-slug}/assessment.md` without modifying source code.
 
-Resolve `references/` and `scripts/` relative to this installed `SKILL.md`, not
-relative to the repository working directory.
-
 ## User Input
 
 ```text

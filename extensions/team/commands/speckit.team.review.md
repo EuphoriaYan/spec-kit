@@ -8,9 +8,6 @@ Review an existing pull request and help a human reviewer decide whether it is
 merge-ready. This command never creates, edits, approves, merges, or resolves
 conversations on a pull request.
 
-Resolve `references/` and `scripts/` relative to this installed `SKILL.md`, not
-relative to the repository working directory.
-
 ## User Input
 
 ```text

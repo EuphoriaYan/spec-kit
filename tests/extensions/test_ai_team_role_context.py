@@ -368,6 +368,8 @@ def test_role_commands_require_repeatable_progressive_bootstrap() -> None:
         assert "scripts/init_role_context.py" not in text
         assert "context-bootstrap.md" not in text
         assert "## Bootstrap" not in text
+        assert "relative to this installed `SKILL.md`" not in text
+        assert "relative to the repository working directory" not in text
 
     manifest = (AI_TEAM / "extension.yml").read_text(encoding="utf-8")
     assert "target: references/context-bootstrap.md" not in manifest

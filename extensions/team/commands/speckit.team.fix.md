@@ -6,9 +6,6 @@ description: "Fix a bug from assessment.md, verify it, write fix.md/test.md, and
 
 Apply a bug fix from an approved assessment, run verification, write `fix.md` and `test.md`, and ask the user before creating a pull request.
 
-Resolve `references/` and `scripts/` relative to this installed `SKILL.md`, not
-relative to the repository working directory.
-
 ## User Input
 
 ```text
