@@ -3,17 +3,64 @@
 from __future__ import annotations
 
 import runpy
+import re
 import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from packaging.version import InvalidVersion, Version
+
 from ._assets import _locate_bundled_extension, get_speckit_version
+
+
+CODEGRAPH_MIN_VERSION = Version("1.0.0")
+CODEGRAPH_MAX_VERSION = Version("2.0.0")
+CODEGRAPH_VERSION = re.compile(r"(?<![0-9])([0-9]+\.[0-9]+\.[0-9]+)(?![0-9])")
+CODEGRAPH_INSTALL_ERROR = """CodeGraph CLI 1.x is required by AI Team.
+Install it, open a new terminal, then run specify init again:
+- Windows PowerShell: irm https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.ps1 | iex
+- macOS/Linux: curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
+- npm: npm install -g @colbymchenry/codegraph@^1
+Specify does not execute third-party installation scripts automatically."""
 
 
 @dataclass(frozen=True)
 class TeamSetupResult:
     installed: bool
     rule_files: tuple[str, ...]
+
+
+def _require_codegraph() -> tuple[str, str]:
+    executable = shutil.which("codegraph")
+    if executable is None:
+        raise RuntimeError(CODEGRAPH_INSTALL_ERROR)
+    try:
+        result = subprocess.run(
+            [executable, "version"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise RuntimeError(f"Could not run CodeGraph version check: {exc}") from exc
+
+    output = f"{result.stdout}\n{result.stderr}".strip()
+    match = CODEGRAPH_VERSION.search(output)
+    if match is None:
+        raise RuntimeError(f"Could not parse CodeGraph version from: {output!r}")
+    try:
+        version = Version(match.group(1))
+    except InvalidVersion as exc:
+        raise RuntimeError(
+            f"CodeGraph returned an invalid version: {match.group(1)}"
+        ) from exc
+    if not CODEGRAPH_MIN_VERSION <= version < CODEGRAPH_MAX_VERSION:
+        raise RuntimeError(
+            f"CodeGraph {version} is unsupported; AI Team requires >=1.0.0,<2.0.0."
+        )
+    return executable, str(version)
 
 
 def _initialize_rules(project_root: Path, source: Path) -> list[str]:
@@ -30,6 +77,8 @@ def _initialize_rules(project_root: Path, source: Path) -> list[str]:
 def install_bundled_team(project_root: Path) -> TeamSetupResult:
     """Register packaged Team skills, then initialize project-owned state."""
     from .extensions import ExtensionManager
+
+    _require_codegraph()
 
     source = _locate_bundled_extension("team")
     if source is None:

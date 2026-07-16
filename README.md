@@ -86,6 +86,14 @@ original behavior when used independently.
 
 ### Install
 
+AI Team requires the local, MIT-licensed CodeGraph CLI `>=1.0.0,<2.0.0`. Install
+it first; Specify validates the executable and version but does not execute
+third-party installation scripts automatically:
+
+```bash
+npm install -g @colbymchenry/codegraph@^1
+```
+
 ```bash
 specify init . --integration codex
 ```
@@ -99,6 +107,10 @@ and extension registry state remain. Advanced users may add
 Initialization writes a short natural-language router into the active AI tools'
 rule files before the first chat. AI Team does not install a workflow; users
 invoke the role skills naturally from chat.
+
+For an existing coding repository, run `codegraph init` once. Plan-and-Task and
+Assess check `codegraph status`, synchronize pending changes, and stop rather
+than guessing architecture impact from an unavailable or stale graph.
 
 After installation, users can remain in chat:
 

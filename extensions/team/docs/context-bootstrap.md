@@ -36,7 +36,7 @@ Defect reports belong to the separate Assess -> Fix -> Review flow.
 Load the Issue body, relevant discussion, labels, and decision evidence. The
 accepted Issue body is primary; merge comments only when a human decision
 clearly accepts them. Then load the source revision, architecture guidance,
-Code Graph slice or fallback, and only the affected module context.
+CodeGraph evidence, and only the affected module context.
 
 Generate `spec.md` from accepted User Stories. Produce the Plan HLD first, stop
 for the human continue/pause/revise decision, then resume the same
