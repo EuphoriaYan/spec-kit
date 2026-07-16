@@ -69,7 +69,7 @@ def _plan(
     ownership_source: str = "src/export/README.md",
 ) -> str:
     common = f"""---
-schema: ai-team-plan-and-task/v4
+schema: ai-team-plan-and-task/v5
 work_id: "{work_id}"
 work_type: {work_type}
 primary_issue: https://example.com/org/repo/issues/{work_id}
@@ -138,9 +138,9 @@ The architect approved immediate Task decomposition.
 ## Tasks (LLD)
 
 ### Task Index
-| Task ID | Module | Requirement IDs | Planned paths | Depends on | Parallel group | Self-test IDs | LLD summary |
-|---|---|---|---|---|---|---|---|
-| T001 | export | VER-001 | src/export.py | {task_dependency} | P1 | {task_test} | preserve every selected result row |
+| Task ID | Status | Module | Requirement IDs | Planned paths | Depends on | Parallel group | Self-test IDs | LLD summary |
+|---|---|---|---|---|---|---|---|---|
+| T001 | [ ] | export | VER-001 | src/export.py | {task_dependency} | P1 | {task_test} | preserve every selected result row |
 
 ### Task Details
 | Task ID | Goal and non-goals | Design and data flow | Inputs and contracts | Completion criteria |
@@ -225,9 +225,9 @@ def _add_parallel_report_task(tmp_path: Path, root: Path) -> None:
         "| export | src/export/README.md | export result production | preserve all result rows | none | none |\n"
         "| report | src/report | report rendering | add export summary | none | none |",
     ).replace(
-        "| T001 | export | VER-001 | src/export.py | none | P1 | TEST-001 | preserve every selected result row |",
-        "| T001 | export | VER-001 | src/export.py | none | P1 | TEST-001 | preserve every selected result row |\n"
-        "| T002 | report | VER-001 | src/report.py | none | P1 | TEST-002 | render the export summary |",
+        "| T001 | [ ] | export | VER-001 | src/export.py | none | P1 | TEST-001 | preserve every selected result row |",
+        "| T001 | [ ] | export | VER-001 | src/export.py | none | P1 | TEST-001 | preserve every selected result row |\n"
+        "| T002 | [ ] | report | VER-001 | src/report.py | none | P1 | TEST-002 | render the export summary |",
     ).replace(
         "| T001 | include all rows; no format change | advance the cursor after copying | existing export result contract | regression test passes |",
         "| T001 | include all rows; no format change | advance the cursor after copying | existing export result contract | regression test passes |\n"
@@ -269,8 +269,8 @@ def test_parallel_tasks_cannot_claim_the_same_path(tmp_path: Path) -> None:
     _add_parallel_report_task(tmp_path, root)
     plan_path = root / "plan-and-task.md"
     plan = plan_path.read_text(encoding="utf-8").replace(
-        "| T002 | report | VER-001 | src/report.py |",
-        "| T002 | report | VER-001 | src/export.py |",
+        "| T002 | [ ] | report | VER-001 | src/report.py |",
+        "| T002 | [ ] | report | VER-001 | src/export.py |",
     )
     plan_path.write_text(plan, encoding="utf-8")
 

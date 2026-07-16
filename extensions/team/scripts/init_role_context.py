@@ -35,6 +35,21 @@ ROUTES = (
         "A defect report needs source-grounded assessment before implementation",
         "write and review `.specify/bugfix/<work_id>/assessment.md`",
     ),
+    (
+        "speckit.team.fix",
+        "An approved Bugfix assessment is ready for source changes",
+        "apply the smallest approved fix and record verification evidence",
+    ),
+    (
+        "speckit.team.implement",
+        "Checked Feature Tasks are ready for implementation",
+        "implement selected Tasks and record verification evidence",
+    ),
+    (
+        "speckit.team.review",
+        "A pull request needs correctness and SDD review",
+        "produce prioritized findings and a merge recommendation",
+    ),
 )
 
 
@@ -99,7 +114,7 @@ def _managed_section(target: str, root: Path | None = None) -> str:
     return (
         f"{START}\n"
         "Before any AI Team role work, read and follow "
-        f"`{BOOTSTRAP}`. Re-run its bootstrap after resume or context "
+        f"`{BOOTSTRAP}`. Re-read the bootstrap after resume or context "
         "compression and before each phase artifact or gate. Repository files "
         "and approved artifacts override remembered chat context.\n\n"
         "Users may describe work naturally; do not require a skill name. Route "

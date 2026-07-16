@@ -16,9 +16,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from work_item_paths import normalize_category, resolve_work_root
 
 
-VALIDATOR = "ai-team-plan-and-task-check/v4"
+VALIDATOR = "ai-team-plan-and-task-check/v5"
 SPEC_SCHEMA = "ai-team-feature-spec/v1"
-PLAN_SCHEMA = "ai-team-plan-and-task/v4"
+PLAN_SCHEMA = "ai-team-plan-and-task/v5"
 ACCEPTED_STATUSES = {"accept", "working"}
 PLACEHOLDER = re.compile(r"(?i)\b(?:TBD|TODO|FIXME)\b|<[^>]+>|path/to/file")
 ID_SPLIT = re.compile(r"\s*(?:,|;|<br\s*/?>)\s*", re.IGNORECASE)
@@ -469,6 +469,7 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
         }
         task_columns = {
             "Task ID",
+            "Status",
             "Module",
             "Requirement IDs",
             "Planned paths",
@@ -508,6 +509,16 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             "single-module Task index is parseable"
             if task_shape
             else "Task Index must use the Team table columns",
+        )
+        task_status_ok = task_shape and all(
+            re.fullmatch(r"\[(?: |x|X)\]", row["Status"].strip()) for row in tasks
+        )
+        record(
+            "TASK_STATUS",
+            task_status_ok,
+            "every Task has an unchecked or completed Status checkbox"
+            if task_status_ok
+            else "Task Status must be [ ] or [x]",
         )
         record(
             "TASK_DETAILS",

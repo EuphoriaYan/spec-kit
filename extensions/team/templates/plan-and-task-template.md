@@ -1,5 +1,5 @@
 ---
-schema: ai-team-plan-and-task/v4
+schema: ai-team-plan-and-task/v5
 work_id: ""
 work_type: feature
 primary_issue: ""
@@ -98,9 +98,9 @@ and explicit dependencies.
 Use `none` in `Depends on` only when the Task has no prerequisite. Tasks in the
 same parallel group are intended to be assigned concurrently.
 
-| Task ID | Module | Requirement IDs | Planned paths | Depends on | Parallel group | Self-test IDs | LLD summary |
-|---|---|---|---|---|---|---|---|
-| T001 | module-name | VER-001 | path/to/file | none | P1 | TEST-001 |  |
+| Task ID | Status | Module | Requirement IDs | Planned paths | Depends on | Parallel group | Self-test IDs | LLD summary |
+|---|---|---|---|---|---|---|---|---|
+| T001 | [ ] | module-name | VER-001 | path/to/file | none | P1 | TEST-001 |  |
 
 ### Task Details
 

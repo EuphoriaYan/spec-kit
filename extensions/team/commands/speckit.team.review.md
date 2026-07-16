@@ -13,10 +13,9 @@ relative to the repository working directory.
 
 ## Bootstrap
 
-1. Run the installed `scripts/init_role_context.py` by its resolved path.
-2. Read the invariant and Reviewer sections of
+1. Read the invariant and Reviewer sections of
    `references/context-bootstrap.md`.
-3. Load `references/work-item-layout.md` and `references/permissions.md` before
+2. Load `references/work-item-layout.md` and `references/permissions.md` before
    resolving feature artifacts or assessing authorization.
 
 ## User Input
@@ -70,10 +69,11 @@ findings.
 ## Phase 3: SDD Alignment
 
 When `FEATURE_ROOT` is available, read the effective spec (`spec.override.md`
-before `spec.md`), `plan.md`, `tasks.md`, `permission-envelope.yml`,
-`work-context.yml`, `evidence/implementation-report.md`, and relevant handoff or
-codegraph artifacts when present. Never quote or copy private override content
-into the review output.
+before `spec.md`), `plan-and-task.md`, `plan-and-task-check.md`,
+`permission-envelope.yml`, `work-context.yml`,
+`evidence/implementation-report.md`, and relevant handoff or codegraph
+artifacts when present. Never quote or copy private override content into the
+review output.
 
 Check that:
 

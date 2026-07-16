@@ -27,8 +27,6 @@ provides:
           target: references/issue-lifecycle.md
         - source: docs/repository-boundary.md
           target: references/repository-boundary.md
-        - source: scripts/init_role_context.py
-          target: scripts/init_role_context.py
     - name: speckit.team.plan-and-task
       file: commands/speckit.team.plan-and-task.md
       description: "Architect role: summarize an accepted Issue and produce Code Graph grounded Plan, parallel Tasks, self-tests, and one readiness check."
@@ -55,8 +53,6 @@ provides:
           target: references/feature-spec.md
         - source: templates/plan-and-task-template.md
           target: references/plan-and-task-format.md
-        - source: scripts/init_role_context.py
-          target: scripts/init_role_context.py
         - source: scripts/check_plan_and_task.py
           target: scripts/check_plan_and_task.py
         - source: scripts/work_item_paths.py
@@ -81,8 +77,6 @@ provides:
           target: references/work-item-layout.md
         - source: docs/code-graph-adapters.md
           target: references/code-graph-adapters.md
-        - source: scripts/init_role_context.py
-          target: scripts/init_role_context.py
     - name: speckit.team.fix
       file: commands/speckit.team.fix.md
       description: "Bug fixer role: apply an approved assessment, verify it, write fix evidence, and optionally create a PR."
@@ -95,8 +89,6 @@ provides:
           target: references/work-item-layout.md
         - source: references/internal/permissions.md
           target: references/permissions.md
-        - source: scripts/init_role_context.py
-          target: scripts/init_role_context.py
     - name: speckit.team.implement
       file: commands/speckit.team.implement.md
       description: "Developer role: implement task-ready Feature work, verify it, and optionally create a pull request."
@@ -109,8 +101,6 @@ provides:
           target: references/permissions.md
         - source: commands/prompts/implement-pr.md
           target: references/implement-pr.md
-        - source: scripts/init_role_context.py
-          target: scripts/init_role_context.py
     - name: speckit.team.review
       file: commands/speckit.team.review.md
       description: "Reviewer role: assess a pull request for correctness, evidence, permissions, and SDD alignment."
@@ -121,8 +111,6 @@ provides:
           target: references/work-item-layout.md
         - source: references/internal/permissions.md
           target: references/permissions.md
-        - source: scripts/init_role_context.py
-          target: scripts/init_role_context.py
 
   config:
     - name: ai-team-config.yml

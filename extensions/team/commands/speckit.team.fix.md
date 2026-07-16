@@ -11,10 +11,9 @@ relative to the repository working directory.
 
 ## Bootstrap
 
-1. Run the installed `scripts/init_role_context.py` by its resolved path.
-2. Read the invariant and Bug Fixer sections of
+1. Read the invariant and Bug Fixer sections of
    `references/context-bootstrap.md`.
-3. Load `references/issue-lifecycle.md`, `references/work-item-layout.md`, and
+2. Load `references/issue-lifecycle.md`, `references/work-item-layout.md`, and
    `references/permissions.md` before assessing state and write authorization.
 
 ## User Input

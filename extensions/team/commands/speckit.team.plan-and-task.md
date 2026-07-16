@@ -13,10 +13,9 @@ relative to the repository working directory.
 
 ## Bootstrap
 
-1. Run the installed `scripts/init_role_context.py` by its resolved path.
-2. Read the invariant and Architect sections of
+1. Read the invariant and Architect sections of
    `references/context-bootstrap.md`.
-3. Load progressively:
+2. Load progressively:
    - `references/issue-lifecycle.md` and `references/work-item-layout.md`;
    - `references/context.md` and `references/permissions.md`;
    - `references/handoff-spec-sync.md` for authorized confidential input;

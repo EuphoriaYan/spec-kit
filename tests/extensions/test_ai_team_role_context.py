@@ -99,8 +99,10 @@ def test_context_initializer_writes_natural_language_skill_router(tmp_path: Path
     assert "Users may describe work naturally" in agents
     assert "speckit.team.specify" in agents
     assert "speckit.team.plan-and-task" in agents
-    assert "speckit.team.implement" not in agents
-    assert "speckit.team.review" not in agents
+    assert "speckit.team.assess" in agents
+    assert "speckit.team.fix" in agents
+    assert "speckit.team.implement" in agents
+    assert "speckit.team.review" in agents
     assert ".specify/<feature|bugfix>/<work_id>/" in agents
 
 
@@ -117,16 +119,12 @@ def test_router_only_includes_approved_role_skills(
     fake_script.write_text("# location marker\n", encoding="utf-8")
     for name, _, _ in module.ROUTES:
         (commands / f"{name}.md").write_text("# role\n", encoding="utf-8")
-    for name in ("speckit.team.implement", "speckit.team.review"):
-        (commands / f"{name}.md").write_text("# unapproved role\n", encoding="utf-8")
     monkeypatch.setattr(module, "__file__", str(fake_script))
 
     section = module._managed_section("AGENTS.md")
 
     for name, _, _ in module.ROUTES:
         assert name in section
-    assert "speckit.team.implement" not in section
-    assert "speckit.team.review" not in section
 
 
 def test_direct_team_setup_rolls_back_extension_when_rules_fail(
@@ -190,7 +188,7 @@ def test_team_skills_install_with_local_references_and_scripts(
     plan_skill = root / "speckit-team-plan-and-task"
     assert (specify_skill / "SKILL.md").is_file()
     assert (specify_skill / "references/issue-lifecycle.md").is_file()
-    assert (specify_skill / "scripts/init_role_context.py").is_file()
+    assert not (specify_skill / "scripts/init_role_context.py").exists()
     assert (plan_skill / "references/codegraph.md").is_file()
     assert (plan_skill / "references/feature-spec.md").is_file()
     assert (plan_skill / "references/plan-and-task-format.md").is_file()
@@ -342,5 +340,5 @@ def test_role_commands_require_repeatable_progressive_bootstrap() -> None:
         assert role in bootstrap
     for command in (AI_TEAM / "commands").glob("*.md"):
         text = command.read_text(encoding="utf-8")
-        assert "scripts/init_role_context.py" in text
+        assert "scripts/init_role_context.py" not in text
         assert "context-bootstrap.md" in text

@@ -12,10 +12,9 @@ relative to the repository working directory.
 
 ## Bootstrap
 
-1. Run the installed `scripts/init_role_context.py` by its resolved path.
-2. Read the invariant and Developer sections of
+1. Read the invariant and Developer sections of
    `references/context-bootstrap.md`.
-3. Load `references/work-item-layout.md` and `references/permissions.md` before
+2. Load `references/work-item-layout.md` and `references/permissions.md` before
    resolving artifacts or checking the implementation envelope.
 
 ## User Input
@@ -45,9 +44,10 @@ fallback. Do not modify workflow files.
 ## Phase 1: Context
 
 1. Resolve the repository root and `FEATURE_ROOT` as absolute paths.
-2. Require regular files `spec.md` (or `spec.override.md`), `plan.md`, and
-   `tasks.md`. Prefer `spec.override.md` over `spec.md` when both exist, but do
-   not copy override content into tracked source or reports.
+2. Require regular files `spec.md` (or `spec.override.md`),
+   `plan-and-task.md`, and `plan-and-task-check.md`. Prefer `spec.override.md`
+   over `spec.md` when both exist, but do not copy override content into
+   tracked source or reports.
 3. Read, when present, `work-context.yml`, `context-pack.md`,
    `permission-envelope.yml`, `handoffs/`, and `codegraph/`.
 4. Create or minimally update `work-context.yml` with `feature_slug`, the
@@ -63,11 +63,12 @@ source code.
 
 Perform a read-only consistency review before implementation:
 
-- the plan identifies the technology, architecture, affected files or modules,
+- the Plan section identifies the technology, architecture, affected files or modules,
   test approach, and important risks;
 - every selected task has an ID, an actionable outcome, sufficient file or
   module context, and an order compatible with its dependencies;
-- the effective spec, plan, and tasks describe the same behavior and scope;
+- the effective spec and the Plan and Tasks sections describe the same behavior and scope;
+- `plan-and-task-check.md` reports a current passing readiness result;
 - selected tasks are not already complete and `only=` names existing tasks;
 - no unresolved placeholder, contradiction, or missing decision prevents safe
   implementation.
@@ -89,7 +90,7 @@ Then re-run:
 ```
 
 For a passing review, update only the Readiness section of `context-pack.md`;
-do not edit the specification or plan.
+do not edit the specification or the Plan section.
 
 ## Phase 3: Permission
 
@@ -114,9 +115,11 @@ Read the complete task list, then implement only the selected incomplete tasks:
 1. Respect task order, dependencies, test-first instructions, and repository
    conventions.
 2. Make the smallest coherent code and test changes allowed by the envelope.
-3. Never edit `spec.md`, `spec.override.md`, or `plan.md`.
-4. In `tasks.md`, change only the selected task checkboxes from `[ ]` to `[x]`,
-   and only after that task is actually complete. Preserve all other content.
+3. Never edit `spec.md`, `spec.override.md`, or the Plan section of
+   `plan-and-task.md`.
+4. In the Task Index of `plan-and-task.md`, change only the selected task
+   Status checkboxes from `[ ]` to `[x]`, and only after that task is actually
+   complete. Preserve all other content.
 5. Stop on a failed sequential task. Independent tasks may continue only when
    doing so cannot hide or compound the failure.
 
@@ -125,7 +128,7 @@ and changed files.
 
 ## Phase 5: Verify
 
-1. Inspect the repository diff and confirm it matches the selected tasks, plan
+1. Inspect the repository diff and confirm it matches the selected Tasks, Plan
    scope, and permission envelope.
 2. Run the most relevant targeted tests, then the build, lint, type, integration,
    or broader test commands required by the plan and repository guidance.

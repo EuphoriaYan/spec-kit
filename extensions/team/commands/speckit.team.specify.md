@@ -14,10 +14,9 @@ relative to the repository working directory.
 
 ## Bootstrap
 
-1. Run the installed `scripts/init_role_context.py` by its resolved path.
-2. Read the invariant and Business/Product sections of
+1. Read the invariant and Business/Product sections of
    `references/context-bootstrap.md`.
-3. Load only when needed:
+2. Load only when needed:
    - `references/issue-lifecycle.md` for labels and governance state;
    - `references/repository-boundary.md` for public or confidential placement.
 

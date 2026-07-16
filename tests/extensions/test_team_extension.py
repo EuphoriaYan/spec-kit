@@ -95,6 +95,10 @@ def test_implement_contract_uses_unified_root_and_lazy_pr_prompt():
     assert "Readiness blocked. Do not proceed with implementation." in command
     assert "references/implement-pr.md" in command
     assert "phase: verified" in command
+    assert "`plan-and-task.md`" in command
+    assert "`plan-and-task-check.md`" in command
+    assert "`plan.md`" not in command
+    assert "`tasks.md`" not in command
 
 
 def test_pr_details_are_isolated_from_main_implementation_command():
@@ -131,3 +135,7 @@ def test_review_contract_treats_pr_as_primary_input():
     assert "## Review Findings" in command
     assert "## Merge Recommendation" in command
     assert "evidence/review-report.md" in command
+    assert "`plan-and-task.md`" in command
+    assert "`plan-and-task-check.md`" in command
+    assert "`plan.md`" not in command
+    assert "`tasks.md`" not in command

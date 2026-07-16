@@ -440,6 +440,18 @@ def test_ai_team_reuses_native_sdd_artifacts_without_change_manifest():
     assert "change-package.yml" not in readme
 
 
+def test_ai_team_readme_matches_current_role_contracts():
+    readme = (EXTENSION_ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "`draft`, `approved`, or `needs-info`" in readme
+    assert ".specify/bugfix/<bug_slug>/" in readme
+    assert "passing `plan-and-task-check.md`" in readme
+    assert "only Plan-and-Task currently has" in readme
+    assert "init_role_context.py` runs during project initialization" in readme
+    assert "specify extension add extensions/team --dev" in readme
+    assert "specify extension add team --dev extensions/team" not in readme
+
+
 def test_ai_team_permission_envelope_document_exists():
     permission_doc = EXTENSION_ROOT / "docs" / "permission-envelope.md"
 
