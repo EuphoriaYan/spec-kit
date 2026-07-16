@@ -174,6 +174,8 @@ def test_init_installs_only_team_extension_and_managed_rules(
     assert not (tmp_path / ".specify" / "bundles" / "installed.json").exists()
     skills = {path.name for path in (tmp_path / ".agents" / "skills").iterdir()}
     assert skills == {
+        "speckit-team-assess",
+        "speckit-team-fix",
         "speckit-team-implement",
         "speckit-team-plan-and-task",
         "speckit-team-review",
@@ -263,6 +265,8 @@ def test_team_profile_hides_native_skills_and_full_profile_keeps_them(
     team_skills = {path.name for path in (team_root / ".agents" / "skills").iterdir()}
     full_skills = {path.name for path in (full_root / ".agents" / "skills").iterdir()}
     assert team_skills == {
+        "speckit-team-assess",
+        "speckit-team-fix",
         "speckit-team-implement",
         "speckit-team-plan-and-task",
         "speckit-team-review",

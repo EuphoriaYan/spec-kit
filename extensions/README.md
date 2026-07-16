@@ -41,9 +41,10 @@ You control which extensions your team can discover and install:
 
 ### Bundled Extensions In This Distribution
 
-This independent distribution includes the `team` extension with four
+This independent distribution includes the `team` extension with six
 role-oriented skills: `speckit.team.specify`, `speckit.team.plan-and-task`,
-`speckit.team.implement`, and `speckit.team.review`.
+`speckit.team.assess`, `speckit.team.fix`, `speckit.team.implement`, and
+`speckit.team.review`.
 
 ```bash
 specify extension add team

@@ -27,12 +27,14 @@ def _install_bootstrap(project: Path) -> None:
     target.write_text("# Installed bootstrap\n", encoding="utf-8")
 
 
-def test_all_four_role_commands_are_registered() -> None:
+def test_all_six_role_commands_are_registered() -> None:
     manifest = yaml.safe_load((AI_TEAM / "extension.yml").read_text(encoding="utf-8"))
     provided = {item["name"]: item for item in manifest["provides"]["commands"]}
     assert set(provided) == {
         "speckit.team.specify",
         "speckit.team.plan-and-task",
+        "speckit.team.assess",
+        "speckit.team.fix",
         "speckit.team.implement",
         "speckit.team.review",
     }
@@ -329,7 +331,14 @@ def test_role_commands_require_repeatable_progressive_bootstrap() -> None:
     assert "after resume or context\ncompression" in bootstrap
     assert "Level 0: Always Load" in bootstrap
     assert "Level 1: Active Role Only" in bootstrap
-    for role in ("Business / Product", "Architect", "Developer", "Reviewer"):
+    for role in (
+        "Business / Product",
+        "Architect",
+        "Bug Assessor",
+        "Bug Fixer",
+        "Developer",
+        "Reviewer",
+    ):
         assert role in bootstrap
     for command in (AI_TEAM / "commands").glob("*.md"):
         text = command.read_text(encoding="utf-8")

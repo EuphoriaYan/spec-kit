@@ -22,6 +22,8 @@ def test_team_manifest_is_valid_and_declares_execution_commands():
     assert commands == {
         "speckit.team.specify": "commands/speckit.team.specify.md",
         "speckit.team.plan-and-task": "commands/speckit.team.plan-and-task.md",
+        "speckit.team.assess": "commands/speckit.team.assess.md",
+        "speckit.team.fix": "commands/speckit.team.fix.md",
         "speckit.team.implement": "commands/speckit.team.implement.md",
         "speckit.team.review": "commands/speckit.team.review.md",
     }
@@ -30,6 +32,56 @@ def test_team_manifest_is_valid_and_declares_execution_commands():
     assert raw["requires"]["tools"] == [{"name": "gh", "required": False}]
     for command_file in commands.values():
         assert (EXTENSION_ROOT / command_file).is_file()
+
+
+def test_assess_contract_uses_bugfix_root_and_merges_analysis():
+    command = _normalized_markdown(
+        EXTENSION_ROOT / "commands" / "speckit.team.assess.md"
+    )
+
+    assert ".specify/bugfix/{bug-slug}" in command
+    assert "assessment.md" in command
+    assert "Code Graph / Relevant Code Paths" in command
+    assert "Impact Analysis" in command
+    assert "Permission Boundary" in command
+    assert "Review and Revision Loop" in command
+    assert "Status**: draft | approved | needs-info" in command
+    assert "Do not read from or write to `.specify/ai-team/`" in command
+    assert "Do not read `.specify/extensions/team` as project context" in command
+    assert "Do not include a separate `## Assessment Review` section" in command
+    assert "Issue Creation" in command
+    assert "status/new-issue" in command
+    assert "type/bugfix" in command
+    assert "workflow_run_id" not in command
+
+
+def test_fix_contract_writes_reports_and_asks_before_pr():
+    command = _normalized_markdown(
+        EXTENSION_ROOT / "commands" / "speckit.team.fix.md"
+    )
+
+    assert ".specify/bugfix/{bug-slug}" in command
+    assert "assessment.md" in command
+    assert "fix.md" in command
+    assert "test.md" in command
+    assert "Status**: approved" in command
+    assert "ask the user whether to create a pull request" in command
+    assert "gh pr create" in command
+    assert "Do not read from or write to `.specify/ai-team/`" in command
+    assert "Do not read `.specify/extensions/team` as project context" in command
+    assert "Do not create a pull request without asking the user first" in command
+    assert "Issue State Gate" in command
+    assert "status/working" in command
+    assert "status/new-issue" in command
+    assert "status/accept" in command
+    assert "Do not change issue labels automatically" in command
+
+
+def test_bugfix_commands_use_canonical_bugfix_root():
+    for filename in ("speckit.team.assess.md", "speckit.team.fix.md"):
+        command = _normalized_markdown(EXTENSION_ROOT / "commands" / filename)
+        assert ".specify/bugfix/" in command
+        assert ".specify/bugs/" not in command
 
 
 def test_implement_contract_uses_unified_root_and_lazy_pr_prompt():

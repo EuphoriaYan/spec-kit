@@ -95,6 +95,8 @@ def test_ai_team_extension_command_files_exist():
     assert command_names == {
         "speckit.team.specify",
         "speckit.team.plan-and-task",
+        "speckit.team.assess",
+        "speckit.team.fix",
         "speckit.team.implement",
         "speckit.team.review",
     }
@@ -517,6 +519,8 @@ def test_ai_team_user_journeys_document_exists():
     for command in (
         "speckit.team.specify",
         "speckit.team.plan-and-task",
+        "speckit.team.assess",
+        "speckit.team.fix",
         "speckit.team.implement",
         "speckit.team.review",
     ):

@@ -1,17 +1,16 @@
 # AI Team Role Extension
 
-The `team` extension provides four role-oriented skills without changing native
+The `team` extension provides six role-oriented skills without changing native
 Spec Kit commands:
 
 | Skill | Role | Input | Durable output |
 |---|---|---|---|
 | `speckit.team.specify` | Business / Product | plain-language Feature or new-project demand | published Feature Issue, or Issue text in the current response |
 | `speckit.team.plan-and-task` | Architect | accepted/working Issue plus source | Feature spec when applicable, Code Graph impact, Plan, parallel Tasks, self-tests, generated check |
+| `speckit.team.assess` | Bug Assessor | Issue URL or defect description | approved `assessment.md` with impact, permissions, fix, and test strategy |
+| `speckit.team.fix` | Bug Fixer | approved assessment and optional tracked Issue | source fix, `fix.md`, `test.md`, optional PR |
 | `speckit.team.implement` | Developer | task-ready Feature artifacts and permission envelope | source changes, completed Tasks, verification evidence, optional PR |
 | `speckit.team.review` | Reviewer | PR URL or number | prioritized findings and merge recommendation |
-
-Bugfix intake is owned by a separate preceding skill. Plan-and-Task accepts its
-reviewed `type/bugfix` Issue but does not require a Bugfix `spec.md`.
 
 ## Role Boundary
 
@@ -39,6 +38,11 @@ The Issue URL is the global identity. Coding-repository work uses the numeric
 Issue ID as `work_id`; enhancement-repository work uses
 `enhancement-<issue-id>` to avoid collisions.
 
+Feature delivery uses `.specify/feature/<work_id>/`. Bugfix delivery uses
+`.specify/bugfix/<work_id>/`: Assess writes `assessment.md`; Fix requires its
+human-approved status, then writes `fix.md` and `test.md`. For a tracked Issue,
+Fix also requires `status/working` and never changes labels automatically.
+
 ## Feature Flow
 
 ```text
@@ -61,16 +65,18 @@ Implement stops when readiness, permissions, or verification fails and creates
 a PR only after explicit confirmation. Review never creates, approves, merges,
 or resolves conversations on a PR.
 
-## Bugfix Flow Boundary
+## Bugfix Flow
 
 ```text
 observed defect
--> separate Bugfix intake skill
--> reviewed type/bugfix Issue
--> status/accept or status/working
--> speckit.team.plan-and-task
--> Bugfix summary in plan-and-task.md, without spec.md
--> Code Graph, root-cause evidence, regression Tasks, self-tests, check
+-> speckit.team.assess
+-> assessment, impact, permission boundary, fix and test strategy
+-> human approval and optional type/bugfix Issue at status/new-issue
+-> maintainer moves claimed work to status/working
+-> speckit.team.fix
+-> source fix, regression verification, fix.md and test.md
+-> optional pull request
+-> speckit.team.review
 ```
 
 Several Bug Issues may map to one change only when they are symptoms of the
@@ -146,17 +152,23 @@ their own installed Skill resources.
 
 ## Chat Entry
 
-Users do not need to name a skill. A new Feature starts naturally:
+Users do not need to name a skill. New Feature and Bugfix work can start
+naturally:
 
 ```text
 Please add CSV export to the current project. Export the same fields shown in
 the result list, and help me turn this into a reviewable requirement.
+
+Login returns 500 after session expiry. Assess the defect before changing code.
 ```
 
 After governance acceptance, continue with the Issue URL. Once planning is
 task-ready, delivery can be invoked directly:
 
 ```text
+/speckit.team.assess https://github.com/org/repo/issues/123
+/speckit.team.assess "Login returns 500 after session expiry" bug_slug=login-session-expiry
+/speckit.team.fix bug_slug=login-session-expiry
 /speckit.team.implement feature_slug=123
 /speckit.team.implement feature_slug=123 only=T001-T010
 /speckit.team.implement feature_slug=123 submit_pr=true
@@ -164,4 +176,7 @@ task-ready, delivery can be invoked directly:
 ```
 
 Pull request operations and Review require GitHub CLI access. Without `gh`,
-Implement can still finish and provide a manual PR checklist.
+Implement and Fix can still finish and provide a manual PR checklist. Delivery
+commands never use the legacy repository-root `specs/` or
+`.specify/ai-team/work/` paths. Bugfix commands do not use `.specify/ai-team/`
+and never treat `.specify/extensions/team` as application evidence.

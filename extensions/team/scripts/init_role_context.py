@@ -30,6 +30,11 @@ ROUTES = (
         "An accepted Feature or Bugfix Issue needs architecture, scope, tasks, and self-tests",
         "summarize the Issue and create and check `plan-and-task.md`",
     ),
+    (
+        "speckit.team.assess",
+        "A defect report needs source-grounded assessment before implementation",
+        "write and review `.specify/bugfix/<work_id>/assessment.md`",
+    ),
 )
 
 

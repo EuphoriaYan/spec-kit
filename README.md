@@ -26,7 +26,7 @@ under [`extensions/team/`](extensions/team/).
 
 ### Role Skills
 
-AI Team provides four role-oriented skills rather than one workflow. Each role
+AI Team provides six role-oriented skills rather than one workflow. Each role
 consumes durable artifacts from the preceding role instead of hidden chat
 context; the installer advertises only commands that this distribution actually
 provides.
@@ -35,12 +35,14 @@ provides.
 |---|---|
 | `speckit.team.specify` | clarify a Feature through User Stories, then publish or print the primary Issue |
 | `speckit.team.plan-and-task` | produce Code Graph grounded Plan, LLD-capable Tasks, and self-test design |
+| `speckit.team.assess` | assess a defect, its impact, permission boundary, fix strategy, and test strategy |
+| `speckit.team.fix` | apply an approved Bugfix assessment, verify it, and optionally create a pull request |
 | `speckit.team.implement` | implement task-ready work, verify it, and optionally create a pull request |
 | `speckit.team.review` | review a pull request for correctness, evidence, permissions, and SDD alignment |
 
 ```text
 Feature: Specify -> status/new-issue -> Technical Committee acceptance -> Plan-and-Task -> Implement -> optional PR -> Review
-Bugfix: separate preceding intake -> reviewed coding Issue -> Plan-and-Task
+Bugfix: Assess -> human approval -> optional tracked Issue -> status/working -> Fix -> optional PR -> Review
 ```
 
 Feature Issue creation belongs to Specify, where User Stories and their
