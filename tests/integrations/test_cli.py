@@ -64,6 +64,7 @@ class TestInitIntegrationFlag:
             os.chdir(project)
             result = runner.invoke(app, [
                 "init", "--here", "--integration", "copilot", "--script", "sh",
+                "--skill-profile", "full",
             ], catch_exceptions=False)
         finally:
             os.chdir(old_cwd)
@@ -80,8 +81,10 @@ class TestInitIntegrationFlag:
         # init must not leave any legacy agent-context keys in init-options.json
         assert "context_file" not in opts
 
-        # AI Team is installed directly; agent-context remains opt-in.
-        assert (project / ".specify" / "extensions" / "team").is_dir()
+        # AI Team is registered from the package; only project-owned state is copied.
+        assert not (project / ".specify" / "extensions" / "team").exists()
+        assert (project / ".specify" / "team" / "context-bootstrap.md").is_file()
+        assert (project / ".specify" / "team" / "ai-team-config.yml").is_file()
         assert not (project / ".specify" / "extensions" / "agent-context").exists()
 
         assert (project / ".specify" / "integrations" / "copilot.manifest.json").exists()
@@ -830,6 +833,7 @@ class TestInitIntegrationFlag:
                 "init", "--here", "--force",
                 "--integration", "copilot",
                 "--script", "sh",
+                "--skill-profile", "full",
             ], catch_exceptions=False)
         finally:
             os.chdir(old_cwd)
@@ -859,6 +863,7 @@ class TestInitIntegrationFlag:
                 "init", "--here",
                 "--integration", "copilot",
                 "--script", "sh",
+                "--skill-profile", "full",
             ], input="y\n", catch_exceptions=False)
         finally:
             os.chdir(old_cwd)

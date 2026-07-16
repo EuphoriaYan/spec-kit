@@ -9,17 +9,6 @@ natural conversation, clarify complete User Stories, and publish or print one
 primary Issue. Do not create local requirement drafts, `spec.md`, architecture
 plans, Tasks, or Bugfix artifacts.
 
-Resolve `references/` and `scripts/` relative to this installed `SKILL.md`, not
-relative to the repository working directory.
-
-## Bootstrap
-
-1. Read the invariant and Business/Product sections of
-   `references/context-bootstrap.md`.
-2. Load only when needed:
-   - `references/issue-lifecycle.md` for labels and governance state;
-   - `references/repository-boundary.md` for public or confidential placement.
-
 Do not load architecture or implementation chat history.
 
 ## Input
@@ -109,6 +98,11 @@ The proposed labels must be exactly:
 New-project demand also uses `type/feature`.
 
 ## Publication Decision
+
+If the repository or privacy boundary is unclear, read
+`references/repository-boundary.md` before presenting the publication
+decision. Do not preload it for an already unambiguous public coding-repository
+request.
 
 Show the exact title, body, repository, and labels, then ask the user to choose:
 

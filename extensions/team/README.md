@@ -112,25 +112,32 @@ contract authority.
 ## Installed Skill Layout
 
 Each supported skills-based integration receives self-contained directories.
-Every role has `SKILL.md` and `references/`; only Plan-and-Task currently has
-runtime scripts:
+Every role has `SKILL.md`; references and scripts are installed only when that
+role loads or executes them:
 
 ```text
 speckit-team-<role>/
-|-- SKILL.md
-`-- references/
+`-- SKILL.md
 
 speckit-team-plan-and-task/
 |-- SKILL.md
 |-- references/
-`-- scripts/              # readiness check and confidential handoff helpers
+`-- scripts/              # deterministic checks and handoff helpers
+
+speckit-team-implement/
+|-- SKILL.md
+|-- references/           # loaded only after PR confirmation
+`-- scripts/              # Permission Envelope validation
 ```
 
-Each Skill resolves declared resources relative to its own `SKILL.md`. The
-extension implementation remains in the installed Specify CLI package and is
-not copied into the project. Editable configuration and the stable context
-bootstrap live under `.specify/team/`. `init_role_context.py` runs during
-project initialization and is not copied into individual Skills.
+Each Skill resolves declared resources relative to its own `SKILL.md`.
+Specify installs only its conditional repository-boundary reference. Assess,
+Fix, and Review install no role references or scripts.
+The extension implementation remains in the installed Specify CLI package and
+is not copied into the project. Editable configuration and the stable context
+bootstrap live under `.specify/team/`.
+`init_role_context.py` runs during project initialization and is not copied
+into individual Skills.
 
 Plan-and-Task must run its installed `scripts/check_plan_and_task.py`. The
 script generates `plan-and-task-check.md`; a model may fix source artifacts but

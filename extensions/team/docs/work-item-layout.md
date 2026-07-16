@@ -26,9 +26,10 @@ visible at `status/accept` or `status/working`.
         `-- evidence/
 ```
 
-Bugfix intake may add a separate analysis artifact through its own preceding
-skill. This extension does not define that artifact yet. Bugfix work does not
-use `spec.md`.
+Bugfix intake may create `assessment.md` under a slug-based Bugfix intake root
+before formal planning. The assessment is intake evidence; it does not by
+itself establish an accepted Issue identity. Bugfix work does not use
+`spec.md`.
 
 ## Identity
 

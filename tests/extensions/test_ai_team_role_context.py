@@ -190,13 +190,38 @@ def test_team_skills_install_with_local_references_and_scripts(
     root = tmp_path / skills_dir
     specify_skill = root / "speckit-team-specify"
     plan_skill = root / "speckit-team-plan-and-task"
+    assess_skill = root / "speckit-team-assess"
+    fix_skill = root / "speckit-team-fix"
+    implement_skill = root / "speckit-team-implement"
+    review_skill = root / "speckit-team-review"
     assert (specify_skill / "SKILL.md").is_file()
-    assert (specify_skill / "references/issue-lifecycle.md").is_file()
+    assert {
+        path.name for path in (specify_skill / "references").glob("*.md")
+    } == {"repository-boundary.md"}
     assert not (specify_skill / "scripts/init_role_context.py").exists()
-    assert (plan_skill / "references/codegraph.md").is_file()
-    assert (plan_skill / "references/feature-spec.md").is_file()
-    assert (plan_skill / "references/plan-and-task-format.md").is_file()
+    assert {
+        path.name for path in (plan_skill / "references").glob("*.md")
+    } == {
+        "code-graph-adapters.md",
+        "code-graph-contract.md",
+        "context.md",
+        "feature-spec.md",
+        "handoff-spec-sync.md",
+        "permission-envelope.md",
+        "plan-and-task-format.md",
+    }
     assert (plan_skill / "scripts/check_plan_and_task.py").is_file()
+    assert (plan_skill / "scripts/check_permission_envelope.py").is_file()
+    assert (plan_skill / "scripts/work_item_paths.py").is_file()
+    for skill in (assess_skill, fix_skill, review_skill):
+        assert (skill / "SKILL.md").is_file()
+        assert not (skill / "references").exists()
+        assert not (skill / "scripts").exists()
+    assert {
+        path.name for path in (implement_skill / "references").glob("*.md")
+    } == {"implement-pr.md"}
+    assert (implement_skill / "scripts/check_permission_envelope.py").is_file()
+    assert (implement_skill / "scripts/work_item_paths.py").is_file()
 
 
 def test_packaged_team_resolves_for_listing_reregistration_and_removal(
@@ -380,4 +405,59 @@ def test_role_commands_require_repeatable_progressive_bootstrap() -> None:
     for command in (AI_TEAM / "commands").glob("*.md"):
         text = command.read_text(encoding="utf-8")
         assert "scripts/init_role_context.py" not in text
-        assert "context-bootstrap.md" in text
+        assert "context-bootstrap.md" not in text
+        assert "## Bootstrap" not in text
+        assert "relative to this installed `SKILL.md`" not in text
+        assert "relative to the repository working directory" not in text
+
+    manifest = (AI_TEAM / "extension.yml").read_text(encoding="utf-8")
+    assert "target: references/context-bootstrap.md" not in manifest
+
+
+def test_role_skills_load_references_only_at_the_phase_that_needs_them() -> None:
+    specify = (AI_TEAM / "commands/speckit.team.specify.md").read_text(
+        encoding="utf-8"
+    )
+    plan = (AI_TEAM / "commands/speckit.team.plan-and-task.md").read_text(
+        encoding="utf-8"
+    )
+    implement = (AI_TEAM / "commands/speckit.team.implement.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "If the repository or privacy boundary is unclear" in specify
+    assert "Do not preload it" in specify
+    assert "When resuming an existing work root" in plan
+    assert "immediately before writing it" in plan
+    assert "only when an adapter must be selected" in plan
+    assert "approved_at" in plan
+    assert "--require-approved" in plan
+    assert "immediately before creating or\n   updating `plan-and-task.md`" in plan
+    assert "Do not reproduce, guess, or preload" in implement
+
+
+def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
+    manifest = yaml.safe_load((AI_TEAM / "extension.yml").read_text(encoding="utf-8"))
+    commands = {
+        item["name"]: {
+            resource["target"] for resource in item.get("resources", [])
+        }
+        for item in manifest["provides"]["commands"]
+    }
+
+    assert commands["speckit.team.specify"] == {
+        "references/repository-boundary.md"
+    }
+    assert commands["speckit.team.assess"] == set()
+    assert commands["speckit.team.fix"] == set()
+    assert commands["speckit.team.review"] == set()
+    assert commands["speckit.team.implement"] == {
+        "references/implement-pr.md",
+        "scripts/check_permission_envelope.py",
+        "scripts/work_item_paths.py",
+    }
+    assert {
+        "references/code-graph-contract.md",
+        "references/permission-envelope.md",
+        "scripts/check_permission_envelope.py",
+    } <= commands["speckit.team.plan-and-task"]
