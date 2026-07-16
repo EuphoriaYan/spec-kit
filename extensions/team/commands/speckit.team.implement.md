@@ -24,7 +24,7 @@ Reject an unsafe slug containing path separators, `..`, or anything other than
 letters, numbers, dots, underscores, and hyphens. Set:
 
 ```text
-FEATURE_ROOT={repository root}/.specify/specs/{feature-slug}
+FEATURE_ROOT={repository root}/.specify/feature/{feature-slug}
 ```
 
 All feature artifact reads and writes MUST stay under `FEATURE_ROOT`. Never
@@ -71,7 +71,7 @@ ask whether implementation should continue. End with:
 ```text
 Readiness blocked. Do not proceed with implementation.
 Revise artifacts with:
-  /speckit.team.plan-task feature_slug={feature-slug}
+  /speckit.team.plan-and-task feature_slug={feature-slug}
 
 Then re-run:
   /speckit.team.implement feature_slug={feature-slug}

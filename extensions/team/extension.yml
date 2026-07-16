@@ -2,9 +2,9 @@ schema_version: "1.0"
 
 extension:
   id: team
-  name: "Team Implement & Review"
+  name: "Team Bugfix, Implement & Review"
   version: "0.1.0"
-  description: "Implement task-ready features, verify the result, optionally open a pull request, and review pull requests against Spec-Driven Development artifacts."
+  description: "Assess and fix bugs, implement task-ready features, verify results, optionally open pull requests, and review pull requests against Spec-Driven Development artifacts."
   author: spec-kit-core
   repository: https://github.com/github/spec-kit
   license: MIT
@@ -17,6 +17,12 @@ requires:
 
 provides:
   commands:
+    - name: speckit.team.assess
+      file: commands/speckit.team.assess.md
+      description: "Assess an issue URL or bug description and write .specify/bugfix/<bug-slug>/assessment.md"
+    - name: speckit.team.fix
+      file: commands/speckit.team.fix.md
+      description: "Fix a bug from assessment.md, verify it, write fix.md/test.md, and ask before creating a PR"
     - name: speckit.team.implement
       file: commands/speckit.team.implement.md
       description: "Implement selected tasks from a feature, verify the changes, and optionally submit a pull request"
@@ -26,6 +32,8 @@ provides:
 
 tags:
   - "team"
+  - "bugfix"
+  - "assessment"
   - "implementation"
   - "review"
   - "sdd"
