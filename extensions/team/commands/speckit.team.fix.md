@@ -202,7 +202,5 @@ Report:
 - Do not proceed without an approved `assessment.md`.
 - Do not edit `assessment.md`.
 - Do not write bugfix reports outside `.specify/bugfix/{bug-slug}/`.
-- Do not read from or write to `.specify/ai-team/`.
-- Do not read `.specify/extensions/team` as project context.
 - Do not create a pull request without asking the user first.
 - Do not invent test results.

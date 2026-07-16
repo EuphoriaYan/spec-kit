@@ -57,7 +57,9 @@ Refuse to fetch non-HTTP(S), loopback, link-local, private-network, or cloud met
 
 Collect enough repository context to assess the bug, but keep the operation read-only except for writing `ASSESSMENT`.
 
-Read relevant project files such as source files, tests, package manifests, README files, logs provided by the user, and existing `.specify/bugfix/{bug-slug}/` artifacts. Do not read `.specify/extensions/team` as application context; installed extension files are command implementation, not project evidence. Do not read from or write to `.specify/ai-team/`; ai-team artifacts are not part of this workflow.
+Read relevant project files such as source files, tests, package manifests,
+README files, logs provided by the user, and existing
+`.specify/bugfix/{bug-slug}/` artifacts.
 
 ## Integrated Analysis
 
@@ -171,7 +173,5 @@ Report:
 
 - Do not modify source code.
 - Do not write outside `.specify/bugfix/{bug-slug}/`.
-- Do not read from or write to `.specify/ai-team/`.
-- Do not read `.specify/extensions/team` as project context.
 - Do not include a separate `## Assessment Review` section in `assessment.md`; review feedback must update the assessment content directly.
 - Do not invent reproduction steps, file paths, or test results.

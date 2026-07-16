@@ -37,9 +37,8 @@ letters, numbers, dots, underscores, and hyphens. Set:
 FEATURE_ROOT={repository root}/.specify/feature/{feature-slug}
 ```
 
-All feature artifact reads and writes MUST stay under `FEATURE_ROOT`. Never
-read or write repository-root `specs/` or `.specify/ai-team/work/`, even as a
-fallback. Do not modify workflow files.
+All feature artifact reads and writes MUST stay under `FEATURE_ROOT`. Do not
+modify workflow files.
 
 ## Phase 1: Context
 

@@ -126,11 +126,9 @@ speckit-team-plan-and-task/
 `-- scripts/              # readiness check and confidential handoff helpers
 ```
 
-Each Skill resolves declared resources relative to its own `SKILL.md`. The
-complete extension remains under `.specify/extensions/team/` for lifecycle and
-configuration, but role execution must not treat that directory as project
-evidence. `init_role_context.py` runs during project initialization and is not
-copied into individual Skills.
+Each Skill resolves declared resources relative to its own `SKILL.md`.
+`init_role_context.py` runs during project initialization and is not copied
+into individual Skills.
 
 Plan-and-Task must run its installed `scripts/check_plan_and_task.py`. The
 script generates `plan-and-task-check.md`; a model may fix source artifacts but
@@ -163,8 +161,7 @@ Issue's formal planning package; Bugfix planning does not create `spec.md`.
 
 Commit Feature Specs, Plans, generated checks, and reviewed evidence according
 to repository policy. Ignore `spec.override.md`, private customer text,
-credentials, and local memory. Delivery commands never fall back to legacy
-repository-root `specs/` or `.specify/ai-team/work/` paths.
+credentials, and local memory.
 
 ## Installation
 
@@ -214,7 +211,4 @@ task-ready, delivery can be invoked directly:
 
 GitHub Issue/PR operations and Review require authenticated GitHub access;
 Review specifically requires `gh`. Without PR access, Implement and Fix can
-still finish verification and provide manual submission guidance. Delivery
-commands never use the legacy repository-root `specs/` or
-`.specify/ai-team/work/` paths. Bugfix commands do not use `.specify/ai-team/`
-and never treat `.specify/extensions/team` as application evidence.
+still finish verification and provide manual submission guidance.

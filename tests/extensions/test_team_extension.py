@@ -46,8 +46,6 @@ def test_assess_contract_uses_bugfix_root_and_merges_analysis():
     assert "Permission Boundary" in command
     assert "Review and Revision Loop" in command
     assert "Status**: draft | approved | needs-info" in command
-    assert "Do not read from or write to `.specify/ai-team/`" in command
-    assert "Do not read `.specify/extensions/team` as project context" in command
     assert "Do not include a separate `## Assessment Review` section" in command
     assert "Issue Creation" in command
     assert "status/new-issue" in command
@@ -67,8 +65,6 @@ def test_fix_contract_writes_reports_and_asks_before_pr():
     assert "Status**: approved" in command
     assert "ask the user whether to create a pull request" in command
     assert "gh pr create" in command
-    assert "Do not read from or write to `.specify/ai-team/`" in command
-    assert "Do not read `.specify/extensions/team` as project context" in command
     assert "Do not create a pull request without asking the user first" in command
     assert "Issue State Gate" in command
     assert "status/working" in command
@@ -116,12 +112,16 @@ def test_pr_details_are_isolated_from_main_implementation_command():
     assert "phase: pr-open" in prompt
 
 
-def test_commands_forbid_legacy_feature_artifact_roots():
-    for filename in ("speckit.team.implement.md", "speckit.team.review.md"):
-        command = _normalized_markdown(EXTENSION_ROOT / "commands" / filename)
-        assert "Never read or write" in command
-        assert "repository-root `specs/`" in command
-        assert "`.specify/ai-team/work/`" in command
+def test_commands_do_not_describe_unrelated_spec_kit_storage():
+    forbidden = (
+        "repository-root `specs/`",
+        ".specify/ai-team",
+        ".specify/team",
+        ".specify/extensions/team",
+    )
+    for path in (EXTENSION_ROOT / "commands").glob("speckit.team.*.md"):
+        command = path.read_text(encoding="utf-8")
+        assert all(value not in command for value in forbidden), path.name
 
 
 def test_review_contract_treats_pr_as_primary_input():

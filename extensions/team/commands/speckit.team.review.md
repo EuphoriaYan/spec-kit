@@ -42,8 +42,7 @@ anything other than letters, numbers, dots, underscores, and hyphens.
    - an unambiguous feature slug in the PR branch name.
 4. When a slug is resolved, set
    `FEATURE_ROOT={repository root}/.specify/feature/{feature-slug}`. All feature
-   artifact reads and writes MUST stay under it. Never read or write
-   repository-root `specs/` or `.specify/ai-team/work/`.
+   artifact reads and writes MUST stay under it.
 
 If `gh` is unavailable, authentication fails, the PR cannot be fetched, or its
 repository is ambiguous, stop and report the exact manual prerequisite. A
