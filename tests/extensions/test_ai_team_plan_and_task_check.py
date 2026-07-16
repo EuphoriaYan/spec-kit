@@ -94,7 +94,7 @@ affected_modules:
   - export
 impact_analysis:
   code_graph:
-    kind: code-graph
+    kind: codegraph
     evidence_path: .specify/{"feature" if work_type == "feature" else "bugfix"}/{work_id}/codegraph/summary.md
     source_revision: abc123
   cross_module: {str(cross_module).lower()}
@@ -385,6 +385,22 @@ def test_code_graph_evidence_must_exist_and_match_revision(tmp_path: Path) -> No
     (root / "codegraph" / "summary.md").unlink()
 
     result, rendered = module.evaluate(tmp_path, "bugfix", "108")
+
+    assert result == "blocked"
+    assert "| IMPACT_EVIDENCE | BLOCK |" in rendered
+
+
+def test_source_fallback_is_not_valid_codegraph_evidence(tmp_path: Path) -> None:
+    module = _module()
+    root = _write_package(tmp_path, "118", "feature")
+    plan_path = root / "plan-and-task.md"
+    plan = plan_path.read_text(encoding="utf-8")
+    plan_path.write_text(
+        plan.replace("kind: codegraph", "kind: source-fallback"),
+        encoding="utf-8",
+    )
+
+    result, rendered = module.evaluate(tmp_path, "feature", "118")
 
     assert result == "blocked"
     assert "| IMPACT_EVIDENCE | BLOCK |" in rendered

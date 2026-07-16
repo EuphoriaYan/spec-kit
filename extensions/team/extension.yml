@@ -14,6 +14,9 @@ requires:
   tools:
     - name: gh
       required: false
+    - name: codegraph
+      version: ">=1.0.0,<2.0.0"
+      required: true
 
 provides:
   commands:
@@ -29,8 +32,6 @@ provides:
       resources:
         - source: docs/code-graph-contract.md
           target: references/code-graph-contract.md
-        - source: docs/code-graph-adapters.md
-          target: references/code-graph-adapters.md
         - source: docs/permission-envelope.md
           target: references/permission-envelope.md
         - source: references/internal/context.md
@@ -58,6 +59,9 @@ provides:
     - name: speckit.team.assess
       file: commands/speckit.team.assess.md
       description: "Bug assessor role: analyze a report, define impact and permissions, and write an approved assessment."
+      resources:
+        - source: docs/code-graph-contract.md
+          target: references/code-graph-contract.md
     - name: speckit.team.fix
       file: commands/speckit.team.fix.md
       description: "Bug fixer role: apply an approved assessment, verify it, write fix evidence, and optionally create a PR."

@@ -141,6 +141,9 @@ def test_init_installs_only_team_extension_and_managed_rules(
     from typer.testing import CliRunner
 
     from specify_cli import app
+    from specify_cli import team_setup
+
+    monkeypatch.setattr(team_setup, "_require_codegraph", lambda: "codegraph")
     monkeypatch.chdir(tmp_path)
     runner = CliRunner()
     result = runner.invoke(
@@ -228,6 +231,9 @@ def test_team_profile_hides_native_skills_and_full_profile_keeps_them(
     from typer.testing import CliRunner
 
     from specify_cli import app
+    from specify_cli import team_setup
+
+    monkeypatch.setattr(team_setup, "_require_codegraph", lambda: "codegraph")
 
     runner = CliRunner()
     team_root = tmp_path / "team"

@@ -21,7 +21,7 @@ declared_paths: []
 affected_modules: []
 impact_analysis:
   code_graph:
-    kind: code-graph
+    kind: codegraph
     evidence_path: ""
     source_revision: ""
   cross_module: false
@@ -38,8 +38,9 @@ impact_analysis:
 
 ### Source And Code Graph Evidence
 
-Record the Code Graph slice or explicit source-structure fallback and the
-revision it describes.
+Record the required CodeGraph evidence and the revision it describes. For a
+zero-to-one project with no source code, record the initialized zero-source
+baseline and the point at which it must be re-indexed.
 
 ### Module Change Plan
 

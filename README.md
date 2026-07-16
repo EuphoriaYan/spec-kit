@@ -51,10 +51,10 @@ capability and is not defined by the Feature skills. Tasks are later engineering
 decomposition and may reach LLD detail. The native `speckit.taskstoissues`
 command is not used to create the primary work item.
 
-Supporting context, permissions, private-requirement synchronization, Code
-Graph, impact, evidence, memory, and release knowledge remain internal
-extension capabilities. They are loaded progressively by the active role and
-do not clutter the AI tool with additional user-facing skills.
+Supporting context, permissions, private-requirement synchronization, impact,
+evidence, memory, and release knowledge remain internal extension capabilities.
+CodeGraph is a required external CLI used directly by Plan and assessment. The
+active role loads only the instructions it needs.
 
 Team work uses one directory convention with type-specific artifacts:
 
@@ -83,6 +83,18 @@ Bugfix documents into another directory. Native Spec Kit commands retain their
 original behavior when used independently.
 
 ### Install
+
+Install the MIT-licensed CodeGraph CLI first. The Team installer checks for the
+`codegraph` command and stops with platform-specific instructions when it is
+missing; it never executes a remote third-party installer silently.
+
+```bash
+# npm on any supported platform
+npm install -g @colbymchenry/codegraph
+
+# build the local graph in an existing coding repository
+codegraph init .
+```
 
 ```bash
 specify init . --integration codex

@@ -1,69 +1,75 @@
-# Planning Code Graph Contract
+# CodeGraph And Impact Contract
 
-Load this contract only when Plan-and-Task generates, attaches, or validates
-Code Graph evidence. Source code is implementation truth; graph output is a
-projection tied to one exact source revision.
+Load this contract only when Plan-and-Task or Bug Assess needs architecture
+impact evidence. Source code is implementation truth; CodeGraph is the required
+projection tied to one exact source revision, not a replaceable adapter.
 
-## Artifact Shape
+## Preconditions
 
-Store the smallest useful slice under the active work root:
+1. Run `codegraph version`. Stop if the command is unavailable.
+2. For an existing project, require `.codegraph/codegraph.db`. Run
+   `codegraph init` when the repository has not been indexed yet.
+3. Run `codegraph status`. Stop if the index is incomplete, stale, truncated,
+   or does not describe the current working tree.
+4. For a zero-to-one project with no source, record a zero-source baseline and
+   re-index immediately after the first runnable source skeleton exists.
+
+## Queries
+
+Start with the smallest query that establishes the affected structure:
 
 ```text
-codegraph/
-|-- nodes.jsonl
-|-- edges.jsonl
-|-- summary.md
-`-- adapter-report.md
+codegraph explore "<feature, flow, module, or failure question>"
+codegraph node <symbol-or-file>
+codegraph callers <symbol>
+codegraph callees <symbol>
+codegraph impact <symbol>
+codegraph affected <changed-files>
 ```
 
-Use stable node IDs. Include applicable node kinds such as `repository`,
-`module`, `package`, `file`, `class`, `interface`, `function`, `method`,
-`config`, and `test`. Include inferable relationships such as `contains`,
-`imports`, `calls`, `implements`, `extends`, `reads_config`, `tests`, and
-`depends_on`.
+An available `codegraph_explore` MCP tool may be used. The CLI is the portable
+path for every supported AI Coding tool.
 
-## Required Evidence
+## Evidence
 
-Record in `summary.md`:
+Write the reviewable result under the active work root:
 
-- work type, work ID, and source revision;
-- likely owner module and adjacent modules;
-- affected public contracts, callers, callees, configuration, and data paths;
-- tests connected to affected nodes;
-- existing abstractions or reuse candidates;
-- likely change paths and change radius;
-- missing evidence and confidence.
+```text
+.specify/<category>/<work_id>/codegraph/summary.md
+```
 
-Record in `adapter-report.md`:
+Record:
 
-- adapter name and version, or `source-structure-fallback`;
-- command or read-only method used;
-- source revision;
-- attempted and skipped evidence;
-- license or network review when an external adapter is used;
-- fallback reason and limitations.
+- CodeGraph version, status, source revision, and working-tree state;
+- exact queries or MCP calls used;
+- affected symbols, files, modules, callers, callees, and tests;
+- public contracts, data paths, and dependency directions;
+- existing abstractions and reuse candidates;
+- expected change radius and minimum verification surface;
+- API, SPI, configuration, schema, event, database, and middleware effects;
+- compatibility, migration, rollback, and required human review;
+- uncertainty, missing relationships, and graph/source disagreements.
 
-The evidence file named by `plan-and-task.md` must exist and name the same
-source revision as the Plan.
+Do not create a separate generic impact artifact. The Plan or Bugfix assessment
+may summarize these conclusions, but must link to this evidence. Do not commit
+`.codegraph/` index data; it is local derived state.
 
 ## Minimal Slice Rule
 
-Inspect only the source and graph radius needed to establish module ownership,
-contracts, dependencies, related tests, reuse opportunities, and likely impact.
-Expand to adjacent modules only when imports, calls, shared state, public
-contracts, configuration, schemas, or test evidence cross the initial boundary.
+Inspect only the graph radius needed to establish responsibilities, contracts,
+dependencies, tests, reuse opportunities, and likely impact. Expand only when
+calls, shared state, public contracts, configuration, schemas, or test evidence
+cross the initial boundary.
 
-## Fallback Rule
+## Stop Conditions
 
-When no configured adapter is available, build a source-structure fallback from
-repository layout, build metadata, imports, symbols, tests, and targeted search.
-Record the fallback and its confidence; do not claim semantic edges that source
-evidence cannot establish.
+Stop instead of substituting grep or an invented source-structure fallback
+when:
 
-A fallback alone is insufficient for public API or SPI changes, class or public
-module addition/removal, dependency-direction changes, cross-module semantics,
-security-sensitive data flow, or schema/wire-format changes unless an authorized
-human accepts the missing evidence.
+- CodeGraph or its existing-project index is unavailable;
+- the index is incomplete, stale, or tied to another working tree;
+- the query cannot distinguish similarly named symbols or modules;
+- graph evidence contradicts current source;
+- the required read scope exceeds the approved Permission Envelope.
 
-Read `references/code-graph-adapters.md` only when an adapter must be selected
-or its license, installation, or network behavior must be evaluated.
+When graph and source disagree, report the conflict and refresh the index.

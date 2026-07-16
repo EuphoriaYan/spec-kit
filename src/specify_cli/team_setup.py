@@ -10,10 +10,25 @@ from pathlib import Path
 from ._assets import _locate_bundled_extension, get_speckit_version
 
 
+CODEGRAPH_INSTALL_ERROR = """CodeGraph CLI is required by the AI Team extension.
+Install the MIT-licensed @colbymchenry/codegraph CLI, then run specify init again:
+- Windows PowerShell: irm https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.ps1 | iex
+- macOS/Linux: curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
+- npm alternative: npm install -g @colbymchenry/codegraph
+The installer does not execute remote third-party installation scripts automatically."""
+
+
 @dataclass(frozen=True)
 class TeamSetupResult:
     installed: bool
     rule_files: tuple[str, ...]
+
+
+def _require_codegraph() -> str:
+    executable = shutil.which("codegraph")
+    if executable is None:
+        raise RuntimeError(CODEGRAPH_INSTALL_ERROR)
+    return executable
 
 
 def _initialize_rules(project_root: Path) -> list[str]:
@@ -37,6 +52,8 @@ def _initialize_rules(project_root: Path) -> list[str]:
 def install_bundled_team(project_root: Path) -> TeamSetupResult:
     """Install Team directly, then initialize rules as one bounded operation."""
     from .extensions import ExtensionManager
+
+    _require_codegraph()
 
     source = _locate_bundled_extension("team")
     if source is None:

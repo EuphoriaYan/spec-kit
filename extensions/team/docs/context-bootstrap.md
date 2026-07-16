@@ -36,7 +36,7 @@ Defect reports belong to the separate Bugfix intake skill.
 Load the Issue body, relevant discussion, labels, and decision evidence. The
 accepted Issue body is primary; merge comments only when a human decision
 clearly accepts them. Then load the source revision, architecture guidance,
-Code Graph slice or fallback, and only the affected module context.
+CodeGraph evidence, and only the affected module context.
 
 Feature work generates `spec.md` from accepted User Stories. Bugfix work does
 not use `spec.md`. Produce the Plan HLD first, stop for the human

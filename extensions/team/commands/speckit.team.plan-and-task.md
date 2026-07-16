@@ -64,11 +64,10 @@ at `status/working`.
    `--work-type <feature|bugfix> --work-id <work_id> --mode analysis`. Stop on
    structural validation errors; the script validates but never grants
    approval.
-5. Read `references/code-graph-contract.md`, then generate or attach the
-   smallest Code Graph slice tied to the exact source revision. Read
-   `references/code-graph-adapters.md` only when an adapter must be selected or
-   its license, installation, or network behavior must be evaluated. Use an
-   explicit source-structure fallback when no adapter is available.
+5. Read `references/code-graph-contract.md`, then use the required CodeGraph
+   CLI or MCP tool and write the smallest graph and impact evidence summary tied
+   to the exact source revision. For an existing project, stop when CodeGraph
+   is unavailable, uninitialized, incomplete, or stale.
 6. Identify affected and adjacent modules from source layout, build metadata,
    architecture guidance, and the Code Graph. Record module paths,
    responsibilities, contracts, dependencies, existing tests, reuse candidates,
@@ -103,7 +102,7 @@ Team Plan And Task:
 - Issue URL, repository, ID, status, and source revision:
 - work ID and category:
 - accepted Issue summary:
-- code graph or fallback:
+- CodeGraph evidence:
 - affected modules and paths:
 - optional owners or review routes:
 - architecture and public-contract deltas:

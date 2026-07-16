@@ -405,7 +405,7 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
         contract_change = str(impact.get("public_contract_change", "")).strip().lower()
         source_revision = str(plan_meta.get("source_revision", "")).strip()
         graph_ok = (
-            graph.get("kind") in {"code-graph", "source-fallback"}
+            graph.get("kind") == "codegraph"
             and _evidence_file(project_root, graph.get("evidence_path"))
             and _meaningful(source_revision)
             and str(graph.get("source_revision", "")).strip() == source_revision
@@ -413,9 +413,9 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
         record(
             "IMPACT_EVIDENCE",
             graph_ok,
-            "versioned Code Graph or source-fallback evidence file exists"
+            "versioned CodeGraph evidence file exists"
             if graph_ok
-            else "impact_analysis.code_graph requires kind, existing evidence_path, and matching source_revision",
+            else "impact_analysis.code_graph requires codegraph evidence, an existing evidence_path, and matching source_revision",
             blocked=True,
         )
         contract_authority = impact.get("contract_authority")

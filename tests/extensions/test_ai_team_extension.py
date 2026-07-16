@@ -192,12 +192,19 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["issue_publishing"]["default_adapter"] == "auto"
     assert config["issue_publishing"]["require_verified_issue_url"] is True
     assert config["issue_publishing"]["require_feature_readiness_pass"] is True
-    assert "root" not in config["code_graph"]
-    assert set(config["code_graph"]["normalized_outputs"]) == {
-        "nodes.jsonl",
-        "edges.jsonl",
-        "summary.md",
-        "adapter-report.md",
+    assert config["code_graph"] == {
+        "tool": "codegraph",
+        "required_version": ">=1.0.0,<2.0.0",
+        "local_index": ".codegraph/codegraph.db",
+        "evidence_file": "codegraph/summary.md",
+        "require_for_existing_project": True,
+        "require_for": [
+            "public interface change",
+            "class add or delete",
+            "cross-module semantic change",
+            "dependency direction change",
+            "resumed task with changed source snapshot",
+        ],
     }
     assert (
         config["repositories"]["enhancement_internal"][
@@ -470,9 +477,10 @@ def test_ai_team_code_graph_contract_is_reference_not_nested_command():
     contract = EXTENSION_ROOT / "docs" / "code-graph-contract.md"
 
     text = contract.read_text(encoding="utf-8")
-    assert "## Required Evidence" in text
-    assert "## Fallback Rule" in text
-    assert "source-structure-fallback" in text
+    assert "## Evidence" in text
+    assert "## Stop Conditions" in text
+    assert "Do not create a separate generic impact artifact" in text
+    assert "source-structure fallback" in text
     assert "$ARGUMENTS" not in text
     assert "## User Input" not in text
 
@@ -515,18 +523,16 @@ def test_core_templates_exclude_handoff_spec_override():
         assert "spec.override.md" not in text, rel
 
 
-def test_ai_team_code_graph_adapter_document_exists():
-    graph_doc = EXTENSION_ROOT / "docs" / "code-graph-adapters.md"
+def test_ai_team_uses_required_codegraph_without_adapter_fallbacks():
+    assert not (EXTENSION_ROOT / "docs" / "code-graph-adapters.md").exists()
 
-    assert graph_doc.exists()
-    text = graph_doc.read_text(encoding="utf-8")
-    assert "Adapter Contract" in text
-    assert "SCIP" in text
-    assert "Joern" in text
-    assert "CodeQL" in text
-    assert "tree-sitter" in text
-    assert "nodes.jsonl" in text
-    assert "edges.jsonl" in text
+    graph_ref = EXTENSION_ROOT / "docs" / "code-graph-contract.md"
+    text = graph_ref.read_text(encoding="utf-8")
+    assert "codegraph version" in text
+    assert "codegraph status" in text
+    assert "codegraph explore" in text
+    assert "not a replaceable adapter" in text
+    assert "source-structure fallback" in text
 
 
 def test_ai_team_user_journeys_document_exists():

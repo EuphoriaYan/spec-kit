@@ -8,7 +8,15 @@ import sys
 
 import pytest
 
+from specify_cli import team_setup as _team_setup
+
 _ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+
+# Most tests exercise Spec Kit behavior after initialization, not third-party
+# executable discovery. Keep that external prerequisite deterministic even for
+# session-scoped project fixtures; the dedicated Team setup test overrides this
+# function to verify the fail-closed path.
+_team_setup._require_codegraph = lambda: "codegraph"
 
 
 def _has_working_bash() -> bool:

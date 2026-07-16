@@ -171,8 +171,16 @@ credentials, and local memory.
 
 ## Installation
 
-The default Team-minimal profile keeps the Spec Kit engine and installs the
-Team role skills:
+CodeGraph is a required Team dependency. Install it once, then initialize the
+coding repository's local graph before impact-sensitive work:
+
+```bash
+npm install -g @colbymchenry/codegraph
+codegraph init .
+```
+
+The default Team-minimal profile checks that `codegraph` is on PATH, keeps the
+Spec Kit engine, and installs the Team role skills:
 
 ```bash
 specify init . --integration codex
@@ -186,7 +194,8 @@ specify extension add extensions/team --dev
 
 Use `--skill-profile full` only when native Spec Kit skills are also wanted.
 Codex, Claude Code, Cursor Agent, and Trae receive the same role behavior and
-their own installed Skill resources.
+their own installed Skill resources. CodeGraph can configure MCP directly for
+Codex, Claude Code, and Cursor; every role can use its CLI, including in Trae.
 
 ## Chat Entry
 

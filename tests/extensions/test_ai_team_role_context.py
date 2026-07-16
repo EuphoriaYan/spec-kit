@@ -139,6 +139,7 @@ def test_direct_team_setup_rolls_back_extension_when_rules_fail(
     )
     (tmp_path / ".claude" / "skills").mkdir(parents=True)
     monkeypatch.setattr(team_setup, "_locate_bundled_extension", lambda _id: AI_TEAM)
+    monkeypatch.setattr(team_setup, "_require_codegraph", lambda: "codegraph")
 
     def fail_rules(_root: Path) -> list[str]:
         raise RuntimeError("rule failure")
@@ -152,6 +153,24 @@ def test_direct_team_setup_rolls_back_extension_when_rules_fail(
     assert not (specify / "extensions" / ".backup" / "team").exists()
     assert not (tmp_path / ".agents" / "skills" / "speckit-team-specify").exists()
     assert not (tmp_path / ".claude" / "skills" / "speckit-team-specify").exists()
+
+
+def test_direct_team_setup_requires_codegraph_before_install(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from specify_cli import team_setup
+
+    (tmp_path / ".specify").mkdir()
+
+    def missing_codegraph() -> str:
+        raise RuntimeError(team_setup.CODEGRAPH_INSTALL_ERROR)
+
+    monkeypatch.setattr(team_setup, "_require_codegraph", missing_codegraph)
+
+    with pytest.raises(RuntimeError, match="CodeGraph CLI is required"):
+        team_setup.install_bundled_team(tmp_path)
+
+    assert not (tmp_path / ".specify" / "extensions" / "team").exists()
 
 
 @pytest.mark.parametrize(
@@ -180,6 +199,7 @@ def test_team_skills_install_with_local_references_and_scripts(
         encoding="utf-8",
     )
     monkeypatch.setattr(team_setup, "_locate_bundled_extension", lambda _id: AI_TEAM)
+    monkeypatch.setattr(team_setup, "_require_codegraph", lambda: "codegraph")
 
     team_setup.install_bundled_team(tmp_path)
 
@@ -198,7 +218,6 @@ def test_team_skills_install_with_local_references_and_scripts(
     assert {
         path.name for path in (plan_skill / "references").glob("*.md")
     } == {
-        "code-graph-adapters.md",
         "code-graph-contract.md",
         "context.md",
         "feature-spec.md",
@@ -209,7 +228,10 @@ def test_team_skills_install_with_local_references_and_scripts(
     assert (plan_skill / "scripts/check_plan_and_task.py").is_file()
     assert (plan_skill / "scripts/check_permission_envelope.py").is_file()
     assert (plan_skill / "scripts/work_item_paths.py").is_file()
-    for skill in (assess_skill, fix_skill, review_skill):
+    assert {
+        path.name for path in (assess_skill / "references").glob("*.md")
+    } == {"code-graph-contract.md"}
+    for skill in (fix_skill, review_skill):
         assert (skill / "SKILL.md").is_file()
         assert not (skill / "references").exists()
         assert not (skill / "scripts").exists()
@@ -330,7 +352,9 @@ def test_plan_and_task_has_structured_input_contract() -> None:
     assert "status/accept" in text
     assert "Issue Identity And Summary" in text
     assert "Read the current Issue body and all relevant discussion" in text
-    assert "Code Graph slice tied to the exact source revision" in text
+    assert "required CodeGraph" in text
+    assert "CLI or MCP tool" in text
+    assert "source-structure fallback" not in text
     assert "Design Tasks for parallel assignment" in text
     assert "Every Task belongs to one" in text
     assert "enhancement-<issue-id>" in text
@@ -390,7 +414,7 @@ def test_role_skills_load_references_only_at_the_phase_that_needs_them() -> None
     assert "Do not preload it" in specify
     assert "When resuming an existing work root" in plan
     assert "immediately before writing it" in plan
-    assert "only when an adapter must be selected" in plan
+    assert "use the required CodeGraph" in plan
     assert "immediately before creating or\n   updating `plan-and-task.md`" in plan
     assert "Do not reproduce, guess, or preload" in implement
 
@@ -407,7 +431,9 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
     assert commands["speckit.team.specify"] == {
         "references/repository-boundary.md"
     }
-    assert commands["speckit.team.assess"] == set()
+    assert commands["speckit.team.assess"] == {
+        "references/code-graph-contract.md"
+    }
     assert commands["speckit.team.fix"] == set()
     assert commands["speckit.team.review"] == set()
     assert commands["speckit.team.implement"] == {
