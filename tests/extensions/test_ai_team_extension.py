@@ -124,7 +124,12 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     }
     assert config["work_artifacts"]["root"] == ".specify"
     assert config["work_artifacts"]["categories"] == ["feature", "bugfix"]
-    assert config["work_artifacts"]["path_template"] == ".specify/{category}/{work_id}"
+    assert config["work_artifacts"]["feature_path_template"] == (
+        ".specify/feature/{work_id}"
+    )
+    assert config["work_artifacts"]["bugfix_path_template"] == (
+        ".specify/bugfix/{bug_slug}"
+    )
     assert config["work_artifacts"]["plan_and_task_file"] == "plan-and-task.md"
     assert config["work_artifacts"]["plan_and_task_check_file"] == "plan-and-task-check.md"
     assert config["memory"]["service"]["default_backend"] == "file"
@@ -176,6 +181,7 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["permissions"]["require_implementation_review"] is True
     assert config["gates"]["require_work_item_anchor"] is True
     assert config["gates"]["allow_same_root_cause_issue_grouping"] is True
+    assert config["planning"]["applies_to"] == ["feature"]
     assert config["planning"]["artifact"] == "plan-and-task.md"
     assert config["planning"]["stages"] == [
         "plan-review",
@@ -422,14 +428,18 @@ def test_ai_team_work_context_document_exists():
     assert context_doc.exists()
     text = context_doc.read_text(encoding="utf-8")
     assert "Work Context Package" in text
-    assert ".specify/<feature|bugfix>/<work_id>/" in text
+    assert ".specify/feature/<work_id>/" in text
+    assert ".specify/bugfix/<bug_slug>/" in text
+    assert "assessment.md" in text
+    assert "fix.md" in text
+    assert "test.md" in text
     assert "work-context.yml" in text
     assert "change-package.yml" not in text
     assert "permission-envelope.yml" in text
     assert ".specify/workflows/runs/<run-id>/state.json" not in text
     assert "plan-and-task.md" in text
     assert "plan-and-task-check.md" in text
-    assert "resume anchor" in text
+    assert "small resume index" in text
 
 
 def test_ai_team_reuses_native_sdd_artifacts_without_change_manifest():
@@ -446,7 +456,7 @@ def test_ai_team_readme_matches_current_role_contracts():
     assert "`draft`, `approved`, or `needs-info`" in readme
     assert ".specify/bugfix/<bug_slug>/" in readme
     assert "passing `plan-and-task-check.md`" in readme
-    assert "Assess,\nFix, and Review install no role references or scripts" in readme
+    assert "Assess, Fix, Implement, and Review install the shared Context" in readme
     assert "init_role_context.py` runs during project initialization" in readme
     assert "specify extension add extensions/team --dev" in readme
     assert "specify extension add team --dev extensions/team" not in readme
@@ -486,6 +496,9 @@ def test_ai_team_uses_one_plan_review_then_task_decomposition_flow():
     assert "continue to Tasks" in text
     assert "pause for discussion" in text
     assert "planning_stage: ready-for-check" in text
+    assert "type/feature" in text
+    assert "direct the user to the Bugfix path" in text
+    assert ".specify/bugfix/<work_id>/" not in text
     assert not (EXTENSION_ROOT / "docs" / "compact-planning.md").exists()
 
 
@@ -497,7 +510,8 @@ def test_ai_team_work_field_spec_document_exists():
     assert "work_id" in text
     assert "work_type" in text
     assert ".specify/feature/<work_id>/" in text
-    assert ".specify/bugfix/<work_id>/" in text
+    assert ".specify/bugfix/<bug_slug>/" in text
+    assert "primary_issue" not in text
     assert "one root-cause change" in text
 
 

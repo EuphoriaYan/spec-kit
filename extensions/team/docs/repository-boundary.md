@@ -16,11 +16,12 @@ org/
 
 ## Rules
 
-1. Coding repositories use issues for both bug fixes and public features.
+1. Coding repositories use issues for public Features. Bugfix Issues are
+   optional; when used, they belong in the coding repository.
 2. `enhancement-internal` is internal-only and exists for traceability of
    confidential feature demand; enterprise customers do not need visibility.
-3. Enhancement-internal issues must use `type/feature`; bug fixes are forbidden
-   there and must be filed in the coding repository.
+3. Enhancement-internal issues must use `type/feature`; Bugfix Issues are
+   forbidden there.
 4. Coding repository issues use `type/bugfix` for bug fixes and `type/feature` for
    feature work.
 5. Both repositories use the state label lifecycle in
@@ -46,9 +47,9 @@ org/
 | route a user request | current workspace | `speckit.team.specify` |
 | define feature | coding repository | `speckit.team.specify` |
 | plan feature | coding repository | `speckit.team.plan-and-task` |
-| implement feature | coding repository | `speckit.implement` |
+| implement feature | coding repository | `speckit.team.implement` |
 | inspect impact before code edits | coding repository | `speckit.team.plan-and-task` |
-| verify and submit | coding repository | later development/review role skills with checks and an Evidence Board |
+| verify and submit | coding repository | `speckit.team.implement`, `speckit.team.fix`, and `speckit.team.review` |
 
 ## Feature Reference Shape
 

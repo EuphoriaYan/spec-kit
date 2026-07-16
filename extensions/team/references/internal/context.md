@@ -1,30 +1,38 @@
 # Internal Context Resume
 
-Use the canonical work directory from `docs/work-item-layout.md`:
+Use exactly one canonical work root:
 
 ```text
-.specify/<feature|bugfix>/<work_id>/
+Feature: .specify/feature/<work_id>/
+Bugfix:  .specify/bugfix/<bug_slug>/
 ```
 
-## Open
+## Open Feature
 
-1. Normalize `work_type` to `feature` or `bugfix` and validate `work_id`.
+1. Require `category: feature` and validate `work_id`.
 2. Open `work-context.yml` when present.
-3. For Feature work, read `spec.override.md` before `spec.md` only when the
-   override exists and current permission allows private requirement access.
-   Bugfix work does not require `spec.md`.
-4. Read `plan-and-task.md` and `plan-and-task-check.md` only for planning resume.
-5. Expand to Code Graph, permissions, or evidence only when the current phase
-   requires them.
+3. Read `spec.override.md` before `spec.md` only with current permission.
+4. Load Plan, check, permissions, Code Graph, or evidence only for the active
+   phase.
 
-## Create
+## Open Bugfix
 
-After an Issue reaches `status/accept` or `status/working`, create a minimal
-`work-context.yml` and `context-pack.md` in its canonical work directory. Do
-not create a second work directory or mirror complete artifact contents.
+1. Require `category: bugfix` and validate `bug_slug`.
+2. Open `work-context.yml` when present, then read `assessment.md`.
+3. Load `fix.md`, `test.md`, Code Graph, or evidence only when the recorded
+   phase requires them.
+4. If an older Bugfix root has no context files, reconstruct a minimal package
+   from its native artifacts; do not invent missing facts.
+
+## Create Or Update
+
+Keep `work-context.yml` machine-readable and `context-pack.md` concise. Record
+identity, source summary, phase, source revision, artifact paths, unresolved
+items, last completed Skill, and next Skill. Preserve unknown fields and never
+mirror complete artifact contents.
 
 ## Stop
 
-Stop for human reconciliation when category, work ID, primary Issue, privacy
-boundary, source revision, or artifact phase disagree. Never recover missing
-facts from remembered chat when repository artifacts exist.
+Stop for human reconciliation when category, identity, source, privacy
+boundary, source revision, or artifact phase disagree. Never select the newest
+directory silently or recover missing facts from remembered chat.

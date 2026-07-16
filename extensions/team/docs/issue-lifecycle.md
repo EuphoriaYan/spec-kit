@@ -1,8 +1,8 @@
 # Issue Lifecycle
 
-Repository Issues are the human-visible demand ledger. Team work directories
-are technical snapshots created only when accepted or active work enters
-planning.
+Repository Issues are the human-visible demand ledger. Feature directories are
+created when accepted work enters Plan-and-Task. Bugfix directories are created
+by Assess and continue through Fix and Review without planning artifacts.
 
 ## Labels
 
@@ -43,12 +43,27 @@ Plan-and-Task reads the body and discussion, excludes rejected or unresolved
 ideas, and creates the committed Feature `spec.md` snapshot. It records the
 Issue update time and body hash so later changes can invalidate stale planning.
 
+## Bugfix Authority
+
+Bugfix does not use Specify or Plan-and-Task. Assess captures the observed
+symptom, reproduction evidence, impact, likely code paths, permission boundary,
+fix strategy, and test strategy in `assessment.md`. Fix consumes the approved
+assessment and records implementation and verification in `fix.md` and
+`test.md`. Review checks the resulting PR against those artifacts and any
+linked Issue.
+
+A Bugfix may enter Assess from a raw symptom and may proceed to Fix after human
+approval of the assessment. A coding-repository Issue is optional. When one is
+linked, Fix requires verified `type/bugfix` and `status/working` labels. Assess,
+Fix, and Review do not grant acceptance or change labels on behalf of
+maintainers.
+
 ## Work Identity
 
-The absolute Issue URL is the global identity. Use the numeric Issue ID as
-`work_id` for coding-repository work. Prefix enhancement-repository work as
-`enhancement-<issue-id>` so equal numbers from different repositories do not
-collide.
+For Feature work, the absolute Issue URL is the global identity and its number
+forms `work_id`; prefix enhancement work as `enhancement-<issue-id>`. For
+Bugfix, `bug_slug` is the stable local artifact key. A supplied coding Issue
+URL remains a repository-tracking reference and is recorded by Fix.
 
 A PR may resolve several Bug Issues only when they are different symptoms of
 the same root cause. Keep one primary Issue and map every additional Issue to

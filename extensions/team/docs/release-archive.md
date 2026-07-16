@@ -42,9 +42,8 @@ is available. Do not block production incident response on knowledge cleanup.
 Before release:
 
 ```text
-.specify/<category>/<work_id>/...      detailed process state
-.specify/<category>/<work_id>/...                      feature SDD artifacts
-.specify/bugfix/<work_id>/...               bug lifecycle artifacts
+.specify/feature/<work_id>/...              feature SDD artifacts
+.specify/bugfix/<bug_slug>/...               bugfix lifecycle artifacts
 PRs, evidence, comments, CI output         merge evidence
 ```
 

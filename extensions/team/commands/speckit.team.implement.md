@@ -15,16 +15,15 @@ $ARGUMENTS
 
 Accept:
 
-- required `feature_slug=<slug>`, or infer the slug from the basename of
-  `.specify/feature.json`'s `feature_directory`;
+- required `work_id=<id>` identifying `.specify/feature/<work_id>/`;
 - optional `only=T001-T010` (also accept a comma-separated list of task IDs);
 - optional `submit_pr=true`.
 
-Reject an unsafe slug containing path separators, `..`, or anything other than
+Reject an unsafe work ID containing path separators, `..`, or anything other than
 letters, numbers, dots, underscores, and hyphens. Set:
 
 ```text
-FEATURE_ROOT={repository root}/.specify/feature/{feature-slug}
+FEATURE_ROOT={repository root}/.specify/feature/{work_id}
 ```
 
 All feature artifact reads and writes MUST stay under `FEATURE_ROOT`. Do not
@@ -37,12 +36,13 @@ modify workflow files.
    `plan-and-task.md`, and `plan-and-task-check.md`. Prefer `spec.override.md`
    over `spec.md` when both exist, but do not copy override content into
    tracked source or reports.
-3. Read, when present, `work-context.yml`, `context-pack.md`,
+3. Read `references/context.md` when resuming, then read, when present,
+   `work-context.yml`, `context-pack.md`,
    `permission-envelope.yml`, `handoffs/`, and `codegraph/`.
-4. Create or minimally update `work-context.yml` with `feature_slug`, the
+4. Create or minimally update `work-context.yml` with `work_id`, the
    relative `feature_root`, artifact names, `phase: implementing`, and an ISO
    8601 UTC `updated_at`. Preserve unrelated and unknown fields.
-5. Output `## Context Summary`, including the resolved feature and selected
+5. Output `## Context Summary`, including the resolved work ID and selected
    task range.
 
 If required artifacts are missing, report them and stop without changing
@@ -62,7 +62,7 @@ Perform a read-only consistency review before implementation:
 - no unresolved placeholder, contradiction, or missing decision prevents safe
   implementation.
 
-Output exactly one `## Readiness Report` with feature slug/root, `PASS` or
+Output exactly one `## Readiness Report` with work ID/root, `PASS` or
 `BLOCKED`, and categorized Plan issues, Tasks issues, and Cross-artifact gaps.
 Use `[blocker]`, `[major]`, or `[minor]` severity.
 
@@ -72,10 +72,10 @@ ask whether implementation should continue. End with:
 ```text
 Readiness blocked. Do not proceed with implementation.
 Revise artifacts with:
-  /speckit.team.plan-and-task feature_slug={feature-slug}
+  /speckit.team.plan-and-task work_id={work_id}
 
 Then re-run:
-  /speckit.team.implement feature_slug={feature-slug}
+  /speckit.team.implement work_id={work_id}
 ```
 
 For a passing review, update only the Readiness section of `context-pack.md`;
@@ -85,7 +85,7 @@ do not edit the specification or the Plan section.
 
 Require `permission-envelope.yml`. Run the installed
 `scripts/check_permission_envelope.py` by its resolved path with
-`--work-type feature --work-id <feature-slug> --mode implementation
+`--work-type feature --work-id <work_id> --mode implementation
 --require-approved`. Stop if the deterministic check is blocked; do not
 hand-wave or replace its result. The check verifies the approval identity and
 timestamps as well as the envelope structure.
@@ -139,8 +139,8 @@ and changed files.
 Output `## Verification Report`. Verification passes only when every selected
 task is checked, required checks pass, and the diff stays in scope. On success,
 update `work-context.yml` to `phase: verified`,
-`last_completed_command: speckit.team.implement`, and an appropriate
-`next_command`, preserving all other fields. On failure, do not set `verified`;
+`last_completed_skill: speckit.team.implement`, and an appropriate
+`next_skill`, preserving all other fields. On failure, do not set `verified`;
 report the repair needed and stop without entering the PR phase.
 
 ## Optional Phase 6

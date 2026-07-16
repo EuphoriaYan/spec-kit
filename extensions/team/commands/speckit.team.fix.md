@@ -18,7 +18,8 @@ Accept any of:
 - `bug_slug=<bug-slug>`;
 - a bare bug slug;
 - optional `base=<branch>` for a pull request target;
-- optional `issue=<issue-url-or-number>` or an issue URL associated with the bugfix.
+- optional `issue=<issue-url-or-number>` or an Issue URL associated with the
+  Bugfix.
 
 ## Assessment Resolution
 
@@ -35,6 +36,8 @@ BUG_ROOT={repository root}/.specify/bugfix/{bug-slug}
 ASSESSMENT={BUG_ROOT}/assessment.md
 FIX_REPORT={BUG_ROOT}/fix.md
 TEST_REPORT={BUG_ROOT}/test.md
+WORK_CONTEXT={BUG_ROOT}/work-context.yml
+CONTEXT_PACK={BUG_ROOT}/context-pack.md
 ```
 
 All bugfix reports created by this command MUST stay under `BUG_ROOT`.
@@ -51,17 +54,31 @@ Proceed only when `ASSESSMENT` has:
 
 If the status is `draft` or `needs-info`, stop and ask the user to finish or revise `speckit.team.assess` first. If the status field is absent, treat the assessment as draft.
 
-## Issue State Gate
+Read `references/context.md`. Resume from `WORK_CONTEXT` when present; for an
+older Bugfix directory, bootstrap a minimal package from `assessment.md`.
+Reconcile identity or phase conflicts before changing source.
 
-When the user provides an issue URL or issue number, inspect the issue labels before modifying source code. If `gh` is unavailable or labels cannot be read, stop and ask the user to provide the issue labels or verify the state manually.
+## Conditional Issue State Gate
 
-Proceed only when the issue has label `status/working`.
+Apply this section only when the user supplies an Issue URL or Issue number.
+Without Issue input, skip this section and continue from the approved
+assessment.
+
+Use an authenticated repository integration or host CLI to inspect the supplied
+Issue before modifying source code. Stop if its repository or labels cannot be
+verified. Require the Issue to belong to the coding repository and have
+`type/bugfix`.
+
+Proceed only when the Issue has label `status/working`.
 
 If the issue does not have `status/working`, stop and explain that the issue is not in the correct state:
 
 - If it has `status/new-issue`, tell the user the issue still needs review by the relevant people before fixing can start.
 - If it has `status/accept`, remind the user to claim the issue and switch the label to `status/working` before running `speckit.team.fix` again.
 - For any other status or missing status label, tell the user which labels were found and that `status/working` is required.
+
+Stop when the Issue belongs to another repository or has a type other than
+`type/bugfix`.
 
 Do not change issue labels automatically. Label transitions require user or maintainer action outside this command.
 
@@ -89,6 +106,7 @@ Write `FIX_REPORT` using this structure:
 # Bug Fix: <short title>
 
 - **Bug Slug**: <bug-slug>
+- **Primary Issue**: <supplied coding Issue URL or not-provided>
 - **Assessment**: ./assessment.md
 - **Fixed**: <ISO 8601 UTC>
 - **Status**: applied | partial | blocked | not-applied
@@ -134,6 +152,7 @@ Write `TEST_REPORT` using this structure:
 # Bug Fix Verification: <short title>
 
 - **Bug Slug**: <bug-slug>
+- **Primary Issue**: <supplied coding Issue URL or not-provided>
 - **Assessment**: ./assessment.md
 - **Fix**: ./fix.md
 - **Tested**: <ISO 8601 UTC>
@@ -166,22 +185,54 @@ Write `TEST_REPORT` using this structure:
 
 After writing `fix.md` and `test.md`, ask the user whether to create a pull request. Do not create a PR without explicit user confirmation in the current interaction.
 
+Before automated submission:
+
+1. Run `git status --short --branch`, determine the default branch without
+   switching branches, and stop if the current branch is the default branch.
+2. Inspect staged, unstaged, and untracked files. Include only the approved
+   Bugfix source, tests, `fix.md`, `test.md`, and repository-approved evidence.
+   Exclude local prompts, scratch files, private demand, and
+   `spec.override.md`.
+3. Confirm the repository is the coding repository and every submitted file
+   fits the assessment Permission Boundary. Stop on an unapproved deviation.
+4. Require regression evidence in `test.md`, including skipped checks and
+   residual risks. Never turn a skipped check into a passing claim.
+5. When the change resolves additional Bug Issues, include only symptoms of
+   the same root cause and map each Issue to its reproduction and verification
+   evidence.
+6. Do not stage or overwrite unrelated user changes.
+
 If the user approves and `gh` is available, run `gh pr create` with a concise title and a body that links or references:
 
+- `Bug Slug` and `.specify/bugfix/{bug-slug}/` as the Bug Root;
 - `assessment.md`;
+- the primary coding Issue, when linked;
 - `fix.md`;
 - `test.md`;
 - changed files;
 - verification commands and results;
 - residual risks.
 
+Use the exact labels `Bug Slug:` and `Bug Root:` in the PR body so Review can
+resolve the Bugfix artifacts without guessing from chat. Add `Primary Issue:`
+when an Issue is linked.
+
 If the user declines, `gh` is unavailable, or PR creation fails, provide manual PR instructions instead. Do not treat a missing PR as a failed fix.
+
+## Resume Context
+
+After writing `fix.md` and `test.md`, minimally update `WORK_CONTEXT` and
+`CONTEXT_PACK` with the actual files changed, verification result, skipped
+checks, residual risks, current phase, last completed Skill, and next Skill.
+Use `phase: fix-verified` only when required verification passes; otherwise
+record `fix-partial` or `fix-blocked`. Do not duplicate full reports.
 
 ## Final Response
 
 Report:
 
 - bug slug;
+- supplied Issue URL or `not-provided`;
 - `fix.md` path;
 - `test.md` path;
 - verification result;
@@ -190,6 +241,8 @@ Report:
 ## Guardrails
 
 - Do not proceed without an approved `assessment.md`.
+- When an Issue is linked, do not proceed without verified `type/bugfix` and
+  `status/working` labels.
 - Do not edit `assessment.md`.
 - Do not write bugfix reports outside `.specify/bugfix/{bug-slug}/`.
 - Do not create a pull request without asking the user first.

@@ -14,9 +14,9 @@ facts and approved artifacts override remembered chat.
    public-contract authority is missing or contradictory.
 
 Specify may begin without an Issue and creates no formal work directory.
-Plan-and-Task requires a readable Issue at `status/accept` or
+Plan-and-Task requires a readable Feature Issue at `status/accept` or
 `status/working`, derives its work ID, and then creates or resumes
-`.specify/<feature|bugfix>/<work_id>/`.
+`.specify/feature/<work_id>/`.
 
 ## Level 1: Active Role Only
 
@@ -29,7 +29,7 @@ Issue and then each User Story. Publish the reviewed Issue or print it in the
 current response. Do not save a checklist, Issue draft, `spec.md`, Plan, or
 Task locally.
 
-Defect reports belong to the separate Bugfix intake skill.
+Defect reports belong to the separate Assess -> Fix -> Review flow.
 
 ### Architect: Plan And Task
 
@@ -38,12 +38,11 @@ accepted Issue body is primary; merge comments only when a human decision
 clearly accepts them. Then load the source revision, architecture guidance,
 Code Graph slice or fallback, and only the affected module context.
 
-Feature work generates `spec.md` from accepted User Stories. Bugfix work does
-not use `spec.md`. Produce the Plan HLD first, stop for the human
-continue/pause/revise decision, then resume the same `plan-and-task.md` for
-single-module LLD Tasks and minimum self-tests. A missing module owner does not
-block decomposition, but unclear module scope or missing public-contract
-authority does.
+Generate `spec.md` from accepted User Stories. Produce the Plan HLD first, stop
+for the human continue/pause/revise decision, then resume the same
+`plan-and-task.md` for single-module LLD Tasks and minimum self-tests. A missing
+module owner does not block decomposition, but unclear module scope or missing
+public-contract authority does.
 
 Run the installed `scripts/check_plan_and_task.py` last. A model must not
 hand-write a passing check.
@@ -55,14 +54,16 @@ the relevant source, tests, Code Graph slice, and repository guidance. Keep
 source changes out of this role. Write the symptom, reproduction evidence,
 impact, proposed permission boundary, root-cause hypothesis, fix strategy, and
 test strategy to the Bugfix assessment. Require explicit human approval before
-marking the assessment ready for Fix.
+marking the assessment ready for Fix. Create or update the Bugfix Work Context
+Package so another session can resume by `bug_slug`.
 
 ### Bug Fixer: Fix
 
-Load an approved assessment, the associated Issue labels when supplied, current
-source, and the proposed Permission Boundary. Require `status/working` before
-editing source for tracked Issue work. Apply the smallest fix, record actual
-writes and verification in `fix.md` and `test.md`, and ask before creating a PR.
+Load an approved assessment, current source, and the proposed Permission
+Boundary. If a coding Issue is linked, require `type/bugfix` and
+`status/working` before editing source. Apply the smallest fix, record actual
+writes and verification in `fix.md` and `test.md`, update the Bugfix Work
+Context Package, and ask before creating a PR.
 
 ### Developer: Implement
 
@@ -74,11 +75,12 @@ not create a PR until verification passes and the user explicitly confirms it.
 
 ### Reviewer: Review
 
-Load PR metadata and the complete diff before feature artifacts. Reconstruct
-the work identity from explicit input, durable context, PR body, or branch in
-that order. Compare the diff with the accepted Issue, Plan, Tasks, Permission
-Envelope, and implementation evidence. Produce prioritized findings and a merge
-recommendation without changing, approving, merging, or resolving the PR.
+Load PR metadata and the complete diff before lifecycle artifacts. Reconstruct
+the Feature or Bugfix identity from explicit input, PR body, durable context,
+or branch. Compare Feature work with its Issue, Plan, Tasks, Permission
+Envelope, and implementation evidence; compare Bugfix work with its assessment,
+fix, test report, Permission Boundary, and any supplied Issue. Produce
+prioritized findings without changing, approving, merging, or resolving the PR.
 
 ## Level 2: Expand On Evidence
 
