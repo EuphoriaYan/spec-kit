@@ -8,9 +8,10 @@ Specify CLI runs this initializer during project initialization. It is not a
 runtime dependency of individual AI Team role skills.
 
 1. During `specify init`, execute the packaged Team context initializer once.
-2. Role skills read and execute
+2. The managed agent rule makes the agent read and execute
    `.specify/extensions/team/docs/context-bootstrap.md` through the level
-   required by the active role.
+   required by the active role before routing to a role skill. Role skills do
+   not package or re-read bootstrap copies.
 3. If initialization reports that the Team extension is absent, stop and repair the
    installation. Do not continue with an ungoverned role prompt.
 

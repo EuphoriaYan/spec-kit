@@ -9,13 +9,6 @@ Assess a bug report from an issue URL or free-form problem description. Produce 
 Resolve `references/` and `scripts/` relative to this installed `SKILL.md`, not
 relative to the repository working directory.
 
-## Bootstrap
-
-1. Read the invariant and Bug Assessor sections of
-   `references/context-bootstrap.md`.
-2. Load `references/issue-lifecycle.md`, `references/work-item-layout.md`, and
-   `references/code-graph-adapters.md` only as required by the report.
-
 ## User Input
 
 ```text

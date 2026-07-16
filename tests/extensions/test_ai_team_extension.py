@@ -446,7 +446,7 @@ def test_ai_team_readme_matches_current_role_contracts():
     assert "`draft`, `approved`, or `needs-info`" in readme
     assert ".specify/bugfix/<bug_slug>/" in readme
     assert "passing `plan-and-task-check.md`" in readme
-    assert "only Plan-and-Task currently has" in readme
+    assert "Assess,\nFix, and Review install no role references or scripts" in readme
     assert "init_role_context.py` runs during project initialization" in readme
     assert "specify extension add extensions/team --dev" in readme
     assert "specify extension add team --dev extensions/team" not in readme
@@ -461,7 +461,20 @@ def test_ai_team_permission_envelope_document_exists():
     assert "policy-only" in text
     assert "agent-native" in text
     assert "wrapper-enforced" in text
+    assert "status: pending-review" in text
+    assert "approved_at" in text
     assert "do not sandbox shell commands" in text
+
+
+def test_ai_team_code_graph_contract_is_reference_not_nested_command():
+    contract = EXTENSION_ROOT / "docs" / "code-graph-contract.md"
+
+    text = contract.read_text(encoding="utf-8")
+    assert "## Required Evidence" in text
+    assert "## Fallback Rule" in text
+    assert "source-structure-fallback" in text
+    assert "$ARGUMENTS" not in text
+    assert "## User Input" not in text
 
 
 def test_ai_team_uses_one_plan_review_then_task_decomposition_flow():

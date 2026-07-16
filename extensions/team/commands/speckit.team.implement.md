@@ -10,13 +10,6 @@ request is optional; implementation is complete when Phase 5 passes.
 Resolve `references/` and `scripts/` relative to this installed `SKILL.md`, not
 relative to the repository working directory.
 
-## Bootstrap
-
-1. Read the invariant and Developer sections of
-   `references/context-bootstrap.md`.
-2. Load `references/work-item-layout.md` and `references/permissions.md` before
-   resolving artifacts or checking the implementation envelope.
-
 ## User Input
 
 ```text
@@ -93,7 +86,14 @@ do not edit the specification or the Plan section.
 
 ## Phase 3: Permission
 
-Require `permission-envelope.yml`. Parse it conservatively and confirm that it:
+Require `permission-envelope.yml`. Run the installed
+`scripts/check_permission_envelope.py` by its resolved path with
+`--work-type feature --work-id <feature-slug> --mode implementation
+--require-approved`. Stop if the deterministic check is blocked; do not
+hand-wave or replace its result.
+
+Then compare the selected Tasks and intended operations with the validated
+envelope and confirm that it:
 
 - authorizes implementation rather than analysis-only work;
 - is ready/approved rather than blocked, expired, or pending review;

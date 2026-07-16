@@ -9,13 +9,6 @@ Apply a bug fix from an approved assessment, run verification, write `fix.md` an
 Resolve `references/` and `scripts/` relative to this installed `SKILL.md`, not
 relative to the repository working directory.
 
-## Bootstrap
-
-1. Read the invariant and Bug Fixer sections of
-   `references/context-bootstrap.md`.
-2. Load `references/issue-lifecycle.md`, `references/work-item-layout.md`, and
-   `references/permissions.md` before assessing state and write authorization.
-
 ## User Input
 
 ```text
