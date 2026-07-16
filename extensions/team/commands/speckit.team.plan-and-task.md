@@ -48,7 +48,10 @@ If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
 
 1. Resolve the work ID, then create or resume
    `.specify/feature/<work_id>/`. When resuming an existing work root,
-   read `references/context.md`; do not load it for a new work root.
+   read `references/context.md`; do not load it for a new work root. For new
+   work, create `work-context.yml` and `context-pack.md` as small resume indexes
+   after resolving the Issue identity and source revision. Do not copy the full
+   Issue, Spec, Plan, or chat history into either file.
 2. Summarize the accepted Issue and accepted discussion into
    `spec.md`. Read `references/feature-spec.md` immediately before writing it.
 3. When an authorized confidential handoff is in scope, read and execute
@@ -81,7 +84,11 @@ If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
    sequencing, compatibility, risk, and rollback. Set `planning_stage:
    plan-review` without inventing Tasks.
 8. Present the Plan and ask the user to continue to Tasks, pause for discussion,
-   or revise the Plan. Record the decision and named human. A material Plan
+   or revise the Plan. Before asking, update `work-context.yml` to
+   `phase: plan-review`, with this Skill as both the last completed and next
+   Skill, and summarize unresolved decisions in `context-pack.md`. Record the
+   decision and named human. For pause or revision, set `phase: plan-paused`
+   and preserve the next action so another session can resume. A material Plan
    revision invalidates Tasks and returns to this decision.
 9. After `continue-to-tasks`, derive LLD-level Tasks. Every Task belongs to one
    module, declares exact paths and completion criteria, and has at least one
@@ -89,11 +96,17 @@ If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
    default. When serialization is necessary, describe the dependency, handoff
    artifact, reason, and unblock evidence in the Plan. Reject cycles.
 10. Map every Task to User Stories and their Verification behavior.
-11. Set `planning_stage: ready-for-check`, then run the installed
+11. Set `planning_stage: ready-for-check`, update the Context Package to
+    `phase: planning-check`, and then run the installed
     `scripts/check_plan_and_task.py` by its resolved path with
     `--work-type feature --work-id <work_id>`. The script owns
     `plan-and-task-check.md`; never hand-write a passing result. Revise until it
-    reports `ready` or preserve the blocking findings.
+    reports `ready` or preserve the blocking findings. On `ready`, update
+    `work-context.yml` to `phase: tasks-ready`, set `next_skill` to
+    `speckit.team.implement`, and summarize the checked Task groups in
+    `context-pack.md`. On failure, set `phase: planning-blocked`, keep
+    `next_skill` as `speckit.team.plan-and-task`, and record the unresolved
+    check findings.
 
 ## Output
 
@@ -109,6 +122,8 @@ Team Plan And Task:
 - plan and task: .specify/feature/<work_id>/plan-and-task.md
 - feature spec: .specify/feature/<work_id>/spec.md
 - check: .specify/feature/<work_id>/plan-and-task-check.md
+- resume index: .specify/feature/<work_id>/work-context.yml
+- handoff summary: .specify/feature/<work_id>/context-pack.md
 - minimum self-test mapping:
 - parallel groups and development chain:
 - compatibility and rollback:
