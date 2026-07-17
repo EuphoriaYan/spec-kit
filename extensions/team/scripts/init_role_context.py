@@ -56,9 +56,12 @@ ROUTES = (
         "A pull request needs correctness and SDD review",
         "produce prioritized findings and a merge recommendation",
     ),
+)
+
+ADVANCED_ENTRIES = (
     (
         "speckit.team.memory-consolidate",
-        "A reviewed lesson, decision, or durable coding requirement should be reused",
+        "A reviewed lesson, decision, or durable coding requirement should be reused after delivery",
         "store advisory Memory or promote human-approved project Knowledge",
     ),
 )
@@ -106,12 +109,27 @@ def _installed_routes(root: Path | None = None) -> list[tuple[str, str, str]]:
     ]
 
 
+def _installed_advanced_entries(
+    root: Path | None = None,
+) -> list[tuple[str, str, str]]:
+    commands = Path(__file__).resolve().parent.parent / "commands"
+    return [
+        entry
+        for entry in ADVANCED_ENTRIES
+        if (commands / f"{entry[0]}.md").is_file()
+    ]
+
+
 def _managed_section(target: str, root: Path | None = None) -> str:
     if target == "CLAUDE.md":
         return f"{START}\n@AGENTS.md\n{END}\n"
     routes = "\n".join(
         f"- {when}: use `{name}` to {outcome}."
         for name, when, outcome in _installed_routes(root)
+    )
+    advanced = "\n".join(
+        f"- {when}: use `{name}` to {outcome}."
+        for name, when, outcome in _installed_advanced_entries(root)
     )
     return (
         f"{START}\n"
@@ -122,6 +140,10 @@ def _managed_section(target: str, root: Path | None = None) -> str:
         "Users may describe work naturally; do not require a skill name. Route "
         "the request by its current phase:\n"
         f"{routes}\n"
+        "Advanced extension entries are installed but are not delivery roles "
+        "and must not be inserted into the Feature or Bugfix route. Use them "
+        "only for an explicit maintenance request:\n"
+        f"{advanced}\n"
         "If a required artifact or human decision is missing, stop and return "
         "to the preceding role. Canonical work artifacts live under "
         "`.specify/feature/<work_id>/` for Features and "

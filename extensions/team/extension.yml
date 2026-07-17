@@ -4,7 +4,7 @@ extension:
   id: team
   name: "AI Team SDD Skills"
   version: "0.6.0"
-  description: "Six role-oriented enterprise SDD skills plus task-scoped Knowledge and Memory consolidation."
+  description: "Six primary enterprise SDD skills plus optional advanced Knowledge and Memory capabilities."
   author: AI Team Template
   repository: https://github.com/EuphoriaYan/spec-kit
   license: MIT
@@ -110,7 +110,7 @@ provides:
           target: scripts/memory_adapter.py
     - name: speckit.team.memory-consolidate
       file: commands/speckit.team.memory-consolidate.md
-      description: "Support role: capture advisory lessons and promote human-approved requirements into task-scoped project Knowledge."
+      description: "Advanced extension entry: capture advisory lessons and promote human-approved requirements into task-scoped project Knowledge."
       resources:
         - source: docs/memory-tiers.md
           target: references/memory-tiers.md

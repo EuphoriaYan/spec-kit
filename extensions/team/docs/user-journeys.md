@@ -99,10 +99,11 @@ only after Task decomposition is complete.
 - Both work roots are local and ignored by Git. Cross-machine resume rebuilds
   from the Issue/PR handoff and current source rather than fetching these files.
 
-## Post-Delivery Knowledge
+## Advanced Extension: Post-Delivery Knowledge
 
 Review may recommend a durable follow-up when a failure pattern is likely to
-recur. A contributor or maintainer can invoke
+recur. This is not another delivery stage. A contributor or maintainer can
+explicitly invoke
 `speckit.team.memory-consolidate` after completed work or an explicit human
 decision. Unreviewed lessons remain advisory local or department Memory. A
 durable coding requirement becomes binding only after owner approval and

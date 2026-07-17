@@ -181,6 +181,8 @@ def test_context_initializer_writes_natural_language_skill_router(tmp_path: Path
     assert "speckit.team.implement" in agents
     assert "speckit.team.review" in agents
     assert "speckit.team.memory-consolidate" in agents
+    assert "Advanced extension entries" in agents
+    assert "must not be inserted into the Feature or Bugfix route" in agents
     assert "saved Memory alone is never a project rule" in agents
     assert ".specify/feature/<work_id>/" in agents
     assert ".specify/bugfix/<bug_slug>/" in agents
@@ -197,7 +199,7 @@ def test_router_only_includes_approved_role_skills(
     commands.mkdir()
     fake_script = scripts / "init_role_context.py"
     fake_script.write_text("# location marker\n", encoding="utf-8")
-    for name, _, _ in module.ROUTES:
+    for name, _, _ in (*module.ROUTES, *module.ADVANCED_ENTRIES):
         (commands / f"{name}.md").write_text("# role\n", encoding="utf-8")
     monkeypatch.setattr(module, "__file__", str(fake_script))
 
@@ -205,6 +207,9 @@ def test_router_only_includes_approved_role_skills(
 
     for name, _, _ in module.ROUTES:
         assert name in section
+    for name, _, _ in module.ADVANCED_ENTRIES:
+        assert name in section
+        assert name not in {route[0] for route in module.ROUTES}
 
 
 def test_direct_team_setup_rolls_back_extension_when_rules_fail(

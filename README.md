@@ -26,11 +26,10 @@ under [`extensions/team/`](extensions/team/).
 
 ### Role Skills
 
-AI Team provides six role-oriented delivery skills rather than one workflow,
-plus a Memory consolidation support skill. Each delivery role
+AI Team provides six primary role-oriented delivery skills rather than one
+workflow. Each delivery role
 consumes durable artifacts from the preceding role instead of hidden chat
-context; the installer advertises only commands that this distribution actually
-provides.
+context.
 
 | Skill | Responsibility |
 |---|---|
@@ -40,7 +39,6 @@ provides.
 | `speckit.team.fix` | apply a ready or risk-approved Bugfix assessment, verify it, and return to review |
 | `speckit.team.implement` | implement task-ready work, verify it, run automatic quality correction, and submit the result |
 | `speckit.team.review` | review a PR or local diff and return `GO`, `GO-WITH-RISK`, or `NO-GO` |
-| `speckit.team.memory-consolidate` | preserve advisory lessons and promote human-approved requirements into task-scoped project Knowledge |
 
 ```text
 Feature: Specify -> status/new-issue -> Technical Committee acceptance -> Plan-and-Task -> Implement -> Review/Assess/Fix loop -> PR -> human merge decision
@@ -55,10 +53,20 @@ command is not used to create the primary work item.
 
 Supporting context, permissions, private-requirement synchronization, Code
 Graph, impact, and evidence remain progressively loaded internal capabilities.
-Memory consolidation is exposed because contributors and maintainers invoke it
-at different times rather than at a mandatory lifecycle gate. Saved Memory is
-advisory; only reviewed promotion into `docs/ai-team/knowledge/rules/` creates
-binding project guidance, which delivery roles retrieve by task scope.
+
+### Advanced Extension Entries
+
+Advanced entries are installed for maintainers but do not participate in
+automatic Feature or Bugfix routing:
+
+| Entry | Use |
+|---|---|
+| `speckit.team.memory-consolidate` | preserve an evidence-backed lesson or promote human-approved guidance after delivery |
+
+Memory consolidation runs only on an explicit maintenance request, not at a
+mandatory lifecycle gate. Saved Memory is advisory; only reviewed promotion
+into `docs/ai-team/knowledge/rules/` creates binding project guidance, which
+delivery roles retrieve by task scope.
 
 Team work uses one directory convention with type-specific artifacts:
 
