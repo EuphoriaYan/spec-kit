@@ -79,7 +79,12 @@ def test_context_initializer_merges_supported_agent_files_idempotently(tmp_path:
     cursor = (tmp_path / ".cursor/rules/specify-rules.mdc").read_text(encoding="utf-8")
     assert "alwaysApply: true" in cursor
     assert cursor.count(module.START) == 1
-    assert (tmp_path / ".gitignore").read_text(encoding="utf-8") == "dist/\n"
+    gitignore = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+    assert gitignore.startswith("dist/\n")
+    assert gitignore.count(module.GITIGNORE_START) == 1
+    assert gitignore.count(module.GITIGNORE_END) == 1
+    for pattern in module.LOCAL_WORK_PATTERNS:
+        assert pattern in gitignore
 
 
 def test_context_initializer_always_writes_agents_without_detected_tool(tmp_path: Path) -> None:
@@ -88,6 +93,76 @@ def test_context_initializer_always_writes_agents_without_detected_tool(tmp_path
 
     assert module.initialize(tmp_path) == ["AGENTS.md"]
     assert module.BOOTSTRAP in (tmp_path / "AGENTS.md").read_text(encoding="utf-8")
+
+
+def test_context_initializer_gitignores_runtime_work_artifacts(tmp_path: Path) -> None:
+    import subprocess
+
+    _install_bootstrap(tmp_path)
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    module = _load_init_module()
+
+    module.initialize(tmp_path)
+    module.initialize(tmp_path)
+
+    for relative in (
+        ".specify/feature/123/spec.md",
+        ".specify/bugfix/upload-timeout/assessment.md",
+    ):
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("local work\n", encoding="utf-8")
+        result = subprocess.run(
+            ["git", "-C", str(tmp_path), "check-ignore", "-q", str(path)],
+            check=False,
+        )
+        assert result.returncode == 0
+
+    team_state = tmp_path / ".specify/team/context-bootstrap.md"
+    result = subprocess.run(
+        ["git", "-C", str(tmp_path), "check-ignore", "-q", str(team_state)],
+        check=False,
+    )
+    assert result.returncode == 1
+    text = (tmp_path / ".gitignore").read_text(encoding="utf-8")
+    assert text.count(module.GITIGNORE_START) == 1
+
+
+def test_team_setup_reports_previously_tracked_runtime_work(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import subprocess
+
+    from specify_cli import team_setup
+
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    _install_bootstrap(tmp_path)
+    tracked = tmp_path / ".specify/bugfix/old-fix/assessment.md"
+    tracked.parent.mkdir(parents=True)
+    tracked.write_text("old tracked work\n", encoding="utf-8")
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "add", str(tracked)],
+        check=True,
+    )
+    specify = tmp_path / ".specify"
+    (specify / "init-options.json").write_text(
+        json.dumps({"ai": "codex", "integration": "codex", "ai_skills": True}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(team_setup, "_locate_bundled_extension", lambda _id: AI_TEAM)
+    monkeypatch.setattr(
+        team_setup, "_require_codegraph", lambda: ("codegraph", "1.4.1")
+    )
+
+    result = team_setup.install_bundled_team(tmp_path)
+
+    assert result.tracked_local_work_files == (
+        ".specify/bugfix/old-fix/assessment.md",
+    )
+    assert subprocess.run(
+        ["git", "-C", str(tmp_path), "check-ignore", "-q", str(tracked)],
+        check=False,
+    ).returncode == 1
 
 
 def test_context_initializer_writes_natural_language_skill_router(tmp_path: Path) -> None:
@@ -213,12 +288,12 @@ def test_team_setup_refreshes_old_bundled_skills_and_preserves_project_state(
         encoding="utf-8",
     )
 
-    old_team = tmp_path / "team-0.5.0"
+    old_team = tmp_path / "team-0.5.1"
     shutil.copytree(AI_TEAM, old_team)
     old_manifest = old_team / "extension.yml"
     old_manifest.write_text(
         old_manifest.read_text(encoding="utf-8").replace(
-            'version: "0.5.1"', 'version: "0.5.0"'
+            'version: "0.5.2"', 'version: "0.5.1"'
         ),
         encoding="utf-8",
     )
@@ -250,7 +325,7 @@ def test_team_setup_refreshes_old_bundled_skills_and_preserves_project_state(
     assert "OLD ADAPTER PLAN" not in installed_plan
     assert "required CodeGraph" in installed_plan
     assert metadata is not None
-    assert metadata["version"] == "0.5.1"
+    assert metadata["version"] == "0.5.2"
     assert config.read_text(encoding="utf-8") == "project_owned: true\n"
 
     second = team_setup.install_bundled_team(project)
@@ -550,7 +625,8 @@ def test_role_skills_load_references_only_at_the_phase_that_needs_them() -> None
     assert "immediately before writing it" in plan
     assert "use the required CodeGraph" in plan
     assert "approved_at" in plan
-    assert "--require-approved" in plan
+    assert "--require-authorized" in plan
+    assert "never request approval Task by Task" in plan
     assert "immediately before creating or\n   updating `plan-and-task.md`" in plan
     assert "Do not reproduce, guess, or preload" in implement
 

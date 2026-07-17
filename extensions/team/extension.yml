@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: team
   name: "AI Team SDD Skills"
-  version: "0.5.1"
+  version: "0.5.2"
   description: "Six role-oriented enterprise SDD skills for feature and bugfix work from intake through pull request review."
   author: AI Team Template
   repository: https://github.com/EuphoriaYan/spec-kit
@@ -58,7 +58,7 @@ provides:
           target: scripts/powershell/Sync-HandoffSpec.ps1
     - name: speckit.team.assess
       file: commands/speckit.team.assess.md
-      description: "Bug assessor role: analyze a report, define impact and permissions, and write an approved assessment."
+      description: "Bug assessor role: analyze a report or review finding, preserve original intent, and route only risky decisions to humans."
       resources:
         - source: docs/code-graph-contract.md
           target: references/code-graph-contract.md
@@ -66,13 +66,13 @@ provides:
           target: references/context.md
     - name: speckit.team.fix
       file: commands/speckit.team.fix.md
-      description: "Bug fixer role: apply an approved assessment, verify it, write fix evidence, and optionally create a PR."
+      description: "Bug fixer role: apply a ready or risk-approved assessment, verify it, update PR progress, and re-enter review."
       resources:
         - source: references/internal/context.md
           target: references/context.md
     - name: speckit.team.implement
       file: commands/speckit.team.implement.md
-      description: "Developer role: implement task-ready Feature work, verify it, and optionally create a pull request."
+      description: "Developer role: implement task-ready Feature work, verify it, and enter the automatic quality loop before PR submission."
       resources:
         - source: references/internal/context.md
           target: references/context.md
@@ -84,7 +84,7 @@ provides:
           target: scripts/work_item_paths.py
     - name: speckit.team.review
       file: commands/speckit.team.review.md
-      description: "Reviewer role: assess a pull request for correctness, evidence, permissions, and SDD alignment."
+      description: "Reviewer role: assess a PR or local diff, route repairable findings, and produce a merge recommendation."
       resources:
         - source: references/internal/context.md
           target: references/context.md

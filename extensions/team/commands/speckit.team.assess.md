@@ -1,10 +1,13 @@
 ---
-description: "Assess an issue URL or bug description and write .specify/bugfix/<bug-slug>/assessment.md"
+description: "Assess an issue, bug description, or review finding and write a risk-routed local assessment."
 ---
 
 # Team Bug Assess
 
-Assess a bug report from an issue URL or free-form problem description. Produce a reviewed, fix-ready assessment at `.specify/bugfix/{bug-slug}/assessment.md` without modifying source code.
+Assess a bug report or Review finding. Produce a source-grounded, fix-ready
+local assessment at `.specify/bugfix/{bug-slug}/assessment.md` without
+modifying source code. Clear repository-local analysis does not need human
+approval.
 
 ## User Input
 
@@ -18,6 +21,8 @@ Accept any of:
 - a pasted stack trace, log excerpt, or bug description;
 - `bug_slug=<bug-slug>` to force the bug directory name;
 - optional context such as `source=<label>`.
+- optional `parent_work_id=<feature-work-id>`, original Issue URL, User Story
+  IDs, and Review finding identity for an automatic Feature correction.
 
 ## Bug Slug and Root
 
@@ -61,6 +66,13 @@ Read relevant project files such as source files, tests, package manifests,
 README files, logs provided by the user, and existing
 `.specify/bugfix/{bug-slug}/` artifacts.
 
+For a Feature correction, require the parent Feature root and read its
+authoritative Issue identity, effective `spec.md` or authorized override,
+User Story Verification clauses, accepted Plan, permission envelope, and the
+specific Review finding before forming a root-cause hypothesis. Record these
+inputs in the assessment. Never infer expected behavior from the implementation
+under review.
+
 ## Integrated Analysis
 
 Merge the old permission, impact, and assessment-review concepts into this assessment:
@@ -73,7 +85,12 @@ Merge the old permission, impact, and assessment-review concepts into this asses
    usable; do not substitute an unreviewed source-search fallback.
 3. **Impact Analysis**: identify blast radius, public API effects, data/storage concerns, migration risk, security risk, and regression risk.
 4. **Permission Boundary**: define proposed write paths and proposed verification commands for the later fix command. These are recommendations, not source changes.
-5. **Review and Revision Loop**: after drafting the assessment, present the verdict, root-cause hypothesis, proposed write paths, verification commands, risks, and open questions to the user. Ask whether to approve, revise, or mark needs-info. Apply requested revisions directly to `assessment.md`; do not add a separate assessment-review section or transcript.
+5. **Risk Routing**: mark the assessment `ready` when the evidence is sufficient
+   and the proposed fix stays in one repository and module, inside an accepted
+   Plan when present, with no public-contract, dependency, security, license,
+   incompatibility, or scope-expansion decision. Mark it `approval-required`
+   and list the exact human-gate triggers otherwise. Use `needs-info` when the
+   symptom, intent, or root-cause evidence is insufficient.
 
 ## Write assessment.md
 
@@ -85,7 +102,7 @@ Write `ASSESSMENT` using this structure:
 - **Bug Slug**: <bug-slug>
 - **Created**: <ISO 8601 UTC>
 - **Updated**: <ISO 8601 UTC>
-- **Status**: draft | approved | needs-info
+- **Status**: ready | approval-required | approved | needs-info
 - **Source**: <issue URL or problem description>
 - **Verdict**: valid | likely-valid | invalid | needs-info
 - **Severity**: critical | high | medium | low
@@ -129,6 +146,10 @@ Write `ASSESSMENT` using this structure:
 
 - `<command>` — <why>
 
+### Human-Gate Triggers
+
+- <none, or exact trigger and responsible decision>
+
 ## Root Cause Hypothesis
 
 <Root cause and confidence.>
@@ -150,7 +171,23 @@ Write `ASSESSMENT` using this structure:
 - [NEEDS INFO: ...]
 ```
 
-Set `Status: approved` only after the user approves the assessment. Set `Status: needs-info` when the assessment cannot safely proceed to a fix. Use `Status: draft` when written without explicit user approval.
+Only when Assess is invoked for a Feature correction from Implement's automatic
+Review -> Assess -> Fix loop, insert these optional fields after `Source`:
+
+```markdown
+- **Parent Feature**: <work ID and Issue URL>
+- **User Stories**: <IDs and Verification clauses>
+```
+
+Omit both fields for a standalone Bugfix. Do not write `not-applicable`
+placeholders.
+
+Set `Status: ready` without asking for approval when no human-gate trigger is
+present. Set `Status: approval-required` when a human-gate trigger is unresolved,
+then change it to `approved` only after a human resolves every listed trigger.
+Set `Status: needs-info` when the assessment cannot safely proceed to a fix.
+`draft` is not a valid assessment status: Assess must gather more information or
+route the current result before handing off.
 
 ## Resume Context
 
@@ -158,12 +195,16 @@ Create or minimally update `WORK_CONTEXT` and `CONTEXT_PACK` after writing the
 assessment. Record the Bug Slug, source summary, assessment status, current
 phase, artifact paths, last completed Skill, next Skill, and unresolved items.
 Keep the package concise; do not duplicate the full assessment, logs, or Issue.
-Use `phase: assessment-approved` and `next_skill: speckit.team.fix` only after
-human approval. Otherwise keep the next Skill as `speckit.team.assess`.
+Use `phase: assessment-ready` and `next_skill: speckit.team.fix` for `ready` or
+`approved`. Keep the next Skill as `speckit.team.assess` for other states.
+
+When invoked by the automatic quality loop and status is `ready`, continue to
+`speckit.team.fix` without asking the user. Stop for `approval-required` or
+`needs-info`.
 
 ## Issue Creation
 
-After the assessment is approved, ask whether the user wants to create or
+After a standalone assessment is ready or approved, ask whether the user wants to create or
 update a tracking Issue. Do not create an Issue without explicit user
 confirmation.
 
@@ -190,5 +231,5 @@ Report:
 
 - Do not modify source code.
 - Do not write outside `.specify/bugfix/{bug-slug}/`.
-- Do not include a separate `## Assessment Review` section in `assessment.md`; review feedback must update the assessment content directly.
+- Do not require approval for a clear, repository-local, single-module analysis.
 - Do not invent reproduction steps, file paths, or test results.

@@ -16,6 +16,7 @@ def _write_envelope(
     status: str = "approved",
     mode: str = "implementation",
     work_id: str = "123",
+    approval_required: list[str] | None = None,
 ) -> Path:
     root = project / ".specify" / "feature" / "123"
     root.mkdir(parents=True)
@@ -38,7 +39,11 @@ def _write_envelope(
             "commands": ["git reset --hard"],
             "network": ["upload-source"],
         },
-        "approval_required": ["expand-write-paths"],
+        "approval_required": (
+            ["cross-module-change"]
+            if approval_required is None and status == "approved"
+            else (approval_required or [])
+        ),
         "runtime": {
             "adapter": "",
             "verified": False,
@@ -83,6 +88,47 @@ def test_permission_envelope_check_accepts_approved_matching_envelope(
 
     assert result.returncode == 0
     assert "Permission Envelope Check: ready" in result.stdout
+
+
+def test_permission_envelope_check_authorizes_single_module_ready_envelope(
+    tmp_path: Path,
+) -> None:
+    _write_envelope(tmp_path, status="ready", approval_required=[])
+
+    result = _run(tmp_path, "--require-authorized")
+
+    assert result.returncode == 0
+    assert "Permission Envelope Check: ready" in result.stdout
+
+
+def test_permission_envelope_check_requires_human_approval_for_risk_trigger(
+    tmp_path: Path,
+) -> None:
+    _write_envelope(
+        tmp_path,
+        status="pending-review",
+        approval_required=["cross-module-change"],
+    )
+
+    result = _run(tmp_path, "--require-authorized")
+
+    assert result.returncode == 1
+    assert "status must be ready or approved" in result.stdout
+
+
+def test_permission_envelope_check_rejects_ready_with_risk_trigger(
+    tmp_path: Path,
+) -> None:
+    _write_envelope(
+        tmp_path,
+        status="ready",
+        approval_required=["new-dependency"],
+    )
+
+    result = _run(tmp_path, "--require-authorized")
+
+    assert result.returncode == 1
+    assert "ready envelopes cannot contain approval_required triggers" in result.stdout
 
 
 def test_permission_envelope_check_does_not_treat_pending_as_approved(

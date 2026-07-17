@@ -57,17 +57,16 @@ If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
 3. When an authorized confidential handoff is in scope, read and execute
    `references/handoff-spec-sync.md`. Otherwise do not load it. Never copy
    private source text into committed public artifacts.
-4. Read `references/permission-envelope.md`, then create or update the analysis
-   Permission Envelope with `status: pending-review` and empty `approved_by`
-   and `approved_at`. Never self-approve it. After a named human approves the
-   exact envelope, record `status: approved`, `approved_by`, and `approved_at`.
-   Any change to `mode`, `allow`, `deny`, or scope invalidates that approval;
-   return to `pending-review` or `blocked` and clear both approval fields. Run
-   the installed
-   `scripts/check_permission_envelope.py` by its resolved path with
+4. Read `references/permission-envelope.md`, then create or update one
+   work-item Permission Envelope. Analysis with clear repository-local read
+   scope does not require human approval: use `status: ready`, keep
+   `approval_required`, `approved_by`, and `approved_at` empty. Run the
+   installed `scripts/check_permission_envelope.py` by its resolved path with
    `--work-type feature --work-id <work_id> --mode analysis
-   --require-approved`. Stop before source or Code Graph analysis when it is
-   blocked; the script validates but never grants approval.
+   --require-authorized`. Use `pending-review` only when analysis itself would
+   cross a repository/privacy boundary or require sensitive network access.
+   Stop when the check is blocked; the script validates but never grants a
+   risky operation.
 5. Read `references/code-graph-contract.md`, then use the required CodeGraph
    CLI or MCP tool and write the smallest graph and impact evidence summary tied
    to the exact source revision. For an existing project, stop when CodeGraph
@@ -96,17 +95,37 @@ If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
    default. When serialization is necessary, describe the dependency, handoff
    artifact, reason, and unblock evidence in the Plan. Reject cycles.
 10. Map every Task to User Stories and their Verification behavior.
-11. Set `planning_stage: ready-for-check`, update the Context Package to
+11. Revise the same Permission Envelope to `mode: implementation` for the
+    complete Task batch. Use `status: ready` when work stays in one repository
+    and one module, follows the approved Plan, preserves public contracts and
+    compatibility, and adds no dependency, security, or license decision. Put
+    the detected reasons in `approval_required` and use `status:
+    pending-review` when work is cross-repository, cross-module, changes a
+    public contract, adds a dependency/security/license decision, is
+    incompatible, or exceeds the approved Plan. One named human may approve
+    the complete batch; never request approval Task by Task.
+12. Set `planning_stage: ready-for-check`, update the Context Package to
     `phase: planning-check`, and then run the installed
     `scripts/check_plan_and_task.py` by its resolved path with
     `--work-type feature --work-id <work_id>`. The script owns
     `plan-and-task-check.md`; never hand-write a passing result. Revise until it
-    reports `ready` or preserve the blocking findings. On `ready`, update
+    reports `ready` or preserve the blocking findings. Also run
+    `scripts/check_permission_envelope.py --work-type feature --work-id
+    <work_id> --mode implementation --require-authorized`. On `ready`, update
     `work-context.yml` to `phase: tasks-ready`, set `next_skill` to
     `speckit.team.implement`, and summarize the checked Task groups in
     `context-pack.md`. On failure, set `phase: planning-blocked`, keep
     `next_skill` as `speckit.team.plan-and-task`, and record the unresolved
     check findings.
+13. On `ready`, publish a public-safe Plan/Task handoff to the primary Issue.
+    Include the Issue-wide HLD summary, affected modules, public-contract and
+    compatibility impact, Task IDs and module/path scope, dependency/parallel
+    groups, minimum self-tests, permission status, and unresolved risks. For
+    GitHub with authenticated automation, post the comment. For GitCode or a
+    host without a usable CLI/API, output the complete Markdown under
+    `## Paste Into Issue Discussion`. Never publish private override content.
+    This Issue handoff, not the local `.specify/feature/` directory, enables a
+    different contributor to reconstruct the accepted work package.
 
 ## Output
 
@@ -128,6 +147,7 @@ Team Plan And Task:
 - parallel groups and development chain:
 - compatibility and rollback:
 - unresolved findings and human decisions:
+- Issue handoff: posted / paste-required / blocked
 - result: plan-awaiting-decision / plan-paused / ready / revise / blocked
 ```
 

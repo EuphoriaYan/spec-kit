@@ -13,7 +13,7 @@ import yaml
 from work_item_paths import resolve_work_root
 
 
-VALID_STATUSES = {"pending-review", "approved", "blocked", "expired"}
+VALID_STATUSES = {"ready", "pending-review", "approved", "blocked", "expired"}
 VALID_MODES = {"analysis", "implementation", "verification", "submission"}
 VALID_ENFORCEMENT = {"policy-only", "agent-native", "wrapper-enforced"}
 CAPABILITY_KEYS = {"read_paths", "write_paths", "commands", "network"}
@@ -69,6 +69,7 @@ def validate_envelope(
     work_id: str,
     mode: str,
     require_approved: bool = False,
+    require_authorized: bool = False,
 ) -> list[str]:
     errors: list[str] = []
     try:
@@ -88,9 +89,20 @@ def validate_envelope(
 
     status = root.get("status")
     if status not in VALID_STATUSES:
-        errors.append("status must be pending-review, approved, blocked, or expired")
+        errors.append(
+            "status must be ready, pending-review, approved, blocked, or expired"
+        )
     if require_approved and status != "approved":
         errors.append("status must be approved")
+    approval_required = _string_list(
+        root.get("approval_required"), "approval_required", errors
+    )
+    if require_authorized and status not in {"ready", "approved"}:
+        errors.append("status must be ready or approved for this operation")
+    if status == "ready" and approval_required:
+        errors.append("ready envelopes cannot contain approval_required triggers")
+    if status == "pending-review" and not approval_required:
+        errors.append("pending-review envelopes require approval_required triggers")
     updated_at = _utc_timestamp(root.get("updated_at"), "updated_at", errors)
     if status == "approved":
         if not str(root.get("approved_by", "")).strip():
@@ -131,7 +143,6 @@ def validate_envelope(
                             f"{section_name}.{key} contains unsafe path: {value}"
                         )
 
-    _string_list(root.get("approval_required"), "approval_required", errors)
     runtime = _mapping(root.get("runtime"), "runtime", errors)
     if not isinstance(runtime.get("verified"), bool):
         errors.append("runtime.verified must be true or false")
@@ -157,6 +168,7 @@ def main() -> int:
     parser.add_argument("--work-id", required=True)
     parser.add_argument("--mode", required=True, choices=sorted(VALID_MODES))
     parser.add_argument("--require-approved", action="store_true")
+    parser.add_argument("--require-authorized", action="store_true")
     args = parser.parse_args()
 
     root = resolve_work_root(
@@ -168,6 +180,7 @@ def main() -> int:
         work_id=args.work_id,
         mode=args.mode,
         require_approved=args.require_approved,
+        require_authorized=args.require_authorized,
     )
     if errors:
         print("Permission Envelope Check: blocked")

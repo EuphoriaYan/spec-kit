@@ -177,8 +177,15 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
         "wrapper-enforced",
     }
     assert config["permissions"]["require_envelope"] is True
-    assert config["permissions"]["require_analysis_review"] is True
-    assert config["permissions"]["require_implementation_review"] is True
+    assert config["permissions"]["require_analysis_review"] is False
+    assert config["permissions"]["implementation_approval_policy"] == "risk-triggered"
+    assert config["permissions"]["one_envelope_per_work_item"] is True
+    assert config["permissions"]["allow_ready_without_human_approval"] is True
+    assert config["work_artifacts"]["git_policy"] == "local-only"
+    assert config["work_artifacts"]["ignored_roots"] == [
+        ".specify/feature/",
+        ".specify/bugfix/",
+    ]
     assert config["gates"]["require_work_item_anchor"] is True
     assert config["gates"]["allow_same_root_cause_issue_grouping"] is True
     assert config["planning"]["applies_to"] == ["feature"]
@@ -451,7 +458,7 @@ def test_ai_team_reuses_native_sdd_artifacts_without_change_manifest():
 def test_ai_team_readme_matches_current_role_contracts():
     readme = (EXTENSION_ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert "`draft`, `approved`, or `needs-info`" in readme
+    assert "`ready`, `approval-required`, or `needs-info`" in readme
     assert ".specify/bugfix/<bug_slug>/" in readme
     assert "passing `plan-and-task-check.md`" in readme
     assert "Assess, Fix, Implement, and Review install the shared Context" in readme
@@ -469,11 +476,17 @@ def test_ai_team_permission_envelope_document_exists():
     assert "policy-only" in text
     assert "agent-native" in text
     assert "wrapper-enforced" in text
-    assert "status: pending-review" in text
+    assert "status: ready" in text
+    assert "pending-review" in text
     assert "approved_at" in text
     assert "approved_by" in text
     assert "updated_at" in text
     assert "do not sandbox shell commands" in text
+
+    example = text.split("```yaml", 1)[1].split("```", 1)[0]
+    document = yaml.safe_load(example)
+    assert document["status"] == "ready"
+    assert document["approval_required"] == []
 
 
 def test_ai_team_code_graph_contract_is_reference_not_nested_command():

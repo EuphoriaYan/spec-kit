@@ -6,11 +6,11 @@ Spec Kit commands:
 | Skill | Role | Input | Durable output |
 |---|---|---|---|
 | `speckit.team.specify` | Business / Product | plain-language Feature or new-project demand | published Feature Issue, or Issue text in the current response |
-| `speckit.team.plan-and-task` | Architect | accepted/working Feature Issue plus source | Feature spec, Code Graph impact, Plan, parallel Tasks, self-tests, generated check |
-| `speckit.team.assess` | Bug Assessor | Issue URL, defect description, or `bug_slug` | `assessment.md` with `draft`, `approved`, or `needs-info` status |
-| `speckit.team.fix` | Bug Fixer | approved assessment and optional tracked Issue | source fix, `fix.md`, `test.md`, optional PR |
-| `speckit.team.implement` | Developer | Feature `work_id`, checked Plan-and-Task, and permission envelope | source changes, completed Task status, implementation evidence, optional PR |
-| `speckit.team.review` | Reviewer | PR URL or number; optional Feature `work_id` or Bugfix `bug_slug` | code findings, lifecycle alignment/report, and merge recommendation |
+| `speckit.team.plan-and-task` | Architect | accepted/working Feature Issue plus source | local Feature work package plus an Issue-ready Plan/Task handoff |
+| `speckit.team.assess` | Bug Assessor | Issue URL, defect description, review finding, or `bug_slug` | local `assessment.md` with `ready`, `approval-required`, or `needs-info` status |
+| `speckit.team.fix` | Bug Fixer | ready or risk-approved assessment and optional tracked Issue | source fix, local evidence, PR progress update, automatic re-review |
+| `speckit.team.implement` | Developer | Feature `work_id`, checked Plan-and-Task, and permission envelope | source changes, implementation evidence, automatic quality loop, and submitted result |
+| `speckit.team.review` | Reviewer | PR or local diff; optional Feature `work_id` or Bugfix `bug_slug` | findings, automatic correction routing, and merge recommendation |
 
 ## Role Boundary
 
@@ -18,7 +18,7 @@ Roles do not share hidden chat context. Specify publishes complete User Stories
 to the Issue. The Technical Committee or delegated authority discusses the
 demand and applies `status/accept` outside the skill. Plan-and-Task reads the
 accepted Issue and current source, while Implement and Review consume the
-durable planning and evidence artifacts rather than prior role chat.
+local planning/evidence artifacts and shared Issue/PR handoffs rather than prior role chat.
 
 Bugfix uses the independent Assess -> Fix -> Review flow.
 
@@ -53,8 +53,9 @@ Issue ID.
 
 Feature delivery uses `.specify/feature/<work_id>/`. Bugfix assessment and fix
 delivery use `.specify/bugfix/<bug_slug>/`: Assess writes `assessment.md` and
-sets `approved` only after explicit user approval; Fix requires that approved
-status, then writes `fix.md` and `test.md`. A coding Issue is optional; when one
+sets `ready` automatically for clear same-repository, single-module work;
+risky work requires a named human decision. Fix accepts `ready` or
+risk-approved status, then writes `fix.md` and `test.md`. A coding Issue is optional; when one
 is linked, Fix verifies `type/bugfix` and `status/working` without changing
 labels automatically.
 
@@ -75,10 +76,11 @@ plain-language demand
 ```
 
 Specify writes no local checklist, Issue draft, Work Context, or `spec.md`.
-Plan-and-Task pauses at its human decision boundary before Task decomposition.
-Implement stops when readiness, permissions, or verification fails and creates
-a PR only after explicit confirmation. Review never creates, approves, merges,
-or resolves conversations on a PR. Review can review any PR; Feature SDD
+Plan-and-Task pauses at its HLD decision boundary before Task decomposition.
+Implement stops when readiness, risk-triggered permissions, or verification
+fails, then automatically enters Review. After the quality loop passes, it
+submits the PR through available host automation or prints a paste-ready
+fallback. Review never approves or merges a PR. Review can review any PR; Feature SDD
 or Bugfix lifecycle alignment is assessed only when the corresponding work root
 can be resolved.
 
@@ -87,15 +89,15 @@ can be resolved.
 ```text
 observed defect
 -> speckit.team.assess
--> assessment with draft, approved, or needs-info status
+-> assessment with ready, approval-required, approved, or needs-info status
 -> impact, proposed permission boundary, fix strategy, and test strategy
--> human approval
+-> human approval only for a permanent gate
 -> optionally create or verify a coding Issue with type/bugfix
 -> when linked, a maintainer moves accepted and claimed work to status/working
 -> speckit.team.fix
 -> source fix, regression verification, fix.md and test.md
--> optional pull request
--> speckit.team.review checks assessment, fix, tests, diff, and any linked Issue
+-> automatic speckit.team.review of assessment, fix, tests, diff, and any linked Issue
+-> optional pull request after the quality loop
 ```
 
 Several Bug Issues may map to one change only when they are symptoms of the
@@ -108,12 +110,14 @@ and designed for parallel assignment. When Tasks cannot run in parallel, the
 Plan records the dependency, handoff artifact, serialization reason, and unblock
 evidence.
 
-Feature implementation requires `spec.md` (or an authorized override), a
+Feature implementation requires a local `spec.md` (or an authorized override), a
 passing `plan-and-task-check.md`, task-ready `plan-and-task.md`, and a permission
-envelope. It marks only completed Task Status checkboxes, records commands and
+envelope. One envelope covers the selected Task batch; same-repository,
+single-module work without a permanent gate is mechanically `ready`. It marks only completed Task Status checkboxes, records commands and
 test results in `evidence/implementation-report.md`, and reaches
-`phase: verified` without requiring a PR. PR submission details are loaded
-progressively only after verification and user confirmation.
+`phase: verified` before submission. After the automatic quality loop returns
+`GO` or `GO-WITH-RISK`, PR submission runs through host automation or produces
+a paste-ready fallback without another design approval.
 
 Public API, SPI, configuration, protocol, schema, database ownership, or
 cross-module semantics still require the appropriate human architecture or
@@ -136,7 +140,7 @@ speckit-team-plan-and-task/
 
 speckit-team-implement/
 |-- SKILL.md
-|-- references/           # loaded only after PR confirmation
+|-- references/           # PR instructions loaded only after quality review
 `-- scripts/              # Permission Envelope validation
 ```
 
@@ -180,9 +184,12 @@ Plan review record.
 `-- evidence/
 ```
 
-Commit Feature Specs, Plans, generated checks, and reviewed evidence according
-to repository policy. Ignore `spec.override.md`, private customer text,
-credentials, and local memory.
+The installer adds `/.specify/feature/` and `/.specify/bugfix/` to the target
+coding repository's `.gitignore`. These directories are local runtime context,
+not Team extension source and not PR payload. Share accepted User Stories,
+Plan/Task summaries, verification, and risks through Issue/PR discussion;
+promote only significant reviewed HLD or long-term knowledge to project docs.
+Existing tracked work packages require a separate, deliberate index cleanup.
 
 ## Installation
 
@@ -228,10 +235,10 @@ task-ready, delivery can be invoked directly:
 /speckit.team.fix bug_slug=login-session-expiry
 /speckit.team.implement work_id=123
 /speckit.team.implement work_id=123 only=T001-T010
-/speckit.team.implement work_id=123 submit_pr=true
 /speckit.team.review https://github.com/org/repo/pull/123
 ```
 
-GitHub Issue/PR operations and Review require authenticated GitHub access;
-Review specifically requires `gh`. Without PR access, Implement and Fix can
-still finish verification and provide manual submission guidance.
+GitHub Issue/PR operations use authenticated automation when available. GitCode
+or another host without a usable CLI/API still supports local review; the
+skills print complete Issue/PR Markdown for the user to paste. Manual posting is
+a platform transport step, not an extra technical approval.

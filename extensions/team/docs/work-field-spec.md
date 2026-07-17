@@ -23,7 +23,7 @@ authority.
 | `bug_slug` | stable safe slug | names `.specify/bugfix/<bug_slug>/` |
 
 Assess may create `bug_slug` from a raw symptom without an Issue. Once the
-assessment is approved, keep that slug stable. Fix uses the approved assessment
+assessment is ready or risk-approved, keep that slug stable. Fix uses that assessment
 as its authority and records a supplied Issue URL in `fix.md` when present.
 
 Several Bug Issues may share one `bug_slug` only when one root-cause change
