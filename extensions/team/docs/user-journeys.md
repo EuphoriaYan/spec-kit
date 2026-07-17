@@ -24,13 +24,18 @@ Please add CSV export. Keep exported columns aligned with the result list.
    revise the Plan. The same file is reused after resume.
 6. After continuation, Plan-and-Task writes single-module LLD Tasks, minimum
    self-tests, and the generated `plan-and-task-check.md`.
-7. An architect or delegated technical reviewer approves or revises the
-   checked Plan and Tasks.
+7. Plan-and-Task posts or prints a public-safe Issue handoff. The local work
+   package remains Git-ignored; another contributor can reconstruct it from the
+   Issue and source.
 8. `speckit.team.implement` changes code, runs tests, compares actual scope with
-   the Plan, writes implementation evidence, and optionally creates a PR after
-   explicit confirmation.
-9. `speckit.team.review` checks the PR against code, permissions, planning, and
-   evidence, then gives a merge recommendation. Named humans review and merge.
+   the Plan, and writes local implementation evidence. Same-module work needs
+   no separate Permission approval.
+9. Implement automatically runs local Review. Repairable blocker/major findings
+   flow through Assess -> Fix -> Re-review for at most three rounds. A human is
+   called only for a permanent gate; minor-only findings may be `GO-WITH-RISK`.
+10. After the loop passes, the user may create a PR. Review posts through
+    GitHub automation when available or prints a GitCode-ready discussion block.
+    A named human makes the final merge decision.
 
 ## Existing Public Feature Issue
 
@@ -49,14 +54,17 @@ the URL within its Permission Envelope, combines allowed content with
 1. `speckit.team.assess` captures observation, expected behavior, reproduction,
    relevant code paths, impact, proposed permissions, fix strategy, and tests in
    `.specify/bugfix/<bug_slug>/assessment.md`.
-2. A human approves the assessment. If tracking is requested, Assess creates or
+2. A clear same-module assessment becomes `ready` automatically. Cross-module,
+   public-interface, dependency/security/license, incompatibility, or expanded
+   scope becomes `approval-required`. If tracking is requested, Assess creates or
    updates a coding-repository Issue only after confirmation. A new Issue must
    have both `type/bugfix` and `status/new-issue`.
 3. For a tracked Issue, a maintainer claims approved work by moving it to
    `status/working` before Fix.
-4. `speckit.team.fix` applies the approved strategy inside its permission
+4. `speckit.team.fix` applies the ready or risk-approved strategy inside its permission
    boundary and records `fix.md`, `test.md`, regression results, and residual risk.
-5. Fix optionally creates a PR after confirmation; `speckit.team.review`
+5. Fix posts or prints a progress update and automatically calls
+   `speckit.team.review`. It optionally creates a new PR after confirmation; Review
    resolves the Bug Slug and checks `assessment.md`, `fix.md`, `test.md`, diff,
    test evidence, and any linked Issue.
 
@@ -88,6 +96,8 @@ only after Task decomposition is complete.
   `context-pack.md` as small indexes to their native artifacts.
 - Every role reruns context initialization and reconstructs from artifacts.
 - If source, Issue, or scope changed, stop and reconcile before continuing.
+- Both work roots are local and ignored by Git. Cross-machine resume rebuilds
+  from the Issue/PR handoff and current source rather than fetching these files.
 
 ## Post-Delivery Knowledge
 

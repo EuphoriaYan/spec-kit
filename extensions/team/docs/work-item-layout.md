@@ -39,7 +39,7 @@ review evidence. Bugfix does not use `spec.md`, `plan-and-task.md`, or
 - Bugfix: `<bug_slug>` is the stable local artifact key created by Assess
   before or after Issue publication;
 - when a Bugfix Issue is linked, its absolute URL is the repository-tracking
-  identity and is recorded in the approved assessment before Fix.
+  identity and is recorded in the ready or risk-approved assessment before Fix.
 
 Never silently select the newest work directory. A generated Bug Slug may be
 derived from the initial symptom, but it must remain stable after assessment
@@ -54,7 +54,7 @@ approval even when the Issue title changes.
 - Feature `plan-and-task-check.md`: generated readiness result; never hand-edit a
   passing result.
 - Bugfix `assessment.md`: observed evidence, impact, permission boundary, fix
-  strategy, test strategy, and human approval state.
+  strategy, test strategy, and risk-routing state.
 - Bugfix `fix.md` and `test.md`: actual change scope and verification evidence.
 - `work-context.yml` and `context-pack.md`: small resume indexes for both
   Feature and Bugfix; they point to native artifacts without duplicating them.
@@ -62,3 +62,13 @@ approval even when the Issue title changes.
 `spec.override.md` may sit beside a Feature `spec.md` for an authorized
 confidential handoff, but it must be ignored by Git and read first. It is not
 used to copy private demand into committed files.
+
+## Persistence Boundary
+
+Everything under `.specify/feature/<work_id>/` and
+`.specify/bugfix/<bug_slug>/` is local runtime context and is ignored by Git.
+It may be deleted after its useful resume window. Durable collaboration lives
+in the Issue, PR, source, tests, and explicitly promoted HLD or long-term
+knowledge. The Team extension source remains in the external Spec Kit
+distribution; installation copies only the skills, bootstrap/configuration,
+agent-rule pointers, and managed ignore rules needed by the target repository.

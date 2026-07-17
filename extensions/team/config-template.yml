@@ -21,6 +21,10 @@ agent_tools:
 work_artifacts:
   # Feature and Bugfix use the same depth but different lifecycle identities.
   root: .specify
+  git_policy: local-only
+  ignored_roots:
+    - .specify/feature/
+    - .specify/bugfix/
   feature_path_template: .specify/feature/{work_id}
   bugfix_path_template: .specify/bugfix/{bug_slug}
   categories:
@@ -149,15 +153,21 @@ permissions:
     - agent-native
     - wrapper-enforced
   require_envelope: true
-  require_analysis_review: true
-  require_implementation_review: true
+  require_analysis_review: false
+  implementation_approval_policy: risk-triggered
+  one_envelope_per_work_item: true
+  allow_ready_without_human_approval: true
   deny_unspecified_write_paths: true
   deny_unspecified_network: true
   require_human_approval_for:
+    - cross-repository-change
     - expand-write-paths
     - public-contract-change
     - cross-module-change
     - dependency-install
+    - security-impact
+    - license-impact
+    - incompatible-change
     - external-network-write
   always_deny_without_explicit_exception:
     - credential-read
@@ -212,8 +222,8 @@ repositories:
       - sanitized handoff RFCs
       - internal status labels
 
-  # Coding repository stores source code, public implementation plans, tasks,
-  # self-tests, evidence, implementation PRs, and public feature issues.
+  # Coding repository stores source code and durable collaboration records.
+  # Local runtime work packages stay ignored under .specify/feature|bugfix.
   coding:
     role: coding
     remote: ""
@@ -222,7 +232,7 @@ repositories:
     stores:
       - source code
       - public feature issues
-      - plan-and-task
+      - accepted Plan and Task summaries in Issue discussion
       - self-test evidence
       - implementation PRs
       - public-safe summaries for internal enhancement work

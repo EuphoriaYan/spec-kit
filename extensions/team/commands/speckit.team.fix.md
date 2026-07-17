@@ -1,10 +1,12 @@
 ---
-description: "Fix a bug from assessment.md, verify it, write fix.md/test.md, and ask before creating a PR"
+description: "Fix a ready assessment, verify it, update PR progress, and re-enter review."
 ---
 
 # Team Bug Fix
 
-Apply a bug fix from an approved assessment, run verification, write `fix.md` and `test.md`, and ask the user before creating a pull request.
+Apply a bug fix from a ready or risk-approved assessment, run verification,
+write local `fix.md` and `test.md`, update review progress, and automatically
+re-enter Review.
 
 ## User Input
 
@@ -46,23 +48,39 @@ All bugfix reports created by this command MUST stay under `BUG_ROOT`.
 
 Read `ASSESSMENT` in full before changing source code. Stop if it is missing.
 
-Proceed only when `ASSESSMENT` has:
+Proceed only when `ASSESSMENT` has either:
+
+```markdown
+- **Status**: ready
+```
+
+or:
 
 ```markdown
 - **Status**: approved
 ```
 
-If the status is `draft` or `needs-info`, stop and ask the user to finish or revise `speckit.team.assess` first. If the status field is absent, treat the assessment as draft.
+If the status is `approval-required` or `needs-info`, stop and return to
+`speckit.team.assess`; only a named human can resolve a listed gate. If the
+status field is absent, treat the assessment as `needs-info`.
 
 Read `references/context.md`. Resume from `WORK_CONTEXT` when present; for an
 older Bugfix directory, bootstrap a minimal package from `assessment.md`.
 Reconcile identity or phase conflicts before changing source.
 
+Set `FLOW_KIND=feature-correction` only when the assessment contains both
+`Parent Feature` and `User Stories`; otherwise set
+`FLOW_KIND=standalone-bugfix`.
+
 ## Conditional Issue State Gate
 
-Apply this section only when the user supplies an Issue URL or Issue number.
-Without Issue input, skip this section and continue from the approved
-assessment.
+Apply this section only for `FLOW_KIND=standalone-bugfix` when the user supplies
+an Issue URL or Issue number. Without Issue input, skip this section and
+continue from the ready or approved assessment.
+
+For `FLOW_KIND=feature-correction`, the parent Feature Issue is intent context,
+not a Bug Issue. Never apply the `type/bugfix` gate to `Parent Feature`, its
+Issue URL, or the original Issue URL carried by the correction handoff.
 
 Use an authenticated repository integration or host CLI to inspect the supplied
 Issue before modifying source code. Stop if its repository or labels cannot be
@@ -93,6 +111,10 @@ Use the assessment as the source of truth:
 - do not edit `assessment.md` during fix; record disagreements or discoveries in `fix.md`.
 
 If the assessment appears wrong or insufficient after investigation, stop changing source code and write `FIX_REPORT` with `Status: blocked` and the reason.
+
+For a Feature correction, preserve the assessment's Parent Feature, original
+Issue URL, User Story IDs, and Verification clauses in `fix.md` and test
+evidence. Do not reinterpret the Review finding from the current implementation.
 
 ## Verification Rules
 
@@ -181,16 +203,52 @@ Write `TEST_REPORT` using this structure:
 - <risk>
 ```
 
+## Progress Update And Re-review
+
+After verification, use the `FLOW_KIND` resolved from the assessment.
+
+For a Feature correction, update the existing parent Feature PR discussion.
+Include the parent work ID and Issue, Review finding identity, affected User
+Story IDs and Verification clauses, addressed root cause, changed files, tests
+and results, residual risk, correction round, and `ready for re-review` status.
+Do not include the temporary Bug Root or local Bugfix artifact paths.
+
+For a standalone Bugfix with an existing PR, include `Bug Slug`, `Bug Root`,
+the `assessment.md` path and status, root-cause/fix summary, changed files,
+tests and results, residual risk, and `ready for re-review` status. The paths
+identify the complete local Bugfix package; do not stage its runtime files.
+
+- For a supplied GitHub PR and authenticated `gh`, post the comment
+  automatically.
+- For GitCode or any host without a usable CLI/API, output the complete comment
+  under `## Paste Into PR Discussion`. Tell the user where to paste it; this is
+  a transport step, not a design approval.
+- With no PR, keep the same content in the final response.
+
+Then invoke `speckit.team.review` automatically in local-diff mode, using the
+parent Feature `work_id` for Feature corrections or this `bug_slug` for a
+standalone Bugfix. Stop after three correction rounds, a repeated finding, or
+a human-gate trigger.
+
 ## Pull Request
 
-After writing `fix.md` and `test.md`, ask the user whether to create a pull request. Do not create a PR without explicit user confirmation in the current interaction.
+This section creates a PR only for a standalone Bugfix. A Feature correction
+already belongs to the parent Feature PR: never create a separate Bugfix PR,
+update that PR using `Progress Update And Re-review`, and return directly to
+Review.
+
+For a standalone Bugfix, after writing `fix.md` and `test.md`, ask the user
+whether to create a pull request. Do not create a PR without explicit user
+confirmation in the current interaction.
 
 Before automated submission:
 
 1. Run `git status --short --branch`, determine the default branch without
    switching branches, and stop if the current branch is the default branch.
 2. Inspect staged, unstaged, and untracked files. Include only the approved
-   Bugfix source, tests, `fix.md`, `test.md`, and repository-approved evidence.
+   Bugfix source and tests, plus only explicitly promoted durable HLD or
+   knowledge. `assessment.md`, `fix.md`, `test.md`, context, and evidence under
+   `.specify/bugfix/` are local runtime artifacts and must not be staged.
    Exclude local prompts, scratch files, private demand, and
    `spec.override.md`.
 3. Confirm the repository is the coding repository and every submitted file
@@ -204,18 +262,23 @@ Before automated submission:
 
 If the user approves and `gh` is available, run `gh pr create` with a concise title and a body that links or references:
 
-- `Bug Slug` and `.specify/bugfix/{bug-slug}/` as the Bug Root;
-- `assessment.md`;
+- `Bug Slug` and `.specify/bugfix/{bug-slug}/` as the `Bug Root`;
+- `assessment.md`, including its status and a public-safe root-cause summary;
 - the primary coding Issue, when linked;
-- `fix.md`;
-- `test.md`;
+- `fix.md` and `test.md`;
 - changed files;
 - verification commands and results;
 - residual risks.
 
-Use the exact labels `Bug Slug:` and `Bug Root:` in the PR body so Review can
-resolve the Bugfix artifacts without guessing from chat. Add `Primary Issue:`
-when an Issue is linked.
+Use the exact labels `Bug Slug:` and `Bug Root:` in a standalone Bugfix PR body
+so Review can resolve the complete local package when it is available. These
+paths are traceability references, not files to stage or publish. Add `Primary
+Issue:` when an Issue is linked.
+
+For a Feature correction, use the existing Feature PR comment instead. Include
+the exact labels `Parent Work ID:`, `Review Finding:`, `User Stories:`, and
+`Correction Round:`; omit `Bug Root:` and the temporary assessment/fix/test
+paths.
 
 If the user declines, `gh` is unavailable, or PR creation fails, provide manual PR instructions instead. Do not treat a missing PR as a failed fix.
 
@@ -240,7 +303,7 @@ Report:
 
 ## Guardrails
 
-- Do not proceed without an approved `assessment.md`.
+- Do not proceed without a `ready` assessment or one approved for its listed human-gate triggers.
 - When an Issue is linked, do not proceed without verified `type/bugfix` and
   `status/working` labels.
 - Do not edit `assessment.md`.

@@ -40,14 +40,15 @@ local draft or `spec.md`. Discussion may refine the demand. Before applying
 body. A clearly identified decision comment may supplement the body.
 
 Plan-and-Task reads the body and discussion, excludes rejected or unresolved
-ideas, and creates the committed Feature `spec.md` snapshot. It records the
+ideas, and creates the local Feature `spec.md` snapshot. It records the
 Issue update time and body hash so later changes can invalidate stale planning.
 
 ## Bugfix Authority
 
 Bugfix does not use Specify or Plan-and-Task. Assess captures the observed
 symptom, reproduction evidence, impact, likely code paths, permission boundary,
-fix strategy, and test strategy in `assessment.md`. Fix consumes the approved
+fix strategy, and test strategy in `assessment.md`. Fix consumes a `ready`
+assessment, or one approved when a permanent human gate was triggered,
 assessment and records implementation and verification in `fix.md` and
 `test.md`. Review checks the resulting PR against those artifacts and any
 linked Issue.

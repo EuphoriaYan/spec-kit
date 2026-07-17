@@ -12,6 +12,12 @@ from pathlib import Path
 START = "<!-- AI TEAM CONTEXT START -->"
 END = "<!-- AI TEAM CONTEXT END -->"
 BOOTSTRAP = ".specify/team/context-bootstrap.md"
+GITIGNORE_START = "# AI TEAM LOCAL WORK START"
+GITIGNORE_END = "# AI TEAM LOCAL WORK END"
+LOCAL_WORK_PATTERNS = (
+    "/.specify/feature/",
+    "/.specify/bugfix/",
+)
 AGENT_FILES = {
     "codex": "AGENTS.md",
     "claude": "CLAUDE.md",
@@ -114,7 +120,12 @@ def _managed_section(target: str, root: Path | None = None) -> str:
         "If a required artifact or human decision is missing, stop and return "
         "to the preceding role. Canonical work artifacts live under "
         "`.specify/feature/<work_id>/` for Features and "
-        "`.specify/bugfix/<bug_slug>/` for Bugfixes.\n"
+        "`.specify/bugfix/<bug_slug>/` for Bugfixes. These work roots are "
+        "Git-ignored local runtime context; share accepted facts through "
+        "Issues, PRs, source, tests, and explicitly promoted HLD. Human "
+        "decisions are required only for requirement acceptance, HLD or "
+        "cross-module/public-interface design, dependency/security/license "
+        "or incompatibility, expansion beyond the Plan, and final merge.\n"
         f"{END}\n"
     )
 
@@ -165,6 +176,28 @@ def _merge(path: Path, target: str, root: Path) -> None:
     path.write_text(merged.replace("\r\n", "\n"), encoding="utf-8")
 
 
+def _merge_gitignore(path: Path) -> None:
+    content = path.read_text(encoding="utf-8-sig") if path.exists() else ""
+    block = "\n".join((GITIGNORE_START, *LOCAL_WORK_PATTERNS, GITIGNORE_END))
+    start = content.find(GITIGNORE_START)
+    end = (
+        content.find(GITIGNORE_END, start + len(GITIGNORE_START))
+        if start >= 0
+        else -1
+    )
+    if (start >= 0) != (end >= 0):
+        raise ValueError("Unbalanced AI Team local-work markers in .gitignore")
+    if start >= 0:
+        end += len(GITIGNORE_END)
+        merged = content[:start] + block + content[end:]
+    else:
+        separator = (
+            "" if not content else ("\n" if content.endswith("\n") else "\n\n")
+        )
+        merged = content + separator + block + "\n"
+    path.write_text(merged.replace("\r\n", "\n"), encoding="utf-8")
+
+
 def initialize(root: Path) -> list[str]:
     root = root.resolve()
     bootstrap = (root / BOOTSTRAP).resolve()
@@ -183,13 +216,15 @@ def initialize(root: Path) -> list[str]:
         if target not in targets:
             targets.append(target)
     paths = [(target, _safe_target(root, target)) for target in targets]
+    gitignore = _safe_target(root, ".gitignore")
     snapshots = {
         path: path.read_bytes() if path.exists() else None
-        for path in [path for _, path in paths]
+        for path in [*[path for _, path in paths], gitignore]
     }
     try:
         for target, path in paths:
             _merge(path, target, root)
+        _merge_gitignore(gitignore)
     except (OSError, UnicodeError, ValueError):
         for path, content in snapshots.items():
             if content is None:

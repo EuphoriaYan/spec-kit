@@ -60,7 +60,7 @@ Read in this order:
 bug_slug: "upload-timeout"
 category: bugfix
 source: "upload timeout reported during development"
-phase: assessment-approved
+phase: assessment-ready
 source_revision: <git-revision>
 last_completed_skill: speckit.team.assess
 next_skill: speckit.team.fix
@@ -71,7 +71,7 @@ artifacts:
 unresolved: []
 ```
 
-Assess updates the package after assessment and human approval. Fix updates it
+Assess updates the package after risk routing and any required human decision. Fix updates it
 after implementation and verification. Review reads it to resolve the same Bug
 Root and may update only review phase metadata when repository policy allows.
 This gives Bugfix work an explicit cross-session resume path without introducing
@@ -79,7 +79,18 @@ Feature Spec, Plan, or Task fields.
 
 ## Git Policy
 
-Repository policy decides whether `work-context.yml` and `context-pack.md` are
-committed. When committed, they must contain only public-safe summaries and
-relative artifact paths. Always ignore `spec.override.md`, private customer
-text, credentials, local memory, and raw logs containing sensitive data.
+Feature and Bugfix work packages are runtime context owned by the installed
+Team extension. The installer adds `/.specify/feature/` and
+`/.specify/bugfix/` to the target coding repository's `.gitignore`; do not
+commit them. `.specify/team/` remains separately governed project
+configuration and is not covered by these ignore rules.
+
+Cross-person handoff uses the authoritative Issue and PR discussion. Publish a
+public-safe User Story, accepted Plan/Task summary, verification result, and
+remaining risk there. A significant HLD may be promoted to project `docs/`
+after human review. Never publish private customer text, credentials, local
+memory, raw logs, or `spec.override.md`.
+
+If older work-package files are already tracked, adding `.gitignore` does not
+remove them from the Git index. Migrate them in a focused repository PR after
+confirming that required Issue, PR, test, and HLD facts remain available.

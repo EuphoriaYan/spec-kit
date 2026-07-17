@@ -621,9 +621,16 @@ def register(app: typer.Typer) -> None:
                         if team_result.updated
                         else "already present"
                     )
+                    migration = ""
+                    if team_result.tracked_local_work_files:
+                        migration = (
+                            f"; {len(team_result.tracked_local_work_files)} tracked local "
+                            "work files need a separate index-cleanup PR"
+                        )
                     tracker.complete(
                         "team",
-                        f"extension {action}; {len(team_result.rule_files)} rule files",
+                        f"extension {action}; {len(team_result.rule_files)} rule files"
+                        f"{migration}",
                     )
                 except Exception as bundle_err:
                     tracker.error("team", str(bundle_err)[:120])

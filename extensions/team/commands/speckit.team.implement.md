@@ -1,11 +1,12 @@
 ---
-description: "Implement task-ready feature work, verify it, and optionally submit a pull request."
+description: "Implement task-ready feature work, verify it, run the quality loop, and submit the result."
 ---
 
 # Team Implement
 
-Implement the selected tasks and produce durable verification evidence. A pull
-request is optional; implementation is complete when Phase 5 passes.
+Implement the selected tasks and produce local verification evidence. After
+Phase 5, automatically hand the diff to the isolated Review -> Assess -> Fix
+quality loop before offering pull-request submission.
 
 ## User Input
 
@@ -15,9 +16,9 @@ $ARGUMENTS
 
 Accept:
 
-- required `work_id=<id>` identifying `.specify/feature/<work_id>/`;
-- optional `only=T001-T010` (also accept a comma-separated list of task IDs);
-- optional `submit_pr=true`.
+- `work_id=<id>` identifying `.specify/feature/<work_id>/`, or the accepted
+  Feature Issue URL from which the work ID can be derived;
+- optional `only=T001-T010` (also accept a comma-separated list of task IDs).
 
 Reject an unsafe work ID containing path separators, `..`, or anything other than
 letters, numbers, dots, underscores, and hyphens. Set:
@@ -36,6 +37,13 @@ modify workflow files.
    `plan-and-task.md`, and `plan-and-task-check.md`. Prefer `spec.override.md`
    over `spec.md` when both exist, but do not copy override content into
    tracked source or reports.
+   When the local work root is absent because another contributor performed
+   planning, fetch the authoritative Issue and its accepted Plan/Task handoff,
+   reconstruct only the public-safe local artifacts, create a fresh Context
+   Package and implementation Permission Envelope, and rerun the installed
+   deterministic checks. Stop if the Issue lacks an unambiguous accepted HLD,
+   Task scope, self-tests, permission status, or decision evidence. Never treat
+   remembered chat as the handoff.
 3. Read `references/context.md` when resuming, then read, when present,
    `work-context.yml`, `context-pack.md`,
    `permission-envelope.yml`, `handoffs/`, and `codegraph/`.
@@ -86,7 +94,10 @@ do not edit the specification or the Plan section.
 Require `permission-envelope.yml`. Run the installed
 `scripts/check_permission_envelope.py` by its resolved path with
 `--work-type feature --work-id <work_id> --mode implementation
---require-approved`. Stop if the deterministic check is blocked; do not
+--require-authorized`. A `ready` envelope is authorized without a human
+approval only when it has no current `approval_required` trigger. An
+`approved` envelope records the one human decision for the complete selected
+Task batch. Stop if the deterministic check is blocked; do not
 hand-wave or replace its result. The check verifies the approval identity and
 timestamps as well as the envelope structure.
 
@@ -139,34 +150,48 @@ and changed files.
 Output `## Verification Report`. Verification passes only when every selected
 task is checked, required checks pass, and the diff stays in scope. On success,
 update `work-context.yml` to `phase: verified`,
-`last_completed_skill: speckit.team.implement`, and an appropriate
-`next_skill`, preserving all other fields. On failure, do not set `verified`;
+   `last_completed_skill: speckit.team.implement`, and
+   `next_skill: speckit.team.review`, preserving all other fields. On failure, do not set `verified`;
 report the repair needed and stop without entering the PR phase.
 
-## Optional Phase 6
+## Phase 6: Automatic Quality Loop
 
-After verification passes:
+After verification passes, invoke `speckit.team.review` in local-diff mode with
+`work_id=<work_id> auto_fix=true`. Do not ask the user to approve this routine
+transition. The Reviewer must reconstruct intent from the Issue, effective
+Feature spec, accepted Plan, and User Story mappings rather than from hidden
+implementation chat.
 
-- when `submit_pr=true`, continue immediately;
-- otherwise ask only:
+When Review finds a repairable blocker or major finding within the authorized
+repository, module, Plan, and dependency boundary, it automatically hands the
+finding and original User Story IDs to `speckit.team.assess`, then
+`speckit.team.fix`, and repeats Review. Stop after three correction rounds, on
+a repeated root cause, or whenever a human-gate trigger appears. Minor findings
+may finish as `GO-WITH-RISK` with the risk listed for the final merge decision.
 
-  ```text
-  Implementation and verification complete.
+If the integration cannot chain installed Skills, print the exact next Skill
+invocation and mark the quality loop `continuation-required`; this is a tooling
+limitation, not a request for design approval.
 
-  Submit a pull request for this feature? (yes/no)
-  ```
+## Phase 7: Pull Request
 
-- continue only after an explicit yes. A no or absent confirmation ends with
-  `phase: verified`.
+After the quality loop reports `GO` or `GO-WITH-RISK`:
 
-When continuing, read and execute the installed
-`references/implement-pr.md`. Do not reproduce, guess, or preload its
-instructions before confirmation.
+- read and execute the installed `references/implement-pr.md` immediately;
+- create or update the PR automatically when the host integration is usable;
+- for GitCode or another host without a usable API/CLI, output the complete
+  title, body, file list, and `## Paste Into PR Description` block;
+- treat manual posting as transport, not another design approval.
+
+Do not reproduce, guess, or preload the PR reference before Phase 7.
+
+Do not ask whether to submit a PR. Stop only when submission prerequisites are
+unresolved, and report the exact prerequisite without invalidating verified
+implementation. Final merge remains a human decision.
 
 ## Output Order
 
-Use these sections, omitting later sections after a stop condition and omitting
-Pull Request unless Phase 6 runs:
+Use these sections, omitting later sections after a stop condition:
 
 ```text
 ## Context Summary
@@ -174,5 +199,6 @@ Pull Request unless Phase 6 runs:
 ## Permission Check
 ## Implementation Progress
 ## Verification Report
+## Automated Quality Loop
 ## Pull Request
 ```

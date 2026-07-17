@@ -52,9 +52,13 @@ def test_assess_contract_uses_bugfix_root_and_merges_analysis():
     assert "Code Graph / Relevant Code Paths" in command
     assert "Impact Analysis" in command
     assert "Permission Boundary" in command
-    assert "Review and Revision Loop" in command
-    assert "Status**: draft | approved | needs-info" in command
-    assert "Do not include a separate `## Assessment Review` section" in command
+    assert "Risk Routing" in command
+    assert "Status**: ready | approval-required | approved | needs-info" in command
+    assert "`draft` is not a valid assessment status" in command
+    assert "Only when Assess is invoked for a Feature correction" in command
+    assert "Omit both fields for a standalone Bugfix" in command
+    assert "or not-applicable" not in command
+    assert "repository-local analysis does not need human approval" in command
     assert "Issue Creation" in command
     assert "status/new-issue" in command
     assert "type/bugfix" in command
@@ -75,6 +79,7 @@ def test_fix_contract_writes_reports_and_asks_before_pr():
     assert "assessment.md" in command
     assert "fix.md" in command
     assert "test.md" in command
+    assert "Status**: ready" in command
     assert "Status**: approved" in command
     assert "ask the user whether to create a pull request" in command
     assert "gh pr create" in command
@@ -84,11 +89,17 @@ def test_fix_contract_writes_reports_and_asks_before_pr():
     assert "status/new-issue" in command
     assert "status/accept" in command
     assert "Do not change issue labels automatically" in command
-    assert "Apply this section only when the user supplies an Issue URL" in command
+    assert "Apply this section only for `FLOW_KIND=standalone-bugfix`" in command
+    assert "Never apply the `type/bugfix` gate to `Parent Feature`" in command
     assert "Proceed only when the Issue has label `status/working`" in command
     assert "Primary Issue**: <supplied coding Issue URL or not-provided>" in command
     assert "references/context.md" in command
+    assert "This section creates a PR only for a standalone Bugfix" in command
+    assert "never create a separate Bugfix PR" in command
     assert "Use the exact labels `Bug Slug:` and `Bug Root:`" in command
+    assert "`assessment.md`, including its status" in command
+    assert "`Parent Work ID:`" in command
+    assert "omit `Bug Root:`" in command
     assert "stop if the current branch is the default branch" in command
     assert "Exclude local prompts, scratch files, private demand" in command
     assert "symptoms of the same root cause" in command
@@ -131,7 +142,7 @@ def test_bugfix_flow_has_its_own_resume_context():
     assert "both `type/bugfix` and `status/new-issue`" in journey
 
 
-def test_feature_and_bugfix_delivery_chains_are_disjoint():
+def test_feature_and_bugfix_delivery_chains_are_distinct_with_review_bridge():
     commands = EXTENSION_ROOT / "commands"
     specify = _normalized_markdown(commands / "speckit.team.specify.md")
     plan = _normalized_markdown(commands / "speckit.team.plan-and-task.md")
@@ -144,11 +155,13 @@ def test_feature_and_bugfix_delivery_chains_are_disjoint():
     assert "assessment.md" not in plan
     assert ".specify/bugfix/" not in implement
     assert "assessment.md" not in implement
-    assert ".specify/feature/" not in assess
-    assert "plan-and-task.md" not in assess
+    assert "parent Feature root" in assess
+    assert "User Story Verification clauses" in assess
     assert ".specify/feature/" not in fix
     assert "plan-and-task.md" not in fix
     assert "belongs to the Bugfix intake skill" in specify
+    assert "Automated Quality Loop" in implement
+    assert "Assess -> Fix -> Re-review" in review
 
     assert "never both" in review
     assert ".specify/feature/{work_id}" in review
@@ -157,16 +170,20 @@ def test_feature_and_bugfix_delivery_chains_are_disjoint():
     assert "For Bugfix" in review
 
 
-def test_implement_contract_uses_unified_root_and_lazy_pr_prompt():
+def test_implement_contract_uses_unified_root_and_automatic_pr_transport():
     command = (EXTENSION_ROOT / "commands" / "speckit.team.implement.md").read_text(
         encoding="utf-8"
     )
 
     assert ".specify/feature/{work_id}" in command
-    assert "required `work_id=<id>`" in command
+    assert "`work_id=<id>`" in command
+    assert "accepted Plan/Task handoff" in command
     assert "feature_slug" not in command
     assert "only=T001-T010" in command
-    assert "submit_pr=true" in command
+    assert "Do not ask whether to submit a PR" in command
+    assert "create or update the PR automatically" in command
+    assert "Final merge remains a human decision" in command
+    assert "submit_pr=true" not in command
     assert "Readiness blocked. Do not proceed with implementation." in command
     assert "references/implement-pr.md" in command
     assert "phase: verified" in command
@@ -203,22 +220,29 @@ def test_commands_do_not_describe_unrelated_spec_kit_storage():
         assert all(value not in command for value in forbidden), path.name
 
 
-def test_review_contract_treats_pr_as_primary_input():
+def test_review_contract_supports_pr_and_local_quality_loop():
     command = _normalized_markdown(
         EXTENSION_ROOT / "commands" / "speckit.team.review.md"
     )
 
-    assert "Require a PR URL or `pr=<number>`" in command
+    assert "Accept a PR URL, `pr=<number>`, or `local=true`" in command
     assert "gh pr view" in command
     assert "gh pr diff" in command
     assert "## Review Findings" in command
-    assert "## Merge Recommendation" in command
+    assert "## Final Conclusion" in command
+    assert "GO | GO-WITH-RISK | NO-GO" in command
+    assert "## Required Next Action" in command
     assert "## Durable Follow-up" in command
     assert "test, mechanical gate, role Skill correction" in command
     assert "evidence/review-report.md" in command
     assert "`bug_slug=<slug>`" in command
     assert "require `assessment.md`, `fix.md`, and `test.md`" in command
     assert "same root cause" in command
+    assert "`GO`" in command
+    assert "`GO-WITH-RISK`" in command
+    assert "`NO-GO`" in command
+    assert "Do not merge" in command
+    assert "Paste Into PR Discussion" in command
     assert "`plan-and-task.md`" in command
     assert "`plan-and-task-check.md`" in command
     assert "`plan.md`" not in command

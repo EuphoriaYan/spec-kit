@@ -36,13 +36,13 @@ provides.
 | `speckit.team.specify` | clarify a Feature through User Stories, then publish or print the primary Issue |
 | `speckit.team.plan-and-task` | produce Code Graph grounded Plan, LLD-capable Tasks, and self-test design |
 | `speckit.team.assess` | assess a defect, its impact, permission boundary, fix strategy, and test strategy |
-| `speckit.team.fix` | apply an approved Bugfix assessment, verify it, and optionally create a pull request |
-| `speckit.team.implement` | implement task-ready work, verify it, and optionally create a pull request |
-| `speckit.team.review` | review a pull request for correctness, evidence, permissions, and SDD alignment |
+| `speckit.team.fix` | apply a ready or risk-approved Bugfix assessment, verify it, and return to review |
+| `speckit.team.implement` | implement task-ready work, verify it, run automatic quality correction, and submit the result |
+| `speckit.team.review` | review a PR or local diff and return `GO`, `GO-WITH-RISK`, or `NO-GO` |
 
 ```text
-Feature: Specify -> status/new-issue -> Technical Committee acceptance -> Plan-and-Task -> Implement -> optional PR -> Review
-Bugfix: Assess -> human approval -> Fix -> optional PR -> Review
+Feature: Specify -> status/new-issue -> Technical Committee acceptance -> Plan-and-Task -> Implement -> Review/Assess/Fix loop -> PR -> human merge decision
+Bugfix: Assess -> optional risk approval -> Fix -> Review -> optional standalone PR -> human merge decision
 ```
 
 Feature Issue creation belongs to Specify, where User Stories and their

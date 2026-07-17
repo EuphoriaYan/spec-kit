@@ -30,6 +30,31 @@ class TeamSetupResult:
     installed: bool
     updated: bool
     rule_files: tuple[str, ...]
+    tracked_local_work_files: tuple[str, ...]
+
+
+def _tracked_local_work_files(project_root: Path) -> tuple[str, ...]:
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(project_root),
+                "ls-files",
+                "-z",
+                "--",
+                ".specify/feature",
+                ".specify/bugfix",
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return ()
+    if result.returncode != 0:
+        return ()
+    return tuple(sorted(path for path in result.stdout.split("\0") if path))
 
 
 def _require_codegraph() -> tuple[str, str]:
@@ -160,4 +185,5 @@ def install_bundled_team(project_root: Path) -> TeamSetupResult:
         installed=not already_installed,
         updated=updated,
         rule_files=tuple(rules),
+        tracked_local_work_files=_tracked_local_work_files(project_root),
     )
