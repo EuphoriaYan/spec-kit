@@ -22,6 +22,12 @@ durable planning and evidence artifacts rather than prior role chat.
 
 Bugfix uses the independent Assess -> Fix -> Review flow.
 
+Plan-and-Task and Assess use the required local CodeGraph CLI for architecture
+and impact evidence. Initialize an existing repository once with
+`codegraph init`; the active Skill asks before creating a missing index, then
+checks and synchronizes it before analysis. Source remains the implementation
+truth, and `.codegraph/` remains local derived state.
+
 An accepted Issue body is primary. Suggestions and rejected alternatives in
 comments are not requirements. Before acceptance, maintainers should consolidate
 accepted changes into the Issue body; an explicit decision comment may

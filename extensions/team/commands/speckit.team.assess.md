@@ -66,7 +66,11 @@ README files, logs provided by the user, and existing
 Merge the old permission, impact, and assessment-review concepts into this assessment:
 
 1. **Context**: summarize the relevant project behavior and files read.
-2. **Code Graph / Relevant Code Paths**: identify likely files, functions, routes, modules, tests, and data flow. If no code graph tool is available, use source search and record the limitation.
+2. **CodeGraph / Relevant Code Paths**: read
+   `references/code-graph-contract.md`, then use CodeGraph to identify likely
+   files, functions, routes, modules, tests, data flow, and blast radius. For an
+   existing project, stop when CodeGraph is unavailable or its index is not
+   usable; do not substitute an unreviewed source-search fallback.
 3. **Impact Analysis**: identify blast radius, public API effects, data/storage concerns, migration risk, security risk, and regression risk.
 4. **Permission Boundary**: define proposed write paths and proposed verification commands for the later fix command. These are recommendations, not source changes.
 5. **Review and Revision Loop**: after drafting the assessment, present the verdict, root-cause hypothesis, proposed write paths, verification commands, risks, and open questions to the user. Ask whether to approve, revise, or mark needs-info. Apply requested revisions directly to `assessment.md`; do not add a separate assessment-review section or transcript.

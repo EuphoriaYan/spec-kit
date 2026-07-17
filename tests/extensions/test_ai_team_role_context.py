@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -140,6 +141,9 @@ def test_direct_team_setup_rolls_back_extension_when_rules_fail(
     )
     (tmp_path / ".claude" / "skills").mkdir(parents=True)
     monkeypatch.setattr(team_setup, "_locate_bundled_extension", lambda _id: AI_TEAM)
+    monkeypatch.setattr(
+        team_setup, "_require_codegraph", lambda: ("codegraph", "1.4.1")
+    )
 
     def fail_rules(_root: Path, _source: Path) -> list[str]:
         raise RuntimeError("rule failure")
@@ -154,6 +158,104 @@ def test_direct_team_setup_rolls_back_extension_when_rules_fail(
     assert not (tmp_path / ".agents" / "skills" / "speckit-team-specify").exists()
     assert not (tmp_path / ".claude" / "skills" / "speckit-team-specify").exists()
     assert not (specify / "team" / "context-bootstrap.md").exists()
+
+
+def test_direct_team_setup_requires_supported_codegraph(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from specify_cli import team_setup
+
+    monkeypatch.setattr(team_setup.shutil, "which", lambda _name: None)
+    with pytest.raises(RuntimeError, match="CodeGraph CLI 1.x is required"):
+        team_setup.install_bundled_team(tmp_path)
+
+    monkeypatch.setattr(team_setup.shutil, "which", lambda _name: "codegraph")
+    monkeypatch.setattr(
+        team_setup.subprocess,
+        "run",
+        lambda *args, **kwargs: team_setup.subprocess.CompletedProcess(
+            args[0], 0, stdout="codegraph 0.9.9\n", stderr=""
+        ),
+    )
+    with pytest.raises(RuntimeError, match="requires >=1.0.0,<2.0.0"):
+        team_setup.install_bundled_team(tmp_path)
+
+
+def test_codegraph_version_check_accepts_supported_release(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from specify_cli import team_setup
+
+    monkeypatch.setattr(team_setup.shutil, "which", lambda _name: "/tools/codegraph")
+    monkeypatch.setattr(
+        team_setup.subprocess,
+        "run",
+        lambda *args, **kwargs: team_setup.subprocess.CompletedProcess(
+            args[0], 0, stdout="CodeGraph v1.4.1\n", stderr=""
+        ),
+    )
+
+    assert team_setup._require_codegraph() == ("/tools/codegraph", "1.4.1")
+
+
+def test_team_setup_refreshes_old_bundled_skills_and_preserves_project_state(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from specify_cli import team_setup
+    from specify_cli._assets import get_speckit_version
+    from specify_cli.extensions import ExtensionManager
+
+    project = tmp_path / "project"
+    specify = project / ".specify"
+    specify.mkdir(parents=True)
+    (specify / "init-options.json").write_text(
+        json.dumps({"ai": "codex", "integration": "codex", "ai_skills": True}),
+        encoding="utf-8",
+    )
+
+    old_team = tmp_path / "team-0.5.0"
+    shutil.copytree(AI_TEAM, old_team)
+    old_manifest = old_team / "extension.yml"
+    old_manifest.write_text(
+        old_manifest.read_text(encoding="utf-8").replace(
+            'version: "0.5.1"', 'version: "0.5.0"'
+        ),
+        encoding="utf-8",
+    )
+    old_plan = old_team / "commands" / "speckit.team.plan-and-task.md"
+    old_plan.write_text(
+        "---\ndescription: old plan\n---\n\nOLD ADAPTER PLAN\n", encoding="utf-8"
+    )
+
+    manager = ExtensionManager(project)
+    manager.install_bundled_from_directory(old_team, get_speckit_version())
+    state = specify / "team"
+    state.mkdir()
+    config = state / "ai-team-config.yml"
+    config.write_text("project_owned: true\n", encoding="utf-8")
+
+    monkeypatch.setattr(team_setup, "_locate_bundled_extension", lambda _id: AI_TEAM)
+    monkeypatch.setattr(
+        team_setup, "_require_codegraph", lambda: ("codegraph", "1.4.1")
+    )
+
+    result = team_setup.install_bundled_team(project)
+
+    installed_plan = (
+        project / ".agents/skills/speckit-team-plan-and-task/SKILL.md"
+    ).read_text(encoding="utf-8")
+    metadata = ExtensionManager(project).registry.get("team")
+    assert result.installed is False
+    assert result.updated is True
+    assert "OLD ADAPTER PLAN" not in installed_plan
+    assert "required CodeGraph" in installed_plan
+    assert metadata is not None
+    assert metadata["version"] == "0.5.1"
+    assert config.read_text(encoding="utf-8") == "project_owned: true\n"
+
+    second = team_setup.install_bundled_team(project)
+    assert second.installed is False
+    assert second.updated is False
 
 
 @pytest.mark.parametrize(
@@ -182,6 +284,9 @@ def test_team_skills_install_with_local_references_and_scripts(
         encoding="utf-8",
     )
     monkeypatch.setattr(team_setup, "_locate_bundled_extension", lambda _id: AI_TEAM)
+    monkeypatch.setattr(
+        team_setup, "_require_codegraph", lambda: ("codegraph", "1.4.1")
+    )
 
     team_setup.install_bundled_team(tmp_path)
 
@@ -203,7 +308,6 @@ def test_team_skills_install_with_local_references_and_scripts(
     assert {
         path.name for path in (plan_skill / "references").glob("*.md")
     } == {
-        "code-graph-adapters.md",
         "code-graph-contract.md",
         "context.md",
         "feature-spec.md",
@@ -214,7 +318,10 @@ def test_team_skills_install_with_local_references_and_scripts(
     assert (plan_skill / "scripts/check_plan_and_task.py").is_file()
     assert (plan_skill / "scripts/check_permission_envelope.py").is_file()
     assert (plan_skill / "scripts/work_item_paths.py").is_file()
-    for skill in (assess_skill, fix_skill, review_skill):
+    assert {
+        path.name for path in (assess_skill / "references").glob("*.md")
+    } == {"code-graph-contract.md", "context.md"}
+    for skill in (fix_skill, review_skill):
         assert (skill / "SKILL.md").is_file()
         assert {
             path.name for path in (skill / "references").glob("*.md")
@@ -240,6 +347,9 @@ def test_packaged_team_resolves_for_listing_reregistration_and_removal(
         encoding="utf-8",
     )
     monkeypatch.setattr(team_setup, "_locate_bundled_extension", lambda _id: AI_TEAM)
+    monkeypatch.setattr(
+        team_setup, "_require_codegraph", lambda: ("codegraph", "1.4.1")
+    )
     monkeypatch.setattr(
         "specify_cli._assets._locate_bundled_extension", lambda _id: AI_TEAM
     )
@@ -374,7 +484,8 @@ def test_plan_and_task_has_structured_input_contract() -> None:
     assert "status/accept" in text
     assert "Issue Identity And Summary" in text
     assert "Read the current Issue body and all relevant discussion" in text
-    assert "Code Graph slice tied to the exact source revision" in text
+    assert "required CodeGraph" in text
+    assert "source-structure fallback" not in text
     assert "Design Tasks for parallel assignment" in text
     assert "Every Task belongs to one" in text
     assert "enhancement-<issue-id>" in text
@@ -437,7 +548,7 @@ def test_role_skills_load_references_only_at_the_phase_that_needs_them() -> None
     assert "Do not preload it" in specify
     assert "When resuming an existing work root" in plan
     assert "immediately before writing it" in plan
-    assert "only when an adapter must be selected" in plan
+    assert "use the required CodeGraph" in plan
     assert "approved_at" in plan
     assert "--require-approved" in plan
     assert "immediately before creating or\n   updating `plan-and-task.md`" in plan
@@ -456,7 +567,10 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
     assert commands["speckit.team.specify"] == {
         "references/repository-boundary.md"
     }
-    assert commands["speckit.team.assess"] == {"references/context.md"}
+    assert commands["speckit.team.assess"] == {
+        "references/code-graph-contract.md",
+        "references/context.md",
+    }
     assert commands["speckit.team.fix"] == {"references/context.md"}
     assert commands["speckit.team.review"] == {"references/context.md"}
     assert commands["speckit.team.implement"] == {

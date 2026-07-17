@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: team
   name: "AI Team SDD Skills"
-  version: "0.5.0"
+  version: "0.5.1"
   description: "Six role-oriented enterprise SDD skills for feature and bugfix work from intake through pull request review."
   author: AI Team Template
   repository: https://github.com/EuphoriaYan/spec-kit
@@ -14,6 +14,9 @@ requires:
   tools:
     - name: gh
       required: false
+    - name: codegraph
+      version: ">=1.0.0,<2.0.0"
+      required: true
 
 provides:
   commands:
@@ -29,8 +32,6 @@ provides:
       resources:
         - source: docs/code-graph-contract.md
           target: references/code-graph-contract.md
-        - source: docs/code-graph-adapters.md
-          target: references/code-graph-adapters.md
         - source: docs/permission-envelope.md
           target: references/permission-envelope.md
         - source: references/internal/context.md
@@ -59,6 +60,8 @@ provides:
       file: commands/speckit.team.assess.md
       description: "Bug assessor role: analyze a report, define impact and permissions, and write an approved assessment."
       resources:
+        - source: docs/code-graph-contract.md
+          target: references/code-graph-contract.md
         - source: references/internal/context.md
           target: references/context.md
     - name: speckit.team.fix

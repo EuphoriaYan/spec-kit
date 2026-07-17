@@ -30,7 +30,14 @@ def test_team_manifest_is_valid_and_declares_execution_commands():
     }
 
     raw = yaml.safe_load((EXTENSION_ROOT / "extension.yml").read_text(encoding="utf-8"))
-    assert raw["requires"]["tools"] == [{"name": "gh", "required": False}]
+    assert raw["requires"]["tools"] == [
+        {"name": "gh", "required": False},
+        {
+            "name": "codegraph",
+            "version": ">=1.0.0,<2.0.0",
+            "required": True,
+        },
+    ]
     for command_file in commands.values():
         assert (EXTENSION_ROOT / command_file).is_file()
 

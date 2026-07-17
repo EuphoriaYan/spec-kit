@@ -198,13 +198,11 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["issue_publishing"]["default_adapter"] == "auto"
     assert config["issue_publishing"]["require_verified_issue_url"] is True
     assert config["issue_publishing"]["require_feature_readiness_pass"] is True
-    assert "root" not in config["code_graph"]
-    assert set(config["code_graph"]["normalized_outputs"]) == {
-        "nodes.jsonl",
-        "edges.jsonl",
-        "summary.md",
-        "adapter-report.md",
-    }
+    assert config["code_graph"]["tool"] == "codegraph"
+    assert config["code_graph"]["required_version"] == ">=1.0.0,<2.0.0"
+    assert config["code_graph"]["local_index"] == ".codegraph/codegraph.db"
+    assert config["code_graph"]["evidence_file"] == "codegraph/summary.md"
+    assert config["code_graph"]["require_for_existing_project"] is True
     assert (
         config["repositories"]["enhancement_internal"][
             "raw_demand_record_in_coding_repository"
@@ -482,9 +480,11 @@ def test_ai_team_code_graph_contract_is_reference_not_nested_command():
     contract = EXTENSION_ROOT / "docs" / "code-graph-contract.md"
 
     text = contract.read_text(encoding="utf-8")
-    assert "## Required Evidence" in text
-    assert "## Fallback Rule" in text
-    assert "source-structure-fallback" in text
+    assert "## Preconditions" in text
+    assert "## Evidence" in text
+    assert "codegraph status" in text
+    assert "source-structure fallback" in text
+    assert "substituting grep" in text
     assert "$ARGUMENTS" not in text
     assert "## User Input" not in text
 
@@ -531,18 +531,10 @@ def test_core_templates_exclude_handoff_spec_override():
         assert "spec.override.md" not in text, rel
 
 
-def test_ai_team_code_graph_adapter_document_exists():
+def test_ai_team_does_not_ship_code_graph_adapter_layer():
     graph_doc = EXTENSION_ROOT / "docs" / "code-graph-adapters.md"
 
-    assert graph_doc.exists()
-    text = graph_doc.read_text(encoding="utf-8")
-    assert "Adapter Contract" in text
-    assert "SCIP" in text
-    assert "Joern" in text
-    assert "CodeQL" in text
-    assert "tree-sitter" in text
-    assert "nodes.jsonl" in text
-    assert "edges.jsonl" in text
+    assert not graph_doc.exists()
 
 
 def test_ai_team_user_journeys_document_exists():

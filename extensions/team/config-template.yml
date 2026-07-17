@@ -180,27 +180,17 @@ issue_lifecycle:
   enhancement_internal_allows_bugfix: false
 
 code_graph:
-  # Adapters may be local tools, MCP tools, or hosted services. All of them
-  # should normalize into the active work item's codegraph/ directory.
-  default_adapter_order:
-    - scip
-    - joern
-    - codeql
-    - tree-sitter-source
-  normalized_outputs:
-    - nodes.jsonl
-    - edges.jsonl
-    - summary.md
-    - adapter-report.md
+  tool: codegraph
+  required_version: ">=1.0.0,<2.0.0"
+  local_index: .codegraph/codegraph.db
+  evidence_file: codegraph/summary.md
+  require_for_existing_project: true
   require_for:
     - public interface change
     - class add or delete
     - cross-module semantic change
     - dependency direction change
     - resumed task with changed source snapshot
-  license_review_required_for:
-    - jqassistant
-    - universal-ctags
 
 repositories:
   # Internal enhancement repository stores confidential enterprise demand,
