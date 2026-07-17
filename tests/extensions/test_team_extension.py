@@ -27,6 +27,7 @@ def test_team_manifest_is_valid_and_declares_execution_commands():
         "speckit.team.fix": "commands/speckit.team.fix.md",
         "speckit.team.implement": "commands/speckit.team.implement.md",
         "speckit.team.review": "commands/speckit.team.review.md",
+        "speckit.team.memory-consolidate": "commands/speckit.team.memory-consolidate.md",
     }
 
     raw = yaml.safe_load((EXTENSION_ROOT / "extension.yml").read_text(encoding="utf-8"))

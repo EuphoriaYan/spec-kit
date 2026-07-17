@@ -1,9 +1,9 @@
 # AI Team User Journeys
 
-The extension exposes six role-oriented skills: Specify, Plan-and-Task, Assess,
-Fix, Implement, and Review. Internal capability documents and scripts are
-loaded by the active role and are not separate user commands. Feature work
-starts with Specify; Bugfix work starts with Assess.
+The extension exposes six role-oriented delivery skills: Specify,
+Plan-and-Task, Assess, Fix, Implement, and Review, plus the optional
+Memory-Consolidate support skill. Feature work starts with Specify; Bugfix work
+starts with Assess.
 Durable artifacts and explicit human decisions route later phases.
 
 ## One-Sentence Feature
@@ -99,9 +99,13 @@ only after Task decomposition is complete.
 - Both work roots are local and ignored by Git. Cross-machine resume rebuilds
   from the Issue/PR handoff and current source rather than fetching these files.
 
-## Post-Delivery Knowledge
+## Advanced Extension: Post-Delivery Knowledge
 
 Review may recommend a durable follow-up when a failure pattern is likely to
-recur. Memory consolidation and release archive remain separate,
-maintainer-chosen maintenance activities documented under `docs/`; they are
-not hidden or reserved role Skills.
+recur. This is not another delivery stage. A contributor or maintainer can
+explicitly invoke
+`speckit.team.memory-consolidate` after completed work or an explicit human
+decision. Unreviewed lessons remain advisory local or department Memory. A
+durable coding requirement becomes binding only after owner approval and
+promotion into task-scoped project Knowledge. Release archive remains a
+separate maintainer-chosen maintenance activity.

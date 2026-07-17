@@ -28,7 +28,7 @@ def _install_bootstrap(project: Path) -> None:
     target.write_text("# Installed bootstrap\n", encoding="utf-8")
 
 
-def test_all_six_role_commands_are_registered() -> None:
+def test_all_team_commands_are_registered() -> None:
     manifest = yaml.safe_load((AI_TEAM / "extension.yml").read_text(encoding="utf-8"))
     provided = {item["name"]: item for item in manifest["provides"]["commands"]}
     assert set(provided) == {
@@ -38,6 +38,7 @@ def test_all_six_role_commands_are_registered() -> None:
         "speckit.team.fix",
         "speckit.team.implement",
         "speckit.team.review",
+        "speckit.team.memory-consolidate",
     }
     assert {path.stem for path in (AI_TEAM / "commands").glob("*.md")} == set(provided)
 
@@ -179,6 +180,10 @@ def test_context_initializer_writes_natural_language_skill_router(tmp_path: Path
     assert "speckit.team.fix" in agents
     assert "speckit.team.implement" in agents
     assert "speckit.team.review" in agents
+    assert "speckit.team.memory-consolidate" in agents
+    assert "Advanced extension entries" in agents
+    assert "must not be inserted into the Feature or Bugfix route" in agents
+    assert "saved Memory alone is never a project rule" in agents
     assert ".specify/feature/<work_id>/" in agents
     assert ".specify/bugfix/<bug_slug>/" in agents
 
@@ -194,7 +199,7 @@ def test_router_only_includes_approved_role_skills(
     commands.mkdir()
     fake_script = scripts / "init_role_context.py"
     fake_script.write_text("# location marker\n", encoding="utf-8")
-    for name, _, _ in module.ROUTES:
+    for name, _, _ in (*module.ROUTES, *module.ADVANCED_ENTRIES):
         (commands / f"{name}.md").write_text("# role\n", encoding="utf-8")
     monkeypatch.setattr(module, "__file__", str(fake_script))
 
@@ -202,6 +207,9 @@ def test_router_only_includes_approved_role_skills(
 
     for name, _, _ in module.ROUTES:
         assert name in section
+    for name, _, _ in module.ADVANCED_ENTRIES:
+        assert name in section
+        assert name not in {route[0] for route in module.ROUTES}
 
 
 def test_direct_team_setup_rolls_back_extension_when_rules_fail(
@@ -293,7 +301,7 @@ def test_team_setup_refreshes_old_bundled_skills_and_preserves_project_state(
     old_manifest = old_team / "extension.yml"
     old_manifest.write_text(
         old_manifest.read_text(encoding="utf-8").replace(
-            'version: "0.5.2"', 'version: "0.5.1"'
+            'version: "0.6.0"', 'version: "0.5.1"'
         ),
         encoding="utf-8",
     )
@@ -325,7 +333,7 @@ def test_team_setup_refreshes_old_bundled_skills_and_preserves_project_state(
     assert "OLD ADAPTER PLAN" not in installed_plan
     assert "required CodeGraph" in installed_plan
     assert metadata is not None
-    assert metadata["version"] == "0.5.2"
+    assert metadata["version"] == "0.6.0"
     assert config.read_text(encoding="utf-8") == "project_owned: true\n"
 
     second = team_setup.install_bundled_team(project)
@@ -375,6 +383,7 @@ def test_team_skills_install_with_local_references_and_scripts(
     fix_skill = root / "speckit-team-fix"
     implement_skill = root / "speckit-team-implement"
     review_skill = root / "speckit-team-review"
+    memory_skill = root / "speckit-team-memory-consolidate"
     assert (specify_skill / "SKILL.md").is_file()
     assert {
         path.name for path in (specify_skill / "references").glob("*.md")
@@ -389,24 +398,33 @@ def test_team_skills_install_with_local_references_and_scripts(
         "handoff-spec-sync.md",
         "permission-envelope.md",
         "plan-and-task-format.md",
+        "memory-runtime.md",
     }
     assert (plan_skill / "scripts/check_plan_and_task.py").is_file()
     assert (plan_skill / "scripts/check_permission_envelope.py").is_file()
     assert (plan_skill / "scripts/work_item_paths.py").is_file()
+    assert (plan_skill / "scripts/memory_adapter.py").is_file()
     assert {
         path.name for path in (assess_skill / "references").glob("*.md")
-    } == {"code-graph-contract.md", "context.md"}
+    } == {"code-graph-contract.md", "context.md", "memory-runtime.md"}
+    assert (assess_skill / "scripts/memory_adapter.py").is_file()
     for skill in (fix_skill, review_skill):
         assert (skill / "SKILL.md").is_file()
         assert {
             path.name for path in (skill / "references").glob("*.md")
-        } == {"context.md"}
-        assert not (skill / "scripts").exists()
+        } == {"context.md", "memory-runtime.md"}
+        assert (skill / "scripts/memory_adapter.py").is_file()
     assert {
         path.name for path in (implement_skill / "references").glob("*.md")
-    } == {"context.md", "implement-pr.md"}
+    } == {"context.md", "implement-pr.md", "memory-runtime.md"}
     assert (implement_skill / "scripts/check_permission_envelope.py").is_file()
     assert (implement_skill / "scripts/work_item_paths.py").is_file()
+    assert (implement_skill / "scripts/memory_adapter.py").is_file()
+    assert (memory_skill / "SKILL.md").is_file()
+    assert {
+        path.name for path in (memory_skill / "references").glob("*.md")
+    } == {"memory-tiers.md"}
+    assert (memory_skill / "scripts/memory_adapter.py").is_file()
 
 
 def test_packaged_team_resolves_for_listing_reregistration_and_removal(
@@ -646,17 +664,35 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
     assert commands["speckit.team.assess"] == {
         "references/code-graph-contract.md",
         "references/context.md",
+        "references/memory-runtime.md",
+        "scripts/memory_adapter.py",
     }
-    assert commands["speckit.team.fix"] == {"references/context.md"}
-    assert commands["speckit.team.review"] == {"references/context.md"}
+    assert commands["speckit.team.fix"] == {
+        "references/context.md",
+        "references/memory-runtime.md",
+        "scripts/memory_adapter.py",
+    }
+    assert commands["speckit.team.review"] == {
+        "references/context.md",
+        "references/memory-runtime.md",
+        "scripts/memory_adapter.py",
+    }
     assert commands["speckit.team.implement"] == {
         "references/context.md",
         "references/implement-pr.md",
+        "references/memory-runtime.md",
         "scripts/check_permission_envelope.py",
+        "scripts/memory_adapter.py",
         "scripts/work_item_paths.py",
+    }
+    assert commands["speckit.team.memory-consolidate"] == {
+        "references/memory-tiers.md",
+        "scripts/memory_adapter.py",
     }
     assert {
         "references/code-graph-contract.md",
         "references/permission-envelope.md",
+        "references/memory-runtime.md",
         "scripts/check_permission_envelope.py",
+        "scripts/memory_adapter.py",
     } <= commands["speckit.team.plan-and-task"]

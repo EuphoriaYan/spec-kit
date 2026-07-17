@@ -152,6 +152,15 @@ Do not use attempt memory to:
 - justify a design without current evidence;
 - preserve every failed experiment forever.
 
+### Requirements And Coding Standards
+
+Writing a requirement into Memory does not make it project policy. Capture an
+unreviewed convention as advisory Memory first. When the requirement is durable,
+scoped, evidenced, and approved by its human owner, use
+`speckit.team.memory-consolidate` to promote it into binding Knowledge under
+`docs/ai-team/knowledge/rules/`. Add a test, gate, or Code Graph rule when the
+requirement can be checked deterministically.
+
 ## Memory Consolidation Flow
 
 A later human-approved memory capability turns completed work into memory.

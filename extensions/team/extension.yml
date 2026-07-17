@@ -3,8 +3,8 @@ schema_version: "1.0"
 extension:
   id: team
   name: "AI Team SDD Skills"
-  version: "0.5.2"
-  description: "Six role-oriented enterprise SDD skills for feature and bugfix work from intake through pull request review."
+  version: "0.6.0"
+  description: "Six primary enterprise SDD skills plus optional advanced Knowledge and Memory capabilities."
   author: AI Team Template
   repository: https://github.com/EuphoriaYan/spec-kit
   license: MIT
@@ -34,6 +34,8 @@ provides:
           target: references/code-graph-contract.md
         - source: docs/permission-envelope.md
           target: references/permission-envelope.md
+        - source: docs/memory-runtime.md
+          target: references/memory-runtime.md
         - source: references/internal/context.md
           target: references/context.md
         - source: references/internal/handoff-spec-sync.md
@@ -48,6 +50,8 @@ provides:
           target: scripts/check_permission_envelope.py
         - source: scripts/work_item_paths.py
           target: scripts/work_item_paths.py
+        - source: scripts/memory_adapter.py
+          target: scripts/memory_adapter.py
         - source: scripts/bash/handoff-spec-common.sh
           target: scripts/bash/handoff-spec-common.sh
         - source: scripts/bash/sync-handoff-spec.sh
@@ -64,12 +68,20 @@ provides:
           target: references/code-graph-contract.md
         - source: references/internal/context.md
           target: references/context.md
+        - source: docs/memory-runtime.md
+          target: references/memory-runtime.md
+        - source: scripts/memory_adapter.py
+          target: scripts/memory_adapter.py
     - name: speckit.team.fix
       file: commands/speckit.team.fix.md
       description: "Bug fixer role: apply a ready or risk-approved assessment, verify it, update PR progress, and re-enter review."
       resources:
         - source: references/internal/context.md
           target: references/context.md
+        - source: docs/memory-runtime.md
+          target: references/memory-runtime.md
+        - source: scripts/memory_adapter.py
+          target: scripts/memory_adapter.py
     - name: speckit.team.implement
       file: commands/speckit.team.implement.md
       description: "Developer role: implement task-ready Feature work, verify it, and enter the automatic quality loop before PR submission."
@@ -82,12 +94,28 @@ provides:
           target: scripts/check_permission_envelope.py
         - source: scripts/work_item_paths.py
           target: scripts/work_item_paths.py
+        - source: docs/memory-runtime.md
+          target: references/memory-runtime.md
+        - source: scripts/memory_adapter.py
+          target: scripts/memory_adapter.py
     - name: speckit.team.review
       file: commands/speckit.team.review.md
       description: "Reviewer role: assess a PR or local diff, route repairable findings, and produce a merge recommendation."
       resources:
         - source: references/internal/context.md
           target: references/context.md
+        - source: docs/memory-runtime.md
+          target: references/memory-runtime.md
+        - source: scripts/memory_adapter.py
+          target: scripts/memory_adapter.py
+    - name: speckit.team.memory-consolidate
+      file: commands/speckit.team.memory-consolidate.md
+      description: "Advanced extension entry: capture advisory lessons and promote human-approved requirements into task-scoped project Knowledge."
+      resources:
+        - source: docs/memory-tiers.md
+          target: references/memory-tiers.md
+        - source: scripts/memory_adapter.py
+          target: scripts/memory_adapter.py
 
   config:
     - name: ai-team-config.yml
@@ -107,3 +135,5 @@ tags:
   - review
   - bugfix
   - assessment
+  - knowledge
+  - memory

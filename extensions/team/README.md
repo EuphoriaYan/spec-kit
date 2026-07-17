@@ -1,7 +1,7 @@
 # AI Team Role Extension
 
-The `team` extension provides six role-oriented skills without changing native
-Spec Kit commands:
+The `team` extension provides six primary role-oriented delivery skills without
+changing native Spec Kit commands:
 
 | Skill | Role | Input | Durable output |
 |---|---|---|---|
@@ -11,6 +11,28 @@ Spec Kit commands:
 | `speckit.team.fix` | Bug Fixer | ready or risk-approved assessment and optional tracked Issue | source fix, local evidence, PR progress update, automatic re-review |
 | `speckit.team.implement` | Developer | Feature `work_id`, checked Plan-and-Task, and permission envelope | source changes, implementation evidence, automatic quality loop, and submitted result |
 | `speckit.team.review` | Reviewer | PR or local diff; optional Feature `work_id` or Bugfix `bug_slug` | findings, automatic correction routing, and merge recommendation |
+
+## Advanced Extension Entries
+
+Advanced entries are available to maintainers but are not delivery roles and
+do not participate in automatic Feature or Bugfix routing:
+
+| Entry | User | Input | Output |
+|---|---|---|---|
+| `speckit.team.memory-consolidate` | Contributor / Maintainer | completed work, evidence, or a reviewed decision | advisory Memory or human-approved task-scoped project Knowledge |
+
+### Knowledge And Memory
+
+Invoke `speckit.team.memory-consolidate` explicitly after completed work or when
+a durable human decision should be reused. Local and department Memory remains advisory
+and Git-ignored. Enterprise Memory is reviewed historical guidance. A coding
+requirement becomes binding only through explicit promotion to
+`docs/ai-team/knowledge/rules/`, with owner, approval, evidence, and scope.
+
+Plan-and-Task, Assess, Fix, Implement, and Review retrieve only the matching
+role, work-type, and module slice. Binding Knowledge constrains the active
+role; Memory may suggest reuse or recurrent risks but cannot override source,
+tests, the current Issue or Plan, or human decisions.
 
 ## Role Boundary
 

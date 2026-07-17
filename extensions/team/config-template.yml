@@ -85,6 +85,16 @@ memory:
       - evidence links
       - public-safe or approved visibility
 
+knowledge:
+  # Only human-approved promotion creates binding project guidance.
+  rules_root: docs/ai-team/knowledge/rules
+  authority: binding
+  retrieval_scope:
+    - role
+    - work_type
+    - module
+  memory_is_advisory: true
+
 release_archive:
   # Release archive is a release-scoped batch view of memory consolidation.
   # It summarizes completed work so future tasks do not need to load every

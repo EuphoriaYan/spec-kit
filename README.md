@@ -26,10 +26,10 @@ under [`extensions/team/`](extensions/team/).
 
 ### Role Skills
 
-AI Team provides six role-oriented skills rather than one workflow. Each role
+AI Team provides six primary role-oriented delivery skills rather than one
+workflow. Each delivery role
 consumes durable artifacts from the preceding role instead of hidden chat
-context; the installer advertises only commands that this distribution actually
-provides.
+context.
 
 | Skill | Responsibility |
 |---|---|
@@ -52,9 +52,21 @@ decomposition and may reach LLD detail. The native `speckit.taskstoissues`
 command is not used to create the primary work item.
 
 Supporting context, permissions, private-requirement synchronization, Code
-Graph, impact, evidence, memory, and release knowledge remain internal
-extension capabilities. They are loaded progressively by the active role and
-do not clutter the AI tool with additional user-facing skills.
+Graph, impact, and evidence remain progressively loaded internal capabilities.
+
+### Advanced Extension Entries
+
+Advanced entries are installed for maintainers but do not participate in
+automatic Feature or Bugfix routing:
+
+| Entry | Use |
+|---|---|
+| `speckit.team.memory-consolidate` | preserve an evidence-backed lesson or promote human-approved guidance after delivery |
+
+Memory consolidation runs only on an explicit maintenance request, not at a
+mandatory lifecycle gate. Saved Memory is advisory; only reviewed promotion
+into `docs/ai-team/knowledge/rules/` creates binding project guidance, which
+delivery roles retrieve by task scope.
 
 Team work uses one directory convention with type-specific artifacts:
 

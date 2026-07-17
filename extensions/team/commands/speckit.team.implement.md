@@ -47,6 +47,10 @@ modify workflow files.
 3. Read `references/context.md` when resuming, then read, when present,
    `work-context.yml`, `context-pack.md`,
    `permission-envelope.yml`, `handoffs/`, and `codegraph/`.
+   Read `references/memory-runtime.md` and retrieve guidance for role
+   `implement`, work type `feature`, and the selected Tasks' modules. Apply
+   binding Knowledge before editing. Advisory Memory may inform reuse and risk
+   checks but cannot expand the Plan or Permission Envelope.
 4. Create or minimally update `work-context.yml` with `work_id`, the
    relative `feature_root`, artifact names, `phase: implementing`, and an ISO
    8601 UTC `updated_at`. Preserve unrelated and unknown fields.
