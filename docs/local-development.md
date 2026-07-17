@@ -34,7 +34,7 @@ uvx --from <path-to-spec-kit> specify init . --integration codex
 
 至少检查：
 
-- 只安装六个 Team Skills；
+- 安装六个主 Team Skills 和声明的高级扩展入口；
 - 每个 Skill 只有自己声明的 references/scripts；
 - AGENTS 和工具规则入口可读且幂等；
 - Feature/Bugfix 本地目录被忽略；

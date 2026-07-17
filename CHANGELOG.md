@@ -2,6 +2,22 @@
 
 <!-- insert new changelog below this comment -->
 
+## [0.12.5+teamwork.2] - 2026-07-17
+
+### Added
+
+- Six focused Team Skills for Feature and Bugfix collaboration.
+- An advanced Memory consolidation entry for explicit post-delivery Knowledge
+  maintenance without changing the six primary delivery routes.
+- Chinese primary human guides with English backup documents.
+
+### Changed
+
+- Pin installation, package metadata, and CLI diagnostics to the reviewed
+  `v0.12.5+teamwork.2` distribution instead of the moving `main` branch.
+- Keep Feature and Bugfix work packages local while Issues, source, tests, and
+  approved architecture records carry durable collaboration state.
+
 ## [0.12.5+teamwork.1] - 2026-07-13
 
 ### Added

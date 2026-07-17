@@ -5,7 +5,7 @@
 一次性试用不会更新 `PATH` 中已有的 `specify`：
 
 ```bash
-uvx --from git+https://github.com/EuphoriaYan/spec-kit.git@main \
+uvx --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.2 \
   specify init . --integration codex
 ```
 

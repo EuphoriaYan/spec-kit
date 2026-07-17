@@ -60,7 +60,7 @@ Bugfix: 现象或问题 -> Assess -> Fix -> Review/Assess/Fix
 ```bash
 npm install -g @colbymchenry/codegraph@^1
 uv tool install specify-cli --force \
-  --from git+https://github.com/EuphoriaYan/spec-kit.git@main
+  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.2
 ```
 
 在真实代码仓根目录执行一次初始化：
@@ -77,9 +77,8 @@ specify init . --integration codex
 specify init . --integration codex --skill-profile full
 ```
 
-> 当前六技能版本从本仓 `main` 安装。历史 tag
-> `v0.12.5+teamwork.1` 不包含当前六技能版本；待维护者发布新的审核 tag 后，
-> 安装指南会重新固定到 tag。
+> 当前六技能版本固定为 `v0.12.5+teamwork.2`。请勿用变化中的 `main`
+> 替代团队统一安装版本。
 
 ## 从聊天开始
 

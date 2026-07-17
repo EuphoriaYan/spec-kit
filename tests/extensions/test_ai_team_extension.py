@@ -589,6 +589,9 @@ def test_ai_team_readme_matches_current_role_contracts():
     readme = (EXTENSION_ROOT / "README.md").read_text(encoding="utf-8")
 
     assert "六个面向交付阶段的 Skills" in readme
+    assert "高级扩展入口" in readme
+    assert "speckit.team.memory-consolidate" in readme
+    assert "不参与 Feature 或 Bugfix 自动路由" in readme
     assert ".specify/bugfix/<bug_slug>/" in readme
     assert "check_plan_and_task.py" in readme
     assert "init_role_context.py" in readme
@@ -708,6 +711,10 @@ def test_human_facing_ai_team_docs_use_chinese_primary_and_english_backup():
             REPO_ROOT / "docs/install/air-gapped.md",
             REPO_ROOT / "docs/install/air-gapped_en.md",
         ),
+        (
+            REPO_ROOT / "docs/releases/v0.12.5-teamwork.2.md",
+            REPO_ROOT / "docs/releases/v0.12.5-teamwork.2_en.md",
+        ),
     )
 
     for primary, backup in pairs:
@@ -728,6 +735,32 @@ def test_human_facing_ai_team_docs_use_chinese_primary_and_english_backup():
         "speckit.team.review",
     ):
         assert command in text
+
+
+def test_current_install_guides_pin_the_reviewed_team_release():
+    release = "v0.12.5+teamwork.2"
+    install_guides = (
+        REPO_ROOT / "README.md",
+        REPO_ROOT / "README_en.md",
+        REPO_ROOT / "docs/installation.md",
+        REPO_ROOT / "docs/installation_en.md",
+        REPO_ROOT / "docs/upgrade.md",
+        REPO_ROOT / "docs/upgrade_en.md",
+        REPO_ROOT / "docs/install/pipx.md",
+        REPO_ROOT / "docs/install/pipx_en.md",
+        REPO_ROOT / "docs/install/one-time.md",
+        REPO_ROOT / "docs/install/one-time_en.md",
+    )
+
+    for guide in install_guides:
+        text = guide.read_text(encoding="utf-8")
+        assert f"spec-kit.git@{release}" in text, guide
+        assert "spec-kit.git@main" not in text, guide
+
+    pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    cli = (REPO_ROOT / "src/specify_cli/__init__.py").read_text(encoding="utf-8")
+    assert 'version = "0.12.5+teamwork.2"' in pyproject
+    assert f"pinned to {release}" in cli
 
 
 def test_ai_runtime_contracts_do_not_gain_language_variants():

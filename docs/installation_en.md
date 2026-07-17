@@ -23,12 +23,11 @@ headless dispatch.
 
 ## Install and Initialize
 
-The current six-skill build has not yet received a new reviewed tag, so install
-from this repository's `main`:
+Install the reviewed six-skill build from its fixed tag:
 
 ```bash
 uv tool install specify-cli --force \
-  --from git+https://github.com/EuphoriaYan/spec-kit.git@main
+  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.2
 specify --version
 
 cd <coding-repository>

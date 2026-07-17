@@ -3,8 +3,9 @@
 [中文主文档](index.md)
 
 AI Team Spec Kit installs one collaboration model into Codex, Claude Code,
-Cursor, and Trae. Users start from chat; six role Skills hand work off through
-Issues, plans, tasks, source, and verification evidence.
+Cursor, and Trae. Users start from chat; six primary role Skills hand work off
+through Issues, plans, tasks, source, and verification evidence. Advanced
+extension entries support explicit post-delivery maintenance.
 
 Start with:
 

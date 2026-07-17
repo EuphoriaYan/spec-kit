@@ -20,9 +20,9 @@ PYTHONPATH=src python -m specify_cli --help
 ```
 
 Validate installation in a separate temporary product repository. Confirm that
-only six Team Skills are installed, resources stay self-contained, managed AI
-rules are idempotent, local work roots are ignored, and project-owned rules are
-preserved.
+the six primary Team Skills and declared advanced extension entries are
+installed, resources stay self-contained, managed AI rules are idempotent,
+local work roots are ignored, and project-owned rules are preserved.
 
 ```bash
 PYTHONPATH=src python -m pytest -q tests/extensions

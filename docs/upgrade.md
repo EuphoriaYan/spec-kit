@@ -8,15 +8,15 @@ AI Team 发行版不会自动跟随上游 Spec Kit 更新。CLI 版本、Team Sk
 ## 当前版本策略
 
 - 上游代码基线固定为 Spec Kit `v0.12.5`；
-- 历史 tag `v0.12.5+teamwork.1` 不包含当前六技能实现；
-- 新审核 tag 发布前，当前六技能版本从本仓 `main` 安装；
+- 当前六技能发行版固定为 `v0.12.5+teamwork.2`；
+- 历史 tag `v0.12.5+teamwork.1` 仅保留用于版本追溯；
 - 不使用 `specify self check` 或 `specify self upgrade` 自动漂移到其他版本。
 
 ## 更新本机 CLI
 
 ```bash
 uv tool install specify-cli --force \
-  --from git+https://github.com/EuphoriaYan/spec-kit.git@main
+  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.2
 specify --version
 ```
 

@@ -46,7 +46,7 @@ Install Python 3.11+, Git, uv, and CodeGraph CLI 1.x, then run:
 ```bash
 npm install -g @colbymchenry/codegraph@^1
 uv tool install specify-cli --force \
-  --from git+https://github.com/EuphoriaYan/spec-kit.git@main
+  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.2
 specify init . --integration codex
 ```
 
@@ -54,9 +54,8 @@ Supported integrations are `codex`, `claude`, `cursor-agent`, and `trae`.
 Use `--skill-profile full` only when the native Spec Kit skill set is also
 required.
 
-The current six-skill distribution is installed from this repository's `main`.
-The historical `v0.12.5+teamwork.1` tag does not contain the current Team Skills;
-a future reviewed tag will replace the temporary `main` installation source.
+The current six-skill distribution is pinned to `v0.12.5+teamwork.2`. Do not
+replace the shared Team version with the moving `main` branch.
 
 Users can remain in chat and describe work naturally. See the
 [installation guide](docs/installation_en.md),

@@ -3,12 +3,12 @@
 [English backup](index_en.md)
 
 AI Team Spec Kit 把同一套团队开发方法安装到 Codex、Claude Code、Cursor 和 Trae。
-用户从聊天框描述需求或问题，六个角色 Skill 通过 Issue、Plan、Tasks、源码和验证证据
-完成交接。
+用户从聊天框描述需求或问题，六个主角色 Skill 通过 Issue、Plan、Tasks、源码和验证证据
+完成交接；交付后的知识沉淀由高级扩展入口按需完成。
 
 ## 从这里开始
 
-1. [安装与环境诊断](installation.md)：把六个 Skills 和规则入口装进真实代码仓；
+1. [安装与环境诊断](installation.md)：把六个主 Skills、高级扩展入口和规则装进真实代码仓；
 2. [六技能快速上手](quickstart.md)：完成 Feature、Bugfix、新项目和中断续接；
 3. [版本升级](upgrade.md)：更新 CLI 后安全刷新项目安装；
 4. [本仓开发](local-development.md)：修改安装器、Skills 或测试。
