@@ -425,7 +425,7 @@ def check():
     if not any(agent_results.values()):
         console.print("[dim]Tip: Install a coding agent for the best experience[/dim]")
 
-    console.print("[dim]AI Team distribution: pinned to v0.12.5+teamwork.1[/dim]")
+    console.print("[dim]AI Team distribution: pinned to v0.12.5+teamwork.2[/dim]")
 
 
 def _feature_capabilities() -> dict[str, bool]:

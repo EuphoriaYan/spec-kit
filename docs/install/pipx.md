@@ -1,33 +1,13 @@
-# Installing with pipx
+# 使用 pipx 安装
 
-[pipx](https://pipx.pypa.io/) is a tool for installing Python CLI applications in isolated environments. It does not require [uv](https://docs.astral.sh/uv/).
+[English backup](pipx_en.md)
 
-## Install Specify CLI
-
-Install the pinned AI Team release:
+uv 是默认方案。组织已标准化 pipx 时，可以安装当前六技能版本：
 
 ```bash
-pipx install git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.1
+pipx install --force \
+  git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.2
+specify --version
 ```
 
-## Verify
-
-```bash
-specify version
-```
-
-## Upgrade
-
-```bash
-pipx install --force git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.1
-```
-
-## Uninstall
-
-```bash
-pipx uninstall specify-cli
-```
-
-## Next steps
-
-Head to the [Quick Start](../quickstart.md) to initialize your first project.
+然后按[安装指南](../installation.md)初始化真实代码仓。团队应统一使用该固定 tag。

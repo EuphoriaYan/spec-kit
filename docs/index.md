@@ -1,154 +1,36 @@
-<div class="landing-hero">
+# AI Team Spec Kit 文档
 
-# GitHub Spec Kit
+[English backup](index_en.md)
 
-**Define what to build before building it — with any AI coding agent.**
+AI Team Spec Kit 把同一套团队开发方法安装到 Codex、Claude Code、Cursor 和 Trae。
+用户从聊天框描述需求或问题，六个主角色 Skill 通过 Issue、Plan、Tasks、源码和验证证据
+完成交接；交付后的知识沉淀由高级扩展入口按需完成。
 
-Spec Kit is a toolkit for [Spec-Driven Development](concepts/sdd.md) (SDD), a methodology that puts specifications at the center of AI-assisted software development. Instead of jumping straight to code, you describe _what_ to build, refine it through structured phases, and let your AI coding agent implement it.
+## 从这里开始
 
-<a href="installation.md" class="btn btn-primary btn-lg">Install Spec Kit</a>&nbsp;
-<a href="quickstart.md" class="btn btn-outline-primary btn-lg">Quick Start</a>
+1. [安装与环境诊断](installation.md)：把六个主 Skills、高级扩展入口和规则装进真实代码仓；
+2. [六技能快速上手](quickstart.md)：完成 Feature、Bugfix、新项目和中断续接；
+3. [版本升级](upgrade.md)：更新 CLI 后安全刷新项目安装；
+4. [本仓开发](local-development.md)：修改安装器、Skills 或测试。
 
-</div>
+## 两条主路径
 
----
+```text
+Feature: Specify -> Issue 接受 -> Plan-and-Task -> Implement
+         -> Review/Assess/Fix -> PR -> 人工合入
 
-<div class="pillar-grid">
-
-<div class="pillar-card">
-
-### Spec-driven by default
-
-The core SDD process ships ready to use: **Spec → Plan → Tasks → Implement**.
-
-Define what to build before building it. Rich templates, quality checklists, and cross-artifact analysis come out of the box. Each phase produces a Markdown artifact that feeds the next — giving your AI coding agent structured context instead of ad-hoc prompts.
-
-<a href="quickstart.md" class="pillar-link">Walk through the workflow →</a>
-
-</div>
-
-<div class="pillar-card">
-
-### Use any coding agent
-
-<span class="pillar-stat">30+ integrations</span> — Copilot, Gemini, Codex, Kilo Code, Zed, Claude, Forge, Kiro, and more. Switch freely between agents with a single command. No lock-in.
-
-Run `specify init` with your agent of choice and Spec Kit sets up the right command files, context rules, and directory structures automatically. If your agent isn't listed, the `generic` integration is an escape hatch for any tool.
-
-<a href="reference/integrations.md" class="pillar-link">See all integrations →</a>
-
-</div>
-
-<div class="pillar-card">
-
-### Make it your own
-
-<span class="pillar-stat">105 community extensions</span> (60+ authors), <span class="pillar-stat">22 presets</span>, and growing. Tune the core process with presets, extend it with extensions, orchestrate it with workflows, or replace it entirely. Build and publish your own.
-
-Including entirely different SDD processes:
-
-- **AIDE** — 7-step AI-driven engineering lifecycle
-- **Canon** — baseline-driven workflows (spec-first, code-first, spec-drift)
-- **Product Forge** — product-management-oriented SDD
-- **FX→.NET** — end-to-end .NET Framework migration across 7 phases
-- **MAQA** — multi-agent orchestration with quality assurance gates
-
-<a href="community/presets.md" class="pillar-link">Browse community presets →</a>
-
-</div>
-
-<div class="pillar-card">
-
-### Integrate into your organization
-
-Works offline, behind firewalls, and on **Windows, macOS, and Linux**. Host your own extension and preset catalogs so your organization controls what gets installed.
-
-Community extensions like CI Guard and Architecture Guard add compliance gates and governance that fit the way your team already works.
-
-<a href="installation.md" class="pillar-link">Installation guide →</a>&nbsp;&nbsp;
-<a href="reference/extensions.md" class="pillar-link">Extensions reference →</a>
-
-</div>
-
-</div>
-
----
-
-<div class="community-section">
-
-## Built by the community
-
-**200+ contributors** power the Spec Kit ecosystem — from core integrations to entirely new development processes. Anyone can create and publish an extension, preset, or workflow.
-
-<div class="stats-grid">
-  <div class="stat-item">
-    <span class="stat-number">106K+</span>
-    <span class="stat-label">GitHub stars</span>
-  </div>
-  <div class="stat-item">
-    <span class="stat-number">200+</span>
-    <span class="stat-label">Contributors</span>
-  </div>
-  <div class="stat-item">
-    <span class="stat-number">30+</span>
-    <span class="stat-label">Integrations</span>
-  </div>
-  <div class="stat-item">
-    <span class="stat-number">105</span>
-    <span class="stat-label">Extensions</span>
-  </div>
-  <div class="stat-item">
-    <span class="stat-number">22</span>
-    <span class="stat-label">Presets</span>
-  </div>
-  <div class="stat-item">
-    <span class="stat-number">4</span>
-    <span class="stat-label">Friends projects</span>
-  </div>
-</div>
-
-<a href="community/presets.md">Presets</a> · <a href="community/walkthroughs.md">Walkthroughs</a> · <a href="community/friends.md">Friends</a>
-
-</div>
-
----
-
-## Explore the docs
-
-<div class="nav-cards">
-  <a href="quickstart.md" class="nav-card">
-    <strong>Getting Started</strong>
-    <span>Install, configure, and run your first SDD workflow</span>
-  </a>
-  <a href="reference/overview.md" class="nav-card">
-    <strong>Reference</strong>
-    <span>Core commands, integrations, extensions, presets, and workflows</span>
-  </a>
-  <a href="community/overview.md" class="nav-card">
-    <strong>Community</strong>
-    <span>Extensions, presets, walkthroughs, and friend projects</span>
-  </a>
-  <a href="local-development.md" class="nav-card">
-    <strong>Development</strong>
-    <span>Contribute to Spec Kit</span>
-  </a>
-  <a href="concepts/sdd.md" class="nav-card">
-    <strong>What is SDD?</strong>
-    <span>The philosophy behind Spec-Driven Development</span>
-  </a>
-</div>
-
----
-
-<div class="footer-cta">
-
-```bash
-uvx --from git+https://github.com/github/spec-kit.git
-specify init my-project --integration copilot
+Bugfix: Assess -> Fix -> Review/Assess/Fix -> 可选 PR -> 人工合入
 ```
 
-Ready to start? Follow the [Quick Start Guide](quickstart.md).
+## 人与 AI 的边界
 
-</div>
+AI 可以完成需求澄清、源码分析、任务拆解、实现、自测和重复质量修复。人长期负责：
 
-<p class="text-end small text-body-secondary">Last updated: May 27, 2026</p>
+- 是否接受需求；
+- HLD、跨模块边界和公共接口；
+- 新依赖、安全、许可证和不兼容变化；
+- 超出 Plan 的范围扩大；
+- 最终是否合入。
+
+需要理解上游原生 Spec Kit 时，可继续查阅导航中的高级参考；它们不属于默认六技能
+用户路径。

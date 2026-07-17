@@ -1,188 +1,61 @@
-# AI Team Role Extension
+# Team 扩展维护说明
 
-The `team` extension provides six primary role-oriented delivery skills without
-changing native Spec Kit commands:
+[English backup](README_en.md)
 
-| Skill | Role | Input | Durable output |
+`team` 扩展提供六个面向交付阶段的 Skills，不修改原生 Spec Kit commands。
+本页面向扩展维护者；普通使用者请阅读[六技能快速上手](../../docs/quickstart.md)。
+
+## 职责边界
+
+| Skill | 角色 | 读取 | 产出 |
 |---|---|---|---|
-| `speckit.team.specify` | Business / Product | plain-language Feature or new-project demand | published Feature Issue, or Issue text in the current response |
-| `speckit.team.plan-and-task` | Architect | accepted/working Feature Issue plus source | local Feature work package plus an Issue-ready Plan/Task handoff |
-| `speckit.team.assess` | Bug Assessor | Issue URL, defect description, review finding, or `bug_slug` | local `assessment.md` with `ready`, `approval-required`, or `needs-info` status |
-| `speckit.team.fix` | Bug Fixer | ready or risk-approved assessment and optional tracked Issue | source fix, local evidence, PR progress update, automatic re-review |
-| `speckit.team.implement` | Developer | Feature `work_id`, checked Plan-and-Task, and permission envelope | source changes, implementation evidence, automatic quality loop, and submitted result |
-| `speckit.team.review` | Reviewer | PR or local diff; optional Feature `work_id` or Bugfix `bug_slug` | findings, automatic correction routing, and merge recommendation |
+| `speckit.team.specify` | 业务 / 产品 | 一句话 Feature 或新项目需求 | Feature Issue；不落本地 Spec 草稿 |
+| `speckit.team.plan-and-task` | 架构 / 模块负责人 | 已接受 Issue、源码、CodeGraph | `spec.md`、Issue 级 HLD、模块 Tasks、自测和检查 |
+| `speckit.team.assess` | 缺陷分析 | 现象、Issue 或 Review finding | `assessment.md` 和风险路由 |
+| `speckit.team.fix` | 缺陷修复 | ready/approved Assessment | 最小修复、`fix.md`、`test.md` 和 Review handoff |
+| `speckit.team.implement` | 开发 | checked Plan/Tasks 和 Permission Envelope | 代码、实现证据和自动质量循环 |
+| `speckit.team.review` | 评审 | PR 或本地 diff | findings、修复路由和合入建议 |
 
-## Advanced Extension Entries
+## 高级扩展入口
 
-Advanced entries are available to maintainers but are not delivery roles and
-do not participate in automatic Feature or Bugfix routing:
+高级扩展会随默认 Team 安装提供，但不是交付角色，不参与 Feature 或 Bugfix 自动路由。
 
-| Entry | User | Input | Output |
+| 入口 | 使用者 | 读取 | 产出 |
 |---|---|---|---|
-| `speckit.team.memory-consolidate` | Contributor / Maintainer | completed work, evidence, or a reviewed decision | advisory Memory or human-approved task-scoped project Knowledge |
+| `speckit.team.memory-consolidate` | Contributor / Maintainer | 已完成工作、证据或已审核决定 | 建议性 Memory，或经人工批准的项目 Knowledge |
 
-### Knowledge And Memory
+该入口仅在明确提出交付后维护请求时调用。本地和部门 Memory 保持建议性并进入
+Git ignore；只有带负责人、批准、证据和作用域的内容，才能晋升到
+`docs/ai-team/knowledge/rules/` 并约束后续角色。
 
-Invoke `speckit.team.memory-consolidate` explicitly after completed work or when
-a durable human decision should be reused. Local and department Memory remains advisory
-and Git-ignored. Enterprise Memory is reviewed historical guidance. A coding
-requirement becomes binding only through explicit promotion to
-`docs/ai-team/knowledge/rules/`, with owner, approval, evidence, and scope.
+角色之间不依赖隐藏聊天。Feature 由 Issue 承担需求事实，Plan/Task handoff 承担架构与
+实现边界，PR 和测试承担交付事实。Bugfix 保留原始现象和 Assessment，避免在自动修复
+循环中错误归因。
 
-Plan-and-Task, Assess, Fix, Implement, and Review retrieve only the matching
-role, work-type, and module slice. Binding Knowledge constrains the active
-role; Memory may suggest reuse or recurrent risks but cannot override source,
-tests, the current Issue or Plan, or human decisions.
+## 安装模型
 
-## Role Boundary
-
-Roles do not share hidden chat context. Specify publishes complete User Stories
-to the Issue. The Technical Committee or delegated authority discusses the
-demand and applies `status/accept` outside the skill. Plan-and-Task reads the
-accepted Issue and current source, while Implement and Review consume the
-local planning/evidence artifacts and shared Issue/PR handoffs rather than prior role chat.
-
-Bugfix uses the independent Assess -> Fix -> Review flow.
-
-Plan-and-Task and Assess use the required local CodeGraph CLI for architecture
-and impact evidence. Initialize an existing repository once with
-`codegraph init`; the active Skill asks before creating a missing index, then
-checks and synchronizes it before analysis. Source remains the implementation
-truth, and `.codegraph/` remains local derived state.
-
-An accepted Issue body is primary. Suggestions and rejected alternatives in
-comments are not requirements. Before acceptance, maintainers should consolidate
-accepted changes into the Issue body; an explicit decision comment may
-supplement it.
-
-## Labels And Identity
-
-Use exactly one type and one status label:
-
-```text
-type/feature | type/bugfix
-status/new-issue | status/accept | status/working | status/close
-```
-
-For Plan-and-Task, the Issue URL is the global identity. Coding-repository work
-uses the numeric Issue ID as `work_id`; enhancement-repository work uses
-`enhancement-<issue-id>` to avoid collisions.
-
-Assess and Fix use a separate safe `bug_slug`. An explicit `bug_slug` wins; an
-Issue URL otherwise produces a repository-and-number slug, and free-form input
-produces a short kebab-case symptom slug. Do not assume this slug is the numeric
-Issue ID.
-
-Feature delivery uses `.specify/feature/<work_id>/`. Bugfix assessment and fix
-delivery use `.specify/bugfix/<bug_slug>/`: Assess writes `assessment.md` and
-sets `ready` automatically for clear same-repository, single-module work;
-risky work requires a named human decision. Fix accepts `ready` or
-risk-approved status, then writes `fix.md` and `test.md`. A coding Issue is optional; when one
-is linked, Fix verifies `type/bugfix` and `status/working` without changing
-labels automatically.
-
-## Feature Flow
-
-```text
-plain-language demand
--> speckit.team.specify
--> publish Issue and complete governance acceptance
--> speckit.team.plan-and-task
--> create .specify/feature/<work_id>/ artifacts
--> Code Graph, Plan HLD, parallel Tasks, self-tests, generated readiness check
--> speckit.team.implement
--> source changes and verification evidence
--> optional pull request
--> speckit.team.review
--> findings and merge recommendation
-```
-
-Specify writes no local checklist, Issue draft, Work Context, or `spec.md`.
-Plan-and-Task pauses at its HLD decision boundary before Task decomposition.
-Implement stops when readiness, risk-triggered permissions, or verification
-fails, then automatically enters Review. After the quality loop passes, it
-submits the PR through available host automation or prints a paste-ready
-fallback. Review never approves or merges a PR. Review can review any PR; Feature SDD
-or Bugfix lifecycle alignment is assessed only when the corresponding work root
-can be resolved.
-
-## Bugfix Flow
-
-```text
-observed defect
--> speckit.team.assess
--> assessment with ready, approval-required, approved, or needs-info status
--> impact, proposed permission boundary, fix strategy, and test strategy
--> human approval only for a permanent gate
--> optionally create or verify a coding Issue with type/bugfix
--> when linked, a maintainer moves accepted and claimed work to status/working
--> speckit.team.fix
--> source fix, regression verification, fix.md and test.md
--> automatic speckit.team.review of assessment, fix, tests, diff, and any linked Issue
--> optional pull request after the quality loop
-```
-
-Several Bug Issues may map to one change only when they are symptoms of the
-same root cause and each has separate reproduction and verification evidence.
-
-## Planning And Delivery Rules
-
-The Plan is Issue-wide HLD. Each Task is a small LLD unit scoped to one module
-and designed for parallel assignment. When Tasks cannot run in parallel, the
-Plan records the dependency, handoff artifact, serialization reason, and unblock
-evidence.
-
-Feature implementation requires a local `spec.md` (or an authorized override), a
-passing `plan-and-task-check.md`, task-ready `plan-and-task.md`, and a permission
-envelope. One envelope covers the selected Task batch; same-repository,
-single-module work without a permanent gate is mechanically `ready`. It marks only completed Task Status checkboxes, records commands and
-test results in `evidence/implementation-report.md`, and reaches
-`phase: verified` before submission. After the automatic quality loop returns
-`GO` or `GO-WITH-RISK`, PR submission runs through host automation or produces
-a paste-ready fallback without another design approval.
-
-Public API, SPI, configuration, protocol, schema, database ownership, or
-cross-module semantics still require the appropriate human architecture or
-contract authority.
-
-## Installed Skill Layout
-
-Each supported skills-based integration receives self-contained directories.
-Every role has `SKILL.md`; references and scripts are installed only when that
-role loads or executes them:
+默认 `team` profile 直接从已安装的 Specify CLI 包注册六个主 Skill 和按需使用的高级入口：
 
 ```text
 speckit-team-<role>/
-`-- SKILL.md
-
-speckit-team-plan-and-task/
 |-- SKILL.md
-|-- references/
-`-- scripts/              # deterministic checks and handoff helpers
-
-speckit-team-implement/
-|-- SKILL.md
-|-- references/           # PR instructions loaded only after quality review
-`-- scripts/              # Permission Envelope validation
+|-- references/   # 仅该角色需要的渐进上下文
+`-- scripts/      # 仅该角色需要的确定性检查
 ```
 
-Each Skill resolves declared resources relative to its own `SKILL.md`.
-Specify installs its conditional repository-boundary reference. Plan-and-Task,
-Assess, Fix, Implement, and Review install the shared Context Resume reference;
-Plan-and-Task and Implement also install their phase-specific checks or PR
-reference.
-The extension implementation remains in the installed Specify CLI package and
-is not copied into the project. Editable configuration and the stable context
-bootstrap live under `.specify/team/`.
-`init_role_context.py` runs during project initialization and is not copied
-into individual Skills.
+扩展实现不会复制到业务仓。业务仓只保留：
 
-Plan-and-Task must run its installed `scripts/check_plan_and_task.py`. The
-script generates `plan-and-task-check.md`; a model may fix source artifacts but
-may not hand-write a passing result. Human decisions remain in the Issue and
-Plan review record.
+```text
+.<tool>/skills/...
+.specify/team/context-bootstrap.md
+.specify/team/ai-team-config.yml
+AGENTS.md 和工具规则中的受管理入口
+```
 
-## Work Directories
+`init_role_context.py` 在初始化时执行，合并而非替换项目已有规则。Claude Code 的
+`CLAUDE.md` 只导入 `AGENTS.md`；Cursor 和 Trae 写入各自规则入口。
+
+## 本地工作包
 
 ```text
 .specify/feature/<work_id>/
@@ -194,8 +67,6 @@ Plan review record.
 |-- permission-envelope.yml
 |-- codegraph/
 `-- evidence/
-    |-- implementation-report.md
-    `-- review-report.md          # optional
 
 .specify/bugfix/<bug_slug>/
 |-- assessment.md
@@ -206,61 +77,38 @@ Plan review record.
 `-- evidence/
 ```
 
-The installer adds `/.specify/feature/` and `/.specify/bugfix/` to the target
-coding repository's `.gitignore`. These directories are local runtime context,
-not Team extension source and not PR payload. Share accepted User Stories,
-Plan/Task summaries, verification, and risks through Issue/PR discussion;
-promote only significant reviewed HLD or long-term knowledge to project docs.
-Existing tracked work packages require a separate, deliberate index cleanup.
+两个工作根默认进入 `.gitignore`。跨成员事实通过 Issue、PR、源码、测试和明确晋升的
+HLD/项目知识共享，不通过提交本地工作包共享。
 
-## Installation
+## 关键 Gate
 
-The default Team-minimal profile installs only the self-contained Team role
-skills plus `.specify/team/` state. It does not copy core scripts, the Team
-extension implementation, native Spec Kit page templates, constitution,
-skills, or workflow:
+- Plan-and-Task 必须使用 CodeGraph，并运行安装到 Skill 内的
+  `check_plan_and_task.py`；模型不得手写通过报告。
+- Permission Envelope 是风险边界，不是运行时沙箱；单仓单模块、无永久 Gate 的批次可
+  自动 ready。
+- Implement 后自动进入 Review；可修复 blocker/major 最多自动循环三轮。
+- Review 只给 `GO`、`GO-WITH-RISK` 或 `NO-GO`，不替人 approve/merge。
+- 永久人工决定只有需求接受、HLD/跨模块/公共接口、依赖安全许可证与不兼容变化、
+  超 Plan 扩围和最终合入。
 
-```bash
-specify init . --integration codex
-```
+## 修改扩展
 
-For extension development:
+`extension.yml` 是 Skill 与资源安装清单。每个命令引用的文件必须显式列在自己的
+`resources` 中，Skill 内路径必须相对自身目录可解析。不要让 Skill 读取扩展源码仓中的
+隐式相对路径。
+
+在临时项目中调试本地扩展时可以使用：
 
 ```bash
 specify extension add extensions/team --dev
 ```
 
-Use `--skill-profile full` only when native Spec Kit skills are also wanted.
-Codex, Claude Code, Cursor Agent, and Trae receive the same role behavior and
-their own installed Skill resources.
+验证：
 
-## Chat Entry
-
-Users do not need to name a skill. New Feature and Bugfix work can start
-naturally:
-
-```text
-Please add CSV export to the current project. Export the same fields shown in
-the result list, and help me turn this into a reviewable requirement.
-
-Login returns 500 after session expiry. Assess the defect before changing code.
+```bash
+PYTHONPATH=src python -m pytest -q tests/extensions
+PYTHONPATH=src python -m pytest -q tests/unit/test_bundled_bundle.py
 ```
 
-After governance acceptance, continue with the Issue URL. Once planning is
-task-ready, delivery can be invoked directly:
-
-```text
-/speckit.team.specify Please add CSV export with the same fields as the result list
-/speckit.team.plan-and-task https://github.com/org/repo/issues/123
-/speckit.team.assess https://github.com/org/repo/issues/123
-/speckit.team.assess "Login returns 500 after session expiry" bug_slug=login-session-expiry
-/speckit.team.fix bug_slug=login-session-expiry
-/speckit.team.implement work_id=123
-/speckit.team.implement work_id=123 only=T001-T010
-/speckit.team.review https://github.com/org/repo/pull/123
-```
-
-GitHub Issue/PR operations use authenticated automation when available. GitCode
-or another host without a usable CLI/API still supports local review; the
-skills print complete Issue/PR Markdown for the user to paste. Manual posting is
-a platform transport step, not an extra technical approval.
+面向人的使用说明放在中文主文档及 `_en` 备用文档；Skill、references、bootstrap、
+模板和脚本契约保持英文。详见[文档管理](../../docs/README.md)。
