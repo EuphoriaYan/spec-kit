@@ -1,59 +1,23 @@
-# Enterprise / Air-Gapped Installation
+# 企业离线安装
 
-If your environment blocks access to PyPI or GitHub, you can create a portable wheel bundle on a connected machine and transfer it to the air-gapped target.
+[English backup](air-gapped_en.md)
 
-## Step 1: Build the wheel on a connected machine
-
-> **Important:** `pip download` resolves platform-specific wheels (e.g., PyYAML includes native extensions). You must run this step on a machine with the **same OS and Python version** as the air-gapped target. If you need to support multiple platforms, repeat this step on each target OS (Linux, macOS, Windows) and Python version.
+离线环境应由维护者在联网构建机上固定审核 commit，构建 wheel 和依赖包，再发布到内部
+制品库。不要把个人虚拟环境整体复制给团队。
 
 ```bash
-# Clone the repository
-git clone https://github.com/github/spec-kit.git
+git clone git@github.com:EuphoriaYan/spec-kit.git
 cd spec-kit
-
-# Build the wheel
-pip install build
-python -m build --wheel --outdir dist/
-
-# Download the wheel and all its runtime dependencies
-pip download -d dist/ dist/specify_cli-*.whl
+git checkout <reviewed-commit>
+uv build
 ```
 
-## Step 2: Transfer the `dist/` directory
+同时准备：
 
-Copy the entire `dist/` directory (which contains the `specify-cli` wheel and all dependency wheels) to the target machine via USB, network share, or other approved transfer method.
+- Python 3.11+ 和 uv/pipx 的内部安装源；
+- CodeGraph CLI 1.x 的已审核内部安装包；
+- Codex/Claude CLI 或 Cursor/Trae IDE 的企业安装方式；
+- Git 远端、代理、证书和 Issue/PR 平台访问配置。
 
-## Step 3: Install on the air-gapped machine
-
-```bash
-pip install --no-index --find-links=./dist specify-cli
-```
-
-## Step 4: Initialize a project
-
-No network access is required — bundled assets are used by default:
-
-```bash
-specify init my-project --integration copilot
-```
-
-> **Note:** Python 3.11+ is required.
-
-> **Windows note:** Offline scaffolding requires PowerShell 7+ (`pwsh`), not Windows PowerShell 5.x (`powershell.exe`). Install from https://aka.ms/powershell.
-
-## Git Credential Manager on Linux
-
-If you're having issues with Git authentication on Linux, you can install Git Credential Manager:
-
-```bash
-#!/usr/bin/env bash
-set -e
-echo "Downloading Git Credential Manager v2.6.1..."
-wget https://github.com/git-ecosystem/git-credential-manager/releases/download/v2.6.1/gcm-linux_amd64.2.6.1.deb
-echo "Installing Git Credential Manager..."
-sudo dpkg -i gcm-linux_amd64.2.6.1.deb
-echo "Configuring Git to use GCM..."
-git config --global credential.helper manager
-echo "Cleaning up..."
-rm gcm-linux_amd64.2.6.1.deb
-```
+离线安装完成后，仍按[安装指南](../installation.md)验证六个 Skills、规则入口、
+CodeGraph 和 `.gitignore`。禁止把 API key、客户需求正文或本地工作包打进 wheel。

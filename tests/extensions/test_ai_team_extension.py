@@ -581,18 +581,17 @@ def test_ai_team_reuses_native_sdd_artifacts_without_change_manifest():
     assert not (EXTENSION_ROOT / "docs" / "change-package.md").exists()
     readme = (EXTENSION_ROOT / "README.md").read_text(encoding="utf-8")
     assert "`spec.md`" in readme
-    assert "human decision" in readme.lower()
+    assert "人工" in readme
     assert "change-package.yml" not in readme
 
 
 def test_ai_team_readme_matches_current_role_contracts():
     readme = (EXTENSION_ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert "`ready`, `approval-required`, or `needs-info`" in readme
+    assert "六个面向交付阶段的 Skills" in readme
     assert ".specify/bugfix/<bug_slug>/" in readme
-    assert "passing `plan-and-task-check.md`" in readme
-    assert "Assess, Fix, Implement, and Review install the shared Context" in readme
-    assert "init_role_context.py` runs during project initialization" in readme
+    assert "check_plan_and_task.py" in readme
+    assert "init_role_context.py" in readme
     assert "specify extension add extensions/team --dev" in readme
     assert "specify extension add team --dev extensions/team" not in readme
 
@@ -680,18 +679,46 @@ def test_ai_team_does_not_ship_code_graph_adapter_layer():
     assert not graph_doc.exists()
 
 
-def test_ai_team_user_journeys_document_exists():
-    journeys_doc = EXTENSION_ROOT / "docs" / "user-journeys.md"
+def test_human_facing_ai_team_docs_use_chinese_primary_and_english_backup():
+    pairs = (
+        (REPO_ROOT / "README.md", REPO_ROOT / "README_en.md"),
+        (REPO_ROOT / "docs/index.md", REPO_ROOT / "docs/index_en.md"),
+        (REPO_ROOT / "docs/installation.md", REPO_ROOT / "docs/installation_en.md"),
+        (REPO_ROOT / "docs/quickstart.md", REPO_ROOT / "docs/quickstart_en.md"),
+        (REPO_ROOT / "docs/upgrade.md", REPO_ROOT / "docs/upgrade_en.md"),
+        (REPO_ROOT / "docs/README.md", REPO_ROOT / "docs/README_en.md"),
+        (
+            REPO_ROOT / "docs/local-development.md",
+            REPO_ROOT / "docs/local-development_en.md",
+        ),
+        (EXTENSION_ROOT / "README.md", EXTENSION_ROOT / "README_en.md"),
+        (
+            REPO_ROOT / "docs/install/uv.md",
+            REPO_ROOT / "docs/install/uv_en.md",
+        ),
+        (
+            REPO_ROOT / "docs/install/pipx.md",
+            REPO_ROOT / "docs/install/pipx_en.md",
+        ),
+        (
+            REPO_ROOT / "docs/install/one-time.md",
+            REPO_ROOT / "docs/install/one-time_en.md",
+        ),
+        (
+            REPO_ROOT / "docs/install/air-gapped.md",
+            REPO_ROOT / "docs/install/air-gapped_en.md",
+        ),
+    )
 
-    assert journeys_doc.exists()
-    text = journeys_doc.read_text(encoding="utf-8")
-    assert "One-Sentence Feature" in text
-    assert "Existing Public Feature Issue" in text
-    assert "Confidential Enterprise Feature" in text
-    assert "Bugfix" in text
-    assert "New Project" in text
-    assert "Plan Discussion And Task Decomposition" in text
-    assert "Resume" in text
+    for primary, backup in pairs:
+        assert primary.is_file(), primary
+        assert backup.is_file(), backup
+        assert any("\u4e00" <= character <= "\u9fff" for character in primary.read_text(encoding="utf-8"))
+        assert "English backup" in primary.read_text(encoding="utf-8")
+        assert "中文主文档" in backup.read_text(encoding="utf-8")
+
+    assert not (EXTENSION_ROOT / "docs/user-journeys.md").exists()
+    text = (REPO_ROOT / "docs/quickstart.md").read_text(encoding="utf-8")
     for command in (
         "speckit.team.specify",
         "speckit.team.plan-and-task",
@@ -701,6 +728,22 @@ def test_ai_team_user_journeys_document_exists():
         "speckit.team.review",
     ):
         assert command in text
+
+
+def test_ai_runtime_contracts_do_not_gain_language_variants():
+    manifest = yaml.safe_load((EXTENSION_ROOT / "extension.yml").read_text(encoding="utf-8"))
+    ai_docs = {
+        resource["source"]
+        for command in manifest["provides"]["commands"]
+        for resource in command.get("resources", [])
+        if resource["source"].endswith(".md")
+    }
+    ai_docs.add("docs/context-bootstrap.md")
+
+    for relative in ai_docs:
+        path = EXTENSION_ROOT / relative
+        assert path.is_file(), relative
+        assert not path.with_name(f"{path.stem}_en{path.suffix}").exists(), relative
 
 
 def test_ai_team_role_skills_do_not_register_workflows():

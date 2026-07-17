@@ -1,199 +1,66 @@
-# Local Development Guide
+# 本仓开发与验证
 
-This guide shows how to iterate on the `specify` CLI locally without publishing a release or committing to `main` first.
+[English backup](local-development_en.md)
 
-> Scripts now have both Bash (`.sh`) and PowerShell (`.ps1`) variants. The CLI auto-selects based on OS unless you pass `--script sh|ps`.
+本指南面向维护 AI Team Spec Kit 本身的贡献者，不是业务仓使用者。
 
-## 1. Clone and Switch Branches
+## 本地环境
 
 ```bash
-git clone https://github.com/github/spec-kit.git
+git clone git@github.com:EuphoriaYan/spec-kit.git
 cd spec-kit
-# Work on a feature branch
-git checkout -b your-feature-branch
-```
+git checkout -b <your-branch>
 
-## 2. Run the CLI Directly (Fastest Feedback)
-
-You can execute the CLI via the module entrypoint without installing anything:
-
-```bash
-# From repo root
-python -m src.specify_cli --help
-python -m src.specify_cli init demo-project --integration claude --ignore-agent-tools --script sh
-```
-
-If you prefer invoking the script file style (uses shebang):
-
-```bash
-python src/specify_cli/__init__.py init demo-project --script ps
-```
-
-## 3. Use Editable Install (Isolated Environment)
-
-Create an isolated environment using `uv` so dependencies resolve exactly like end users get them:
-
-```bash
-# Create & activate virtual env (uv auto-manages .venv)
 uv venv
-source .venv/bin/activate  # or on Windows PowerShell: .venv\Scripts\Activate.ps1
-
-# Install project in editable mode
 uv pip install -e .
-
-# Now 'specify' entrypoint is available
 specify --help
 ```
 
-Re-running after code edits requires no reinstall because of editable mode.
-
-## 4. Invoke with uvx Directly From Git (Current Branch)
-
-`uvx` can run from a local path (or a Git ref) to simulate user flows:
+也可以不安装入口，直接从当前源码运行：
 
 ```bash
-uvx --from . specify init demo-uvx --integration copilot --ignore-agent-tools --script sh
+PYTHONPATH=src python -m specify_cli --help
 ```
 
-You can also point uvx at a specific branch without merging:
+## 在临时业务仓验证安装
+
+不要直接用本仓目录模拟业务仓。创建临时目录并安装本地构建：
 
 ```bash
-# Push your working branch first
-git push origin your-feature-branch
-uvx --from git+https://github.com/github/spec-kit.git@your-feature-branch specify init demo-branch-test --script ps
+mkdir <temporary-project>
+cd <temporary-project>
+uvx --from <path-to-spec-kit> specify init . --integration codex
 ```
 
-### 4a. Absolute Path uvx (Run From Anywhere)
+至少检查：
 
-If you're in another directory, use an absolute path instead of `.`:
+- 只安装六个 Team Skills；
+- 每个 Skill 只有自己声明的 references/scripts；
+- AGENTS 和工具规则入口可读且幂等；
+- Feature/Bugfix 本地目录被忽略；
+- 项目既有规则和配置未被覆盖；
+- Cursor/Trae IDE-only 与 Codex/Claude CLI 检查符合预期。
+
+## 测试
 
 ```bash
-uvx --from /mnt/c/GitHub/spec-kit specify --help
-uvx --from /mnt/c/GitHub/spec-kit specify init demo-anywhere --integration copilot --ignore-agent-tools --script sh
+PYTHONPATH=src python -m pytest -q tests/extensions
+PYTHONPATH=src python -m pytest -q tests/unit/test_bundled_bundle.py
+python -m ruff check src extensions tests
 ```
 
-Set an environment variable for convenience:
+修改安装、integration 或打包逻辑时，扩大到对应 integration 和 CLI 测试。测试环境存在
+另一个 editable install 时，显式设置 `PYTHONPATH=src`，避免加载错误工作树。
 
-```bash
-export SPEC_KIT_SRC=/mnt/c/GitHub/spec-kit
-uvx --from "$SPEC_KIT_SRC" specify init demo-env --integration copilot --ignore-agent-tools --script ps
-```
+## 文档规则
 
-(Optional) Define a shell function:
+- 面向人的 AI Team 文档：中文文件是主文档，英文使用 `_en` 后缀；
+- AI Skills、references、脚本契约和 AGENTS 规则：保持英文、稳定路径和简短表达；
+- 一项事实只在一个主文档详细说明，其他页面使用链接；
+- 修改 Skill 输入、输出或停止条件时，同步更新快速上手和对应安装测试；
+- 不把课程 HTML 当作运行契约，也不让 AI Skill 依赖课程材料。
 
-```bash
-specify-dev() { uvx --from /mnt/c/GitHub/spec-kit specify "$@"; }
-# Then
-specify-dev --help
-```
+## 提交前
 
-## 5. Testing Script Permission Logic
-
-After running an `init`, check that shell scripts are executable on POSIX systems:
-
-```bash
-ls -l scripts | grep .sh
-# Expect owner execute bit (e.g. -rwxr-xr-x)
-```
-
-On Windows you will instead use the `.ps1` scripts (no chmod needed).
-
-## 6. Scaffold a Built-In Integration
-
-Use the integration scaffold command to create the initial Python package and
-test skeleton for a new built-in integration:
-
-```bash
-specify integration scaffold my-agent --type markdown
-specify integration scaffold my-agent --type toml
-specify integration scaffold my-agent --type yaml
-specify integration scaffold my-agent --type skills
-```
-
-Hyphenated keys are converted to Python-safe package names, for example
-`my-agent` creates `src/specify_cli/integrations/my_agent/` and
-`tests/integrations/test_integration_my_agent.py`.
-
-The scaffold does not register the integration automatically. Review the
-generated metadata, then add the import and `_register()` call in
-`src/specify_cli/integrations/__init__.py`.
-
-## 7. Run Lint / Basic Checks
-
-CI enforces `ruff check src/` (see `.github/workflows/test.yml`), so run it locally before pushing:
-
-```bash
-uvx ruff check src/
-```
-
-You can also quickly sanity check importability:
-
-```bash
-python -c "import specify_cli; print('Import OK')"
-```
-
-## 8. Build a Wheel Locally (Optional)
-
-Validate packaging before publishing:
-
-```bash
-uv build
-ls dist/
-```
-
-Install the built artifact into a fresh throwaway environment if needed.
-
-## 9. Using a Temporary Workspace
-
-When testing `init --here` in a dirty directory, create a temp workspace:
-
-```bash
-mkdir /tmp/spec-test && cd /tmp/spec-test
-python -m src.specify_cli init --here --integration claude --ignore-agent-tools --script sh  # if repo copied here
-```
-
-Or copy only the modified CLI portion if you want a lighter sandbox.
-
-## 10. Debug Network / TLS Issues
-
-> **Deprecated:** The `--skip-tls` flag is a no-op and has no effect.
-> It was previously used to bypass TLS validation during local testing.
-> If you encounter TLS errors (e.g., on a corporate network), configure your
-> environment's certificate store or proxy instead.
->
-> For example, set `SSL_CERT_FILE` or configure `HTTPS_PROXY` / `HTTP_PROXY`.
-
-## 11. Rapid Edit Loop Summary
-
-| Action | Command |
-|--------|---------|
-| Run CLI directly | `python -m src.specify_cli --help` |
-| Editable install | `uv pip install -e .` then `specify ...` |
-| Local uvx run (repo root) | `uvx --from . specify ...` |
-| Local uvx run (abs path) | `uvx --from /mnt/c/GitHub/spec-kit specify ...` |
-| Git branch uvx | `uvx --from git+URL@branch specify ...` |
-| Build wheel | `uv build` |
-
-## 12. Cleaning Up
-
-Remove build artifacts / virtual env quickly:
-
-```bash
-rm -rf .venv dist build *.egg-info
-```
-
-## 13. Common Issues
-
-| Symptom | Fix |
-|---------|-----|
-| `ModuleNotFoundError: typer` | Run `uv pip install -e .` |
-| Scripts not executable (Linux) | Re-run init or `chmod +x scripts/*.sh` |
-| Git commands unavailable | Install the git extension with `specify extension add git` |
-| Wrong script type downloaded | Pass `--script sh` or `--script ps` explicitly |
-| TLS errors on corporate network | Configure your environment's certificate store or proxy. The `--skip-tls` flag is deprecated and has no effect. |
-
-## 14. Next Steps
-
-- Update docs and run through Quick Start using your modified CLI
-- Open a PR when satisfied
-- (Optional) Tag a release once changes land in `main`
+确认 diff 不包含临时项目、`.specify/feature/`、`.specify/bugfix/`、CodeGraph 数据库、
+本地记忆或凭据。PR 应说明影响的是 CLI、安装、某个 Skill、AI 契约还是人类文档。

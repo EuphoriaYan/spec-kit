@@ -1,29 +1,46 @@
-# Home page
-- name: Home
+- name: 首页
   href: index.md
 
-# Getting started section
-- name: Getting Started
+- name: 开始使用
   items:
-    - name: Installation
+    - name: 安装与环境诊断
       href: installation.md
-    - name: Quick Start
+    - name: 六技能快速上手
       href: quickstart.md
-    - name: Upgrade
+    - name: 版本升级
       href: upgrade.md
-    - name: Install uv
+    - name: 安装 uv
       href: install/uv.md
-    - name: Install with pipx
+    - name: 使用 pipx
       href: install/pipx.md
-    - name: One-time Usage (uvx)
+    - name: 一次性试用
       href: install/one-time.md
-    - name: Enterprise / Air-Gapped
+    - name: 企业离线安装
       href: install/air-gapped.md
 
-# Reference
-- name: Reference
+- name: English Backups
   items:
-    - name: Overview
+    - name: Home
+      href: index_en.md
+    - name: Installation
+      href: installation_en.md
+    - name: Six-Skill Quick Start
+      href: quickstart_en.md
+    - name: Upgrade
+      href: upgrade_en.md
+    - name: Local Development
+      href: local-development_en.md
+
+- name: 本仓维护
+  items:
+    - name: 本地开发与测试
+      href: local-development.md
+    - name: 文档管理
+      href: README.md
+
+- name: 上游高级参考（英文）
+  items:
+    - name: Reference Overview
       href: reference/overview.md
     - name: Core Commands
       href: reference/core.md
@@ -35,44 +52,9 @@
       href: reference/presets.md
     - name: Workflows
       href: reference/workflows.md
-    - name: Bundles
-      href: reference/bundles.md
-    - name: Authentication
-      href: reference/authentication.md
-
-# Concepts
-- name: Concepts
-  items:
-    - name: What is SDD?
+    - name: SDD Concepts
       href: concepts/sdd.md
-    - name: Spec Persistence Models
-      href: concepts/spec-persistence.md
-    - name: Handling Complex Features
+    - name: Complex Features
       href: concepts/complex-features.md
-
-# Development workflows
-- name: Development
-  items:
-    - name: Local Development
-      href: local-development.md
-    - name: Evolving Specs
-      href: guides/evolving-specs.md
     - name: Monorepos
       href: guides/monorepo.md
-
-# Community
-- name: Community
-  href: community/overview.md
-  items:
-    - name: Overview
-      href: community/overview.md
-    - name: Extensions
-      href: community/extensions.md
-    - name: Presets
-      href: community/presets.md
-    - name: Bundles
-      href: community/bundles.md
-    - name: Walkthroughs
-      href: community/walkthroughs.md
-    - name: Friends
-      href: community/friends.md

@@ -128,7 +128,7 @@ def test_bugfix_commands_use_canonical_bugfix_root():
 
 def test_bugfix_flow_has_its_own_resume_context():
     layout = _normalized_markdown(EXTENSION_ROOT / "docs" / "work-item-layout.md")
-    journey = _normalized_markdown(EXTENSION_ROOT / "docs" / "user-journeys.md")
+    lifecycle = _normalized_markdown(EXTENSION_ROOT / "docs" / "issue-lifecycle.md")
 
     context = _normalized_markdown(
         EXTENSION_ROOT / "docs" / "work-context-package.md"
@@ -139,8 +139,9 @@ def test_bugfix_flow_has_its_own_resume_context():
     assert ".specify/bugfix/<bug_slug>/" in context
     assert "last_completed_skill: speckit.team.assess" in context
     assert "next_skill: speckit.team.fix" in context
-    assert "Bugfix work starts with Assess" in journey
-    assert "both `type/bugfix` and `status/new-issue`" in journey
+    assert "Bugfix does not use Specify or Plan-and-Task" in lifecycle
+    assert "type/bugfix" in lifecycle
+    assert "status/new-issue" in lifecycle
 
 
 def test_feature_and_bugfix_delivery_chains_are_distinct_with_review_bridge():

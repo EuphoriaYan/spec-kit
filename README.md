@@ -1,777 +1,112 @@
-<div align="center">
-    <img src="./media/logo_large.webp" alt="Spec Kit Logo" width="200" height="200"/>
-    <h1>🌱 Spec Kit</h1>
-    <h3><em>Build high-quality software faster.</em></h3>
-</div>
+# AI Team Spec Kit
 
-<p align="center">
-    <strong>An open source toolkit that allows you to focus on product scenarios and predictable outcomes instead of vibe coding every piece from scratch.</strong>
-</p>
+[English backup](README_en.md)
 
-<p align="center">
-    <a href="https://github.com/EuphoriaYan/spec-kit/tree/v0.12.5%2Bteamwork.1"><img src="https://img.shields.io/badge/release-v0.12.5%2Bteamwork.1-blue" alt="AI Team Release"/></a>
-    <a href="https://github.com/EuphoriaYan/spec-kit/stargazers"><img src="https://img.shields.io/github/stars/EuphoriaYan/spec-kit?style=social" alt="GitHub stars"/></a>
-    <a href="https://github.com/EuphoriaYan/spec-kit/blob/main/LICENSE"><img src="https://img.shields.io/github/license/EuphoriaYan/spec-kit" alt="License"/></a>
-    <a href="https://github.github.io/spec-kit/"><img src="https://img.shields.io/badge/docs-GitHub_Pages-blue" alt="Documentation"/></a>
-</p>
+AI Team Spec Kit 是一个面向团队协作的 Spec-Driven Development（SDD）工具。
+它基于 Spec Kit `v0.12.5`，但默认不安装原生 Spec Kit 的整套命令，而是为
+Codex、Claude Code、Cursor 和 Trae 安装六个职责清晰的主 Team Skills，并提供
+按需使用的高级扩展入口。
 
----
+它解决的不是“让 AI 多写代码”，而是让不同成员、不同 AI 工具在同一套需求、
+架构边界、任务范围和验证证据下协作。
 
-## AI Team Independent Distribution
+## 为什么需要它
 
-This repository is pinned to the Spec Kit `v0.12.5` base and adds an
-enterprise Team extension. Native Spec Kit commands remain unchanged and are
-available through the optional `full` skill profile; Team collaboration lives
-under [`extensions/team/`](extensions/team/).
+AI Coding 降低了实现功能的成本，也带来了新的团队风险：模型可能没有读全代码、
+重复实现已有能力、绕过模块边界、扩大修改范围，或者只凭一次运行成功就宣布完成。
 
-### Role Skills
+本项目用以下方式收敛这些风险：
 
-AI Team provides six primary role-oriented delivery skills rather than one
-workflow. Each delivery role
-consumes durable artifacts from the preceding role instead of hidden chat
-context.
+- 需求、架构、实现和评审由不同角色 Skill 承担，以 Issue 和文档交接；
+- CodeGraph 在 Plan 和缺陷分析阶段提供源码影响范围；
+- Feature 和 Bugfix 使用不同但可续接的路径；
+- 实现后自动进入 Review -> Assess -> Fix 质量循环；
+- 只有需求接受、HLD/公共接口、敏感依赖与安全决策、超范围变更和最终合入长期保留人工责任；
+- 本地过程文件默认不进入 Git，Issue、PR、源码、测试和经批准的架构文档承担跨人协作。
 
-| Skill | Responsibility |
-|---|---|
-| `speckit.team.specify` | clarify a Feature through User Stories, then publish or print the primary Issue |
-| `speckit.team.plan-and-task` | produce Code Graph grounded Plan, LLD-capable Tasks, and self-test design |
-| `speckit.team.assess` | assess a defect, its impact, permission boundary, fix strategy, and test strategy |
-| `speckit.team.fix` | apply a ready or risk-approved Bugfix assessment, verify it, and return to review |
-| `speckit.team.implement` | implement task-ready work, verify it, run automatic quality correction, and submit the result |
-| `speckit.team.review` | review a PR or local diff and return `GO`, `GO-WITH-RISK`, or `NO-GO` |
+## 六个 Team Skills
 
-```text
-Feature: Specify -> status/new-issue -> Technical Committee acceptance -> Plan-and-Task -> Implement -> Review/Assess/Fix loop -> PR -> human merge decision
-Bugfix: Assess -> optional risk approval -> Fix -> Review -> optional standalone PR -> human merge decision
-```
+用户可以直接在聊天框描述当前要做的事，不必记住 Skill 名称。
 
-Feature Issue creation belongs to Specify, where User Stories and their
-verifiable outcomes are established. Bugfix intake is a separate preceding
-capability and is not defined by the Feature skills. Tasks are later engineering
-decomposition and may reach LLD detail. The native `speckit.taskstoissues`
-command is not used to create the primary work item.
+| Skill | 什么时候使用 | 主要输出 |
+|---|---|---|
+| `speckit.team.specify` | 有一个新 Feature 或新项目想法 | 完整 User Stories，以及可发布或可复制的 Feature Issue |
+| `speckit.team.plan-and-task` | Feature Issue 已被接受 | CodeGraph 支撑的 HLD、模块 Tasks、最小自测和确定性检查 |
+| `speckit.team.assess` | 发现缺陷、异常现象或 Review 问题 | 根因假设、影响范围、修复边界和测试策略 |
+| `speckit.team.fix` | Assessment 已 ready 或风险已批准 | 最小修复、回归测试、进度说明并自动回到 Review |
+| `speckit.team.implement` | Feature Tasks 已通过检查 | 代码、自测证据和自动质量循环后的 PR 准备结果 |
+| `speckit.team.review` | 需要评审 PR 或本地 diff | 分级问题、自动修复路由以及 `GO` / `GO-WITH-RISK` / `NO-GO` |
 
-Supporting context, permissions, private-requirement synchronization, Code
-Graph, impact, and evidence remain progressively loaded internal capabilities.
+## 高级扩展入口
 
-### Advanced Extension Entries
+高级扩展不参与 Feature 或 Bugfix 的自动路由，仅在用户明确提出维护需求时调用：
 
-Advanced entries are installed for maintainers but do not participate in
-automatic Feature or Bugfix routing:
-
-| Entry | Use |
-|---|---|
-| `speckit.team.memory-consolidate` | preserve an evidence-backed lesson or promote human-approved guidance after delivery |
-
-Memory consolidation runs only on an explicit maintenance request, not at a
-mandatory lifecycle gate. Saved Memory is advisory; only reviewed promotion
-into `docs/ai-team/knowledge/rules/` creates binding project guidance, which
-delivery roles retrieve by task scope.
-
-Team work uses one directory convention with type-specific artifacts:
+| 入口 | 什么时候使用 | 主要输出 |
+|---|---|---|
+| `speckit.team.memory-consolidate` | 交付后需要沉淀经验或复用已批准的决定 | 建议性 Memory，或经人工批准的项目 Knowledge |
 
 ```text
-.specify/feature/<work_id>/
-  spec.md                    # generated from the accepted Feature Issue
-  plan-and-task.md
-  plan-and-task-check.md
+Feature: 一句话需求 -> Specify -> Issue 接受 -> Plan-and-Task
+         -> Implement -> Review/Assess/Fix -> PR -> 人工决定合入
 
-.specify/bugfix/<bug_slug>/
-  assessment.md
-  fix.md
-  test.md
-  evidence/                  # optional review evidence
+Bugfix: 现象或问题 -> Assess -> Fix -> Review/Assess/Fix
+        -> 可选 PR -> 人工决定合入
 ```
 
-### Module Context
+## 安装
 
-During Feature `speckit.team.plan-and-task`, the Issue-wide Plan identifies modules from
-the repository's source layout, build metadata, architecture guidance, and Code
-Graph. A repository may document owners or review routes, but they are not
-required for Task decomposition. Tasks are single-module and parallel by
-default; unavoidable dependencies and their handoff evidence are recorded in
-the Plan before implementation begins.
-
-The Team extension does not split Feature documents into native `specs/` and
-Bugfix documents into another directory. Native Spec Kit commands retain their
-original behavior when used independently.
-
-### Install
-
-AI Team requires the local, MIT-licensed CodeGraph CLI `>=1.0.0,<2.0.0`. Install
-it first; Specify validates the executable and version but does not execute
-third-party installation scripts automatically:
+准备 Python 3.11+、Git、uv，以及 CodeGraph CLI 1.x：
 
 ```bash
 npm install -g @colbymchenry/codegraph@^1
+uv tool install specify-cli --force \
+  --from git+https://github.com/EuphoriaYan/spec-kit.git@main
 ```
+
+在真实代码仓根目录执行一次初始化：
 
 ```bash
 specify init . --integration codex
 ```
 
-The default `team` skill profile registers the built-in role skills directly
-from the Specify CLI package. It does not copy extension implementation, core
-scripts, native page templates, constitution, skills, or workflow into the
-project. Only generated agent skills, `.specify/team/` configuration/context,
-and extension registry state remain. Advanced users may add
-`--skill-profile full` to install the complete native Spec Kit surface.
-Initialization writes a short natural-language router into the active AI tools'
-rule files before the first chat. AI Team does not install a workflow; users
-invoke the role skills naturally from chat.
+可选 integration：`codex`、`claude`、`cursor-agent`、`trae`。默认
+`team` profile 安装六个主 Team Skills、可选高级扩展入口及其必要资源，并把主流程的
+自然语言路由写入当前工具的规则入口。需要原生 Spec Kit 全部能力时才使用：
 
-For an existing coding repository, run `codegraph init` once. When the index is
-missing, Plan-and-Task and Assess ask before initializing it. They check
-`codegraph status`, synchronize pending changes, and stop rather than guessing
-architecture impact from an unavailable or stale graph.
+```bash
+specify init . --integration codex --skill-profile full
+```
 
-After installation, users can remain in chat:
+> 当前六技能版本从本仓 `main` 安装。历史 tag
+> `v0.12.5+teamwork.1` 不包含当前六技能版本；待维护者发布新的审核 tag 后，
+> 安装指南会重新固定到 tag。
+
+## 从聊天开始
+
+新 Feature 可以直接说：
 
 ```text
-Please add CSV export to the current project. After the architecture Plan is
-ready, pause so I can decide whether to discuss it or decompose Tasks now.
+请给当前系统增加 CSV 导出。导出字段要和列表展示一致，先帮我把需求澄清完整。
 ```
 
-The AI tool starts with `speckit.team.specify` and stops at each human
-decision boundary. See
-[the Team extension guide](extensions/team/README.md) for artifacts, repository
-boundaries, resume behavior, and the complete Feature/Bugfix journeys.
-
-> [!NOTE]
-> The upstream walkthrough below uses native Spec Kit commands and therefore
-> applies to `--skill-profile full`. The default AI Team experience starts from
-> natural language and the `speckit.team.*` role skills described above.
-
-## Table of Contents
-
-- [🤔 What is Spec-Driven Development?](#-what-is-spec-driven-development)
-- [⚡ Get Started](#-get-started)
-- [📽️ Video Overview](#️-video-overview)
-- [🌍 Community](#-community)
-- [🤖 Supported AI Coding Agent Integrations](#-supported-ai-coding-agent-integrations)
-- [🔧 Specify CLI Reference](#-specify-cli-reference)
-- [🧩 Making Spec Kit Your Own: Extensions & Presets](#-making-spec-kit-your-own-extensions--presets)
-- [📦 Bundles: Role-Based Setups](#-bundles-role-based-setups)
-- [📚 Core Philosophy](#-core-philosophy)
-- [🌟 Development Phases](#-development-phases)
-- [🎯 Experimental Goals](#-experimental-goals)
-- [🔧 Prerequisites](#-prerequisites)
-- [📖 Learn More](#-learn-more)
-- [📋 Detailed Process](#-detailed-process)
-- [💬 Support](#-support)
-- [🙏 Acknowledgements](#-acknowledgements)
-- [📄 License](#-license)
-
-## 🤔 What is Spec-Driven Development?
-
-Spec-Driven Development **flips the script** on traditional software development. For decades, code has been king — specifications were just scaffolding we built and discarded once the "real work" of coding began. Spec-Driven Development changes this: **specifications become executable**, directly generating working implementations rather than just guiding them.
-
-## ⚡ Get Started
-
-### 1. Install Specify CLI
-
-Requires **[uv](https://docs.astral.sh/uv/)** ([install uv](./docs/install/uv.md)). This distribution is pinned to `v0.12.5+teamwork.1`:
-
-```bash
-uv tool install specify-cli --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.1
-```
-
-See the [Installation Guide](./docs/installation.md) for alternative methods, verification, upgrade, and troubleshooting.
-
-### 2. Initialize a project
-
-```bash
-specify init my-project --integration copilot
-cd my-project
-```
-
-Automatic self-management is disabled for this pinned distribution. Reinstall
-the same tag when repairing or standardizing a workstation:
-
-```bash
-uv tool install specify-cli --force \
-  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.1
-```
-
-See the [Upgrade Guide](./docs/upgrade.md) for the fixed-version policy and
-project-file refresh procedure.
-
-### 3. Establish project principles
-
-Launch your coding agent in the project directory. Most agents expose spec-kit as `/speckit.*` slash commands; Codex CLI in skills mode uses `$speckit-*` instead; GitHub Copilot CLI uses `/agents` to select the agent or address it directly in a prompt.
-
-Use the **`/speckit.constitution`** command to create your project's governing principles and development guidelines that will guide all subsequent development.
-
-```bash
-/speckit.constitution Create principles focused on code quality, testing standards, user experience consistency, and performance requirements
-```
-
-### 4. Create the spec
-
-Use the **`/speckit.specify`** command to describe what you want to build. Focus on the **what** and **why**, not the tech stack.
-
-```bash
-/speckit.specify Build an application that can help me organize my photos in separate photo albums. Albums are grouped by date and can be re-organized by dragging and dropping on the main page. Albums are never in other nested albums. Within each album, photos are previewed in a tile-like interface.
-```
-
-### 5. Create a technical implementation plan
-
-Use the **`/speckit.plan`** command to provide your tech stack and architecture choices.
-
-```bash
-/speckit.plan The application uses Vite with minimal number of libraries. Use vanilla HTML, CSS, and JavaScript as much as possible. Images are not uploaded anywhere and metadata is stored in a local SQLite database.
-```
-
-### 6. Break down into tasks
-
-Use **`/speckit.tasks`** to create an actionable task list from your implementation plan.
-
-```bash
-/speckit.tasks
-```
-
-### 7. Execute implementation
-
-Use **`/speckit.implement`** to execute all tasks and build your feature according to the plan.
-
-```bash
-/speckit.implement
-```
-
-For detailed step-by-step instructions, see our [comprehensive guide](./spec-driven.md).
-
-## 📽️ Video Overview
-
-Want to see Spec Kit in action? Watch our [video overview](https://www.youtube.com/watch?v=a9eR1xsfvHg&pp=0gcJCckJAYcqIYzv)!
-
-[![Spec Kit video header](/media/spec-kit-video-header.jpg)](https://www.youtube.com/watch?v=a9eR1xsfvHg&pp=0gcJCckJAYcqIYzv)
-
-## 🌍 Community
-
-Explore community-contributed resources on the [Spec Kit docs site](https://github.github.io/spec-kit/):
-
-- [Extensions](https://github.github.io/spec-kit/community/extensions.html) — commands, hooks, and capabilities
-- [Presets](https://github.github.io/spec-kit/community/presets.html) — template and terminology overrides
-- [Bundles](https://github.github.io/spec-kit/community/bundles.html) — role and team stacks composed from existing components
-- [Walkthroughs](https://github.github.io/spec-kit/community/walkthroughs.html) — end-to-end SDD scenarios
-- [Friends](https://github.github.io/spec-kit/community/friends.html) — projects that extend or build on Spec Kit
-
-> [!NOTE]
-> Community contributions are independently created and maintained by their respective authors. Review source code before installation and use at your own discretion.
-
-Want to contribute? See the [Extension Publishing Guide](extensions/EXTENSION-PUBLISHING-GUIDE.md), the [Presets Publishing Guide](presets/PUBLISHING.md), or the [Community Bundles guide](docs/community/bundles.md).
-
-## 🤖 Supported AI Coding Agent Integrations
-
-Spec Kit works with 30+ AI coding agents — both CLI tools and IDE-based assistants. See the full list with notes and usage details in the [Supported AI Coding Agent Integrations](https://github.github.io/spec-kit/reference/integrations.html) guide.
-
-Run `specify integration list` to see all available integrations in your installed version.
-
-## Available Slash Commands
-
-After running `specify init`, your AI coding agent will have access to these slash commands for structured development. For integrations that support skills mode, passing `--integration <agent> --integration-options="--skills"` installs agent skills instead of slash-command prompt files.
-
-### Core Commands
-
-Essential commands for the Spec-Driven Development workflow:
-
-| Command                  | Agent Skill            | Description                                                                |
-| ------------------------ | ---------------------- | -------------------------------------------------------------------------- |
-| `/speckit.constitution`  | `speckit-constitution` | Create or update project governing principles and development guidelines   |
-| `/speckit.specify`       | `speckit-specify`      | Define what you want to build (requirements and user stories)              |
-| `/speckit.plan`          | `speckit-plan`         | Create technical implementation plans with your chosen tech stack          |
-| `/speckit.tasks`         | `speckit-tasks`        | Generate actionable task lists for implementation                          |
-| `/speckit.taskstoissues` | `speckit-taskstoissues`| Convert generated task lists into GitHub issues for tracking and execution |
-| `/speckit.implement`     | `speckit-implement`    | Execute all tasks to build the feature according to the plan               |
-| `/speckit.converge`      | `speckit-converge`     | Assess the codebase against spec/plan/tasks and append remaining work as new tasks |
-
-### Optional Commands
-
-Additional commands for enhanced quality and validation:
-
-| Command              | Agent Skill            | Description                                                                                                                          |
-| -------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `/speckit.clarify`   | `speckit-clarify`      | Clarify underspecified areas (recommended before `/speckit.plan`; formerly `/quizme`)                                                |
-| `/speckit.analyze`   | `speckit-analyze`      | Cross-artifact consistency & coverage analysis (run after `/speckit.tasks`, before `/speckit.implement`)                             |
-| `/speckit.checklist` | `speckit-checklist`    | Generate custom quality checklists that validate requirements completeness, clarity, and consistency (like "unit tests for English") |
-
-## 🔧 Specify CLI Reference
-
-For full command details, options, and examples, see the [CLI Reference](https://github.github.io/spec-kit/reference/overview.html).
-
-## 🧩 Making Spec Kit Your Own: Extensions & Presets
-
-Spec Kit can be tailored to your needs through two complementary systems — **extensions** and **presets** — plus project-local overrides for one-off adjustments:
-
-| Priority | Component Type                                    | Location                         |
-| -------: | ------------------------------------------------- | -------------------------------- |
-|      ⬆ 1 | Project-Local Overrides                           | `.specify/templates/overrides/`  |
-|        2 | Presets — Customize core & extensions             | `.specify/presets/templates/`    |
-|        3 | Extensions — Add new capabilities                 | `.specify/extensions/templates/` |
-|      ⬇ 4 | Spec Kit Core — Built-in SDD commands & templates | `.specify/templates/`            |
-
-- **Templates** are resolved at **runtime** — Spec Kit walks the stack top-down and uses the first match.
-- Project-local overrides (`.specify/templates/overrides/`) let you make one-off adjustments for a single project without creating a full preset.
-- **Extension/preset commands** are applied at **install time** — when you run `specify extension add` or `specify preset add`, command files are written into agent directories (e.g., `.claude/commands/`).
-- If multiple presets or extensions provide the same command, the highest-priority version wins. On removal, the next-highest-priority version is restored automatically.
-- If no overrides or customizations exist, Spec Kit uses its core defaults.
-
-### Extensions — Add New Capabilities
-
-Use **extensions** when you need functionality that goes beyond Spec Kit's core. Extensions introduce new commands and templates — for example, adding domain-specific workflows that are not covered by the built-in SDD commands, integrating with external tools, or adding entirely new development phases. They expand *what Spec Kit can do*.
-
-```bash
-# Search available extensions
-specify extension search
-
-# Install an extension
-specify extension add <extension-name>
-```
-
-For example, extensions could add Jira integration, post-implementation code review, V-Model test traceability, or project health diagnostics.
-
-See the [Extensions reference](https://github.github.io/spec-kit/reference/extensions.html) for the full command guide. Browse the [community extensions](https://github.github.io/spec-kit/community/extensions.html) for what's available.
-
-### Presets — Customize Existing Workflows
-
-Use **presets** when you want to change *how* Spec Kit works without adding new capabilities. Presets override the templates and commands that ship with the core *and* with installed extensions — for example, enforcing a compliance-oriented spec format, using domain-specific terminology, or applying organizational standards to plans and tasks. They customize the artifacts and instructions that Spec Kit and its extensions produce.
-
-```bash
-# Search available presets
-specify preset search
-
-# Install a preset
-specify preset add <preset-name>
-```
-
-For example, presets could restructure spec templates to require regulatory traceability, adapt the workflow to fit the methodology you use (e.g., Agile, Kanban, Waterfall, jobs-to-be-done, or domain-driven design), add mandatory security review gates to plans, enforce test-first task ordering, or localize the entire workflow to a different language. The [pirate-speak demo](https://github.com/mnriem/spec-kit-pirate-speak-preset-demo) shows just how deep the customization can go. Multiple presets can be stacked with priority ordering.
-
-See the [Presets reference](https://github.github.io/spec-kit/reference/presets.html) for the full command guide, including resolution order and priority stacking.
-
-## 📦 Bundles: Role-Based Setups
-
-Extensions and presets are individual building blocks. A **bundle** packages a
-curated set of them — extensions, presets, steps, and workflows — into a single,
-versioned, role-oriented setup so a whole team persona (product manager, business
-analyst, security researcher, developer, …) can be provisioned with one command.
-
-A bundle is described by a hand-written `bundle.yml` manifest. It pins each
-component to a version and, optionally, targets a specific integration; a bundle
-with no `integration` is **agnostic** and inherits whatever integration the
-project already uses.
-
-```bash
-# Discover bundles in the active catalog stack
-specify bundle search [<query>]
-
-# Inspect the exact component set a bundle will add (equals what install does)
-specify bundle info <bundle-id>
-
-# Install a bundle's full component set in one operation
-specify bundle install <bundle-id>
-
-# See what's installed, then update or remove non-destructively
-specify bundle list
-specify bundle update <bundle-id>     # or --all
-specify bundle remove <bundle-id>     # removes only this bundle's components
-```
-
-Bundles resolve from a **priority-ordered catalog stack** (project > user >
-built-in). Each source carries an install policy: `install-allowed` sources can
-be installed from, while `discovery-only` sources are visible in `search`/`info`
-but refuse installation. Manage the stack with `specify bundle catalog list|add|remove`.
-
-Authors validate and package bundles locally. Distribution is hosting the built
-artifact and adding a catalog source; community bundle submissions use the
-[Bundle Submission](https://github.com/github/spec-kit/issues/new?template=bundle_submission.yml)
-issue template so required component catalogs and install evidence can be reviewed:
-
-```bash
-specify bundle validate --path ./my-bundle      # structural + reference checks
-specify bundle build --path ./my-bundle         # produce a versioned .zip artifact
-```
-
-Four ready-to-read example manifests live under
-[`examples/bundles/`](examples/bundles/) (product manager, business analyst,
-security researcher, developer).
-
-Key guarantees: `info` shows exactly what `install` adds (transparency);
-installs are idempotent and confined to the project root; `remove` never touches
-components another installed bundle still needs; and all consume/author commands
-work **offline** against local or pinned sources.
-
-### When to Use Which
-
-| Goal | Use |
-| --- | --- |
-| Add a brand-new command or workflow | Extension |
-| Customize the format of specs, plans, or tasks | Preset |
-| Integrate an external tool or service | Extension |
-| Enforce organizational or regulatory standards | Preset |
-| Ship reusable domain-specific templates | Either — presets for template overrides, extensions for templates bundled with new commands |
-| Provision a complete role-based setup in one command | Bundle |
-
-## 📚 Core Philosophy
-
-Spec-Driven Development is a structured process that emphasizes:
-
-- **Intent-driven development** where specifications define the "*what*" before the "*how*"
-- **Rich specification creation** using guardrails and organizational principles
-- **Multi-step refinement** rather than one-shot code generation from prompts
-- **Heavy reliance** on advanced AI model capabilities for specification interpretation
-
-## 🌟 Development Phases
-
-| Phase                                    | Focus                    | Key Activities                                                                                                                                                     |
-| ---------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **0-to-1 Development** ("Greenfield")    | Generate from scratch    | <ul><li>Start with high-level requirements</li><li>Generate specifications</li><li>Plan implementation steps</li><li>Build production-ready applications</li></ul> |
-| **Creative Exploration**                 | Parallel implementations | <ul><li>Explore diverse solutions</li><li>Support multiple technology stacks & architectures</li><li>Experiment with UX patterns</li></ul>                         |
-| **Iterative Enhancement** ("Brownfield") | Brownfield modernization | <ul><li>Add features iteratively</li><li>Modernize legacy systems</li><li>Adapt processes</li></ul>                                                                |
-
-For existing projects, keep Spec Kit tooling updates separate from feature
-artifact evolution: refresh managed project files when upgrading, and update
-`specs/` artifacts when intended behavior changes. The
-[Evolving Specs guide](./docs/guides/evolving-specs.md) describes the
-recommended brownfield loop.
-
-## 🎯 Experimental Goals
-
-Our research and experimentation focus on:
-
-### Technology independence
-
-- Create applications using diverse technology stacks
-- Validate the hypothesis that Spec-Driven Development is a process not tied to specific technologies, programming languages, or frameworks
-
-### Enterprise constraints
-
-- Demonstrate mission-critical application development
-- Incorporate organizational constraints (cloud providers, tech stacks, engineering practices)
-- Support enterprise design systems and compliance requirements
-
-### User-centric development
-
-- Build applications for different user cohorts and preferences
-- Support various development approaches (from vibe-coding to AI-native development)
-
-### Creative & iterative processes
-
-- Validate the concept of parallel implementation exploration
-- Provide robust iterative feature development workflows
-- Extend processes to handle upgrades and modernization tasks
-
-## 🔧 Prerequisites
-
-- **Linux/macOS/Windows**
-- [Supported](#-supported-ai-coding-agent-integrations) AI coding agent.
-- [uv](https://docs.astral.sh/uv/) for package management (recommended) or [pipx](https://pipx.pypa.io/) for persistent installation
-- [Python 3.11+](https://www.python.org/downloads/)
-- [Git](https://git-scm.com/downloads)
-
-If you encounter issues with an agent, please open an issue so we can refine the integration.
-
-## 📖 Learn More
-
-- **[Complete Spec-Driven Development Methodology](./spec-driven.md)** - Deep dive into the full process
-- **[Detailed Walkthrough](#-detailed-process)** - Step-by-step implementation guide
-
----
-
-## 📋 Detailed Process
-
-<details>
-<summary>Click to expand the detailed step-by-step walkthrough</summary>
-
-You can use the Specify CLI to bootstrap your project, which will bring in the required artifacts in your environment. Run:
-
-```bash
-specify init <project_name>
-```
-
-Or initialize in the current directory:
-
-```bash
-specify init .
-# or use the --here flag
-specify init --here
-# Skip confirmation when the directory already has files
-specify init . --force
-# or
-specify init --here --force
-```
-
-![Specify CLI bootstrapping a new project in the terminal](./media/specify_cli.gif)
-
-In an interactive terminal, you will be prompted to select the coding agent integration you are using. In non-interactive sessions, such as CI or piped runs, `specify init` defaults to GitHub Copilot unless you pass `--integration`. You can also proactively specify the integration directly in the terminal:
-
-```bash
-specify init <project_name> --integration copilot
-specify init <project_name> --integration gemini
-specify init <project_name> --integration codex
-
-# Or in current directory:
-specify init . --integration copilot
-specify init . --integration codex --integration-options="--skills"
-
-# or use --here flag
-specify init --here --integration copilot
-specify init --here --integration codex --integration-options="--skills"
-
-# Force merge into a non-empty current directory
-specify init . --force --integration copilot
-
-# or
-specify init --here --force --integration copilot
-```
-
-The CLI will check that your selected agent's CLI tool is installed (for integrations that require a CLI), such as Claude Code, Gemini CLI, Qwen Code, opencode, Codex CLI, Qoder CLI, Tabnine CLI, Kiro CLI, Pi Coding Agent, Oh My Pi, Forge, Goose, Mistral Vibe, or ZCode. If you don't have the required tool installed, or you prefer to get the templates without checking for the right tools, use `--ignore-agent-tools` with your command:
-
-```bash
-specify init <project_name> --integration copilot --ignore-agent-tools
-```
-
-### **STEP 1:** Establish project principles
-
-Go to the project folder and run your coding agent. In our example, we're using `claude`.
-
-![Bootstrapping Claude Code environment](./media/bootstrap-claude-code.gif)
-
-You will know that things are configured correctly if you see the `/speckit.constitution`, `/speckit.specify`, `/speckit.plan`, `/speckit.tasks`, and `/speckit.implement` commands available.
-
-The first step should be establishing your project's governing principles using the `/speckit.constitution` command. This helps ensure consistent decision-making throughout all subsequent development phases:
+Bugfix 可以直接说：
 
 ```text
-/speckit.constitution Create principles focused on code quality, testing standards, user experience consistency, and performance requirements. Include governance for how these principles should guide technical decisions and implementation choices.
+登录会话过期后接口返回 500。请先分析根因和影响范围，再决定如何修复。
 ```
 
-This step creates or updates the `.specify/memory/constitution.md` file with your project's foundational guidelines that the coding agent will reference during specification, planning, and implementation phases.
+中断后可以用 Issue URL、`work_id`、`bug_slug` 或 PR URL 继续当前阶段。详细示例见
+[快速上手](docs/quickstart.md)。
 
-### **STEP 2:** Create project specifications
+## 文档
 
-With your project principles established, you can now create the functional specifications. Use the `/speckit.specify` command and then provide the concrete requirements for the project you want to develop.
+- [安装与环境诊断](docs/installation.md)
+- [六技能快速上手与用户旅程](docs/quickstart.md)
+- [版本升级与项目刷新](docs/upgrade.md)
+- [本仓开发与测试](docs/local-development.md)
+- [Team 扩展维护说明](extensions/team/README.md)
+- [文档分层与语言规范](docs/README.md)
 
-> [!IMPORTANT]
-> Be as explicit as possible about *what* you are trying to build and *why*. **Do not focus on the tech stack at this point**.
-
-An example prompt:
-
-```text
-Develop Taskify, a team productivity platform. It should allow users to create projects, add team members,
-assign tasks, comment and move tasks between boards in Kanban style. In this initial phase for this feature,
-let's call it "Create Taskify," let's have multiple users but the users will be declared ahead of time, predefined.
-I want five users in two different categories, one product manager and four engineers. Let's create three
-different sample projects. Let's have the standard Kanban columns for the status of each task, such as "To Do,"
-"In Progress," "In Review," and "Done." There will be no login for this application as this is just the very
-first testing thing to ensure that our basic features are set up. For each task in the UI for a task card,
-you should be able to change the current status of the task between the different columns in the Kanban work board.
-You should be able to leave an unlimited number of comments for a particular card. You should be able to, from that task
-card, assign one of the valid users. When you first launch Taskify, it's going to give you a list of the five users to pick
-from. There will be no password required. When you click on a user, you go into the main view, which displays the list of
-projects. When you click on a project, you open the Kanban board for that project. You're going to see the columns.
-You'll be able to drag and drop cards back and forth between different columns. You will see any cards that are
-assigned to you, the currently logged in user, in a different color from all the other ones, so you can quickly
-see yours. You can edit any comments that you make, but you can't edit comments that other people made. You can
-delete any comments that you made, but you can't delete comments anybody else made.
-```
-
-After this prompt is entered, you should see Claude Code kick off the planning and spec drafting process. Claude Code will also trigger some of the built-in scripts to set up the repository.
-
-Once this step is completed, you should have a new branch created (e.g., `001-create-taskify`), as well as a new specification in the `specs/001-create-taskify` directory.
-
-The produced specification should contain a set of user stories and functional requirements, as defined in the template.
-
-At this stage, your project folder contents should resemble the following:
-
-```text
-.
-├── .specify
-│   ├── memory
-│   │   └── constitution.md
-│   ├── scripts
-│   │   └── bash
-│   │       ├── check-prerequisites.sh
-│   │       ├── common.sh
-│   │       ├── create-new-feature.sh
-│   │       ├── setup-plan.sh
-│   │       └── setup-tasks.sh
-│   └── templates
-│       ├── plan-template.md
-│       ├── spec-template.md
-│       └── tasks-template.md
-└── specs
-    └── 001-create-taskify
-        └── spec.md
-```
-
-### **STEP 3:** Functional specification clarification (required before planning)
-
-With the baseline specification created, you can go ahead and clarify any of the requirements that were not captured properly within the first shot attempt.
-
-You should run the structured clarification workflow **before** creating a technical plan to reduce rework downstream.
-
-Preferred order:
-
-1. Use `/speckit.clarify` (structured) – sequential, coverage-based questioning that records answers in a Clarifications section.
-2. Optionally follow up with ad-hoc free-form refinement if something still feels vague.
-
-If you intentionally want to skip clarification (e.g., spike or exploratory prototype), explicitly state that so the agent doesn't block on missing clarifications.
-
-Example free-form refinement prompt (after `/speckit.clarify` if still needed):
-
-```text
-For each sample project or project that you create there should be a variable number of tasks between 5 and 15
-tasks for each one randomly distributed into different states of completion. Make sure that there's at least
-one task in each stage of completion.
-```
-
-You should also ask Claude Code to validate the **Review & Acceptance Checklist**, checking off the things that are validated/pass the requirements, and leave the ones that are not unchecked. The following prompt can be used:
-
-```text
-Read the review and acceptance checklist, and check off each item in the checklist if the feature spec meets the criteria. Leave it empty if it does not.
-```
-
-It's important to use the interaction with Claude Code as an opportunity to clarify and ask questions around the specification - **do not treat its first attempt as final**.
-
-### **STEP 4:** Generate a plan
-
-You can now be specific about the tech stack and other technical requirements. You can use the `/speckit.plan` command that is built into the project template with a prompt like this:
-
-```text
-We are going to generate this using .NET Aspire, using Postgres as the database. The frontend should use
-Blazor server with drag-and-drop task boards, real-time updates. There should be a REST API created with a projects API,
-tasks API, and a notifications API.
-```
-
-The output of this step will include a number of implementation detail documents, with your directory tree resembling this:
-
-```text
-.
-├── CLAUDE.md
-├── .specify
-│   ├── memory
-│   │   └── constitution.md
-│   ├── scripts
-│   │   └── bash
-│   │       ├── check-prerequisites.sh
-│   │       ├── common.sh
-│   │       ├── create-new-feature.sh
-│   │       ├── setup-plan.sh
-│   │       └── setup-tasks.sh
-│   └── templates
-│       ├── CLAUDE-template.md
-│       ├── plan-template.md
-│       ├── spec-template.md
-│       └── tasks-template.md
-└── specs
-    └── 001-create-taskify
-        ├── contracts
-        │   ├── api-spec.json
-        │   └── signalr-spec.md
-        ├── data-model.md
-        ├── plan.md
-        ├── quickstart.md
-        ├── research.md
-        └── spec.md
-```
-
-Check the `research.md` document to ensure that the right tech stack is used, based on your instructions. You can ask Claude Code to refine it if any of the components stand out, or even have it check the locally-installed version of the platform/framework you want to use (e.g., .NET).
-
-Additionally, you might want to ask Claude Code to research details about the chosen tech stack if it's something that is rapidly changing (e.g., .NET Aspire, JS frameworks), with a prompt like this:
-
-```text
-I want you to go through the implementation plan and implementation details, looking for areas that could
-benefit from additional research as .NET Aspire is a rapidly changing library. For those areas that you identify that
-require further research, I want you to update the research document with additional details about the specific
-versions that we are going to be using in this Taskify application and spawn parallel research tasks to clarify
-any details using research from the web.
-```
-
-During this process, you might find that Claude Code gets stuck researching the wrong thing - you can help nudge it in the right direction with a prompt like this:
-
-```text
-I think we need to break this down into a series of steps. First, identify a list of tasks
-that you would need to do during implementation that you're not sure of or would benefit
-from further research. Write down a list of those tasks. And then for each one of these tasks,
-I want you to spin up a separate research task so that the net results is we are researching
-all of those very specific tasks in parallel. What I saw you doing was it looks like you were
-researching .NET Aspire in general and I don't think that's gonna do much for us in this case.
-That's way too untargeted research. The research needs to help you solve a specific targeted question.
-```
-
-> [!NOTE]
-> Claude Code might be over-eager and add components that you did not ask for. Ask it to clarify the rationale and the source of the change.
-
-### **STEP 5:** Have Claude Code validate the plan
-
-With the plan in place, you should have Claude Code run through it to make sure that there are no missing pieces. You can use a prompt like this:
-
-```text
-Now I want you to go and audit the implementation plan and the implementation detail files.
-Read through it with an eye on determining whether or not there is a sequence of tasks that you need
-to be doing that are obvious from reading this. Because I don't know if there's enough here. For example,
-when I look at the core implementation, it would be useful to reference the appropriate places in the implementation
-details where it can find the information as it walks through each step in the core implementation or in the refinement.
-```
-
-This helps refine the implementation plan and helps you avoid potential blind spots that Claude Code missed in its planning cycle. Once the initial refinement pass is complete, ask Claude Code to go through the checklist once more before you can get to the implementation.
-
-You can also ask Claude Code (if you have the [GitHub CLI](https://docs.github.com/en/github-cli/github-cli) installed) to go ahead and create a pull request from your current branch to `main` with a detailed description, to make sure that the effort is properly tracked.
-
-> [!NOTE]
-> Before you have the agent implement it, it's also worth prompting Claude Code to cross-check the details to see if there are any over-engineered pieces (remember - it can be over-eager). If over-engineered components or decisions exist, you can ask Claude Code to resolve them. Ensure that Claude Code follows the constitution in `.specify/memory/constitution.md` as the foundational piece that it must adhere to when establishing the plan.
-
-### **STEP 6:** Generate task breakdown with /speckit.tasks
-
-With the implementation plan validated, you can now break down the plan into specific, actionable tasks that can be executed in the correct order. Use the `/speckit.tasks` command to automatically generate a detailed task breakdown from your implementation plan:
-
-```text
-/speckit.tasks
-```
-
-This step creates a `tasks.md` file in your feature specification directory that contains:
-
-- **Task breakdown organized by user story** - Each user story becomes a separate implementation phase with its own set of tasks
-- **Dependency management** - Tasks are ordered to respect dependencies between components (e.g., models before services, services before endpoints)
-- **Parallel execution markers** - Tasks that can run in parallel are marked with `[P]` to optimize development workflow
-- **File path specifications** - Each task includes the exact file paths where implementation should occur
-- **Test-driven development structure** - If tests are requested, test tasks are included and ordered to be written before implementation
-- **Checkpoint validation** - Each user story phase includes checkpoints to validate independent functionality
-
-The generated tasks.md provides a clear roadmap for the `/speckit.implement` command, ensuring systematic implementation that maintains code quality and allows for incremental delivery of user stories.
-
-### **STEP 7:** Implementation
-
-Once ready, use the `/speckit.implement` command to execute your implementation plan:
-
-```text
-/speckit.implement
-```
-
-The `/speckit.implement` command will:
-
-- Validate that all prerequisites are in place (constitution, spec, plan, and tasks)
-- Parse the task breakdown from `tasks.md`
-- Execute tasks in the correct order, respecting dependencies and parallel execution markers
-- Follow the TDD approach defined in your task plan
-- Provide progress updates and handle errors appropriately
-
-> [!IMPORTANT]
-> The coding agent will execute local CLI commands (such as `dotnet`, `npm`, etc.) - make sure you have the required tools installed on your machine.
-
-Once the implementation is complete, test the application and resolve any runtime errors that may not be visible in CLI logs (e.g., browser console errors). You can copy and paste such errors back to your coding agent for resolution.
-
-</details>
-
----
-
-## 💬 Support
-
-For support, please open a [GitHub issue](https://github.com/github/spec-kit/issues/new). We welcome bug reports, feature requests, and questions about using Spec-Driven Development.
-
-## 🙏 Acknowledgements
-
-This project is heavily influenced by and based on the work and research of [John Lam](https://github.com/jflam).
-
-## 📄 License
-
-This project is licensed under the terms of the MIT open source license. Please refer to the [LICENSE](./LICENSE) file for the full terms.
+AI 运行契约位于 `extensions/team/commands/`、`extensions/team/references/`
+以及被 `extensions/team/extension.yml` 安装的资源中。这些文件保持英文和稳定路径，
+不与面向人的双语文档混在一起。

@@ -1,68 +1,55 @@
-# Fixed-Version Guide
+# 版本升级与项目刷新
 
-The AI Team distribution is pinned to `v0.12.5+teamwork.1`. Automatic
-`specify self check` and `specify self upgrade` are not advertised for this
-release because the team intentionally uses one reviewed CLI and workflow
-baseline.
+[English backup](upgrade_en.md)
 
-## Install Or Repair The CLI
+AI Team 发行版不会自动跟随上游 Spec Kit 更新。CLI 版本、Team Skills 和项目内生成文件
+是三个不同层次，升级时必须分别确认。
 
-Use the same command for a new installation, a repair, or standardizing a
-workstation that has another Spec Kit version:
+## 当前版本策略
+
+- 上游代码基线固定为 Spec Kit `v0.12.5`；
+- 历史 tag `v0.12.5+teamwork.1` 不包含当前六技能实现；
+- 新审核 tag 发布前，当前六技能版本从本仓 `main` 安装；
+- 不使用 `specify self check` 或 `specify self upgrade` 自动漂移到其他版本。
+
+## 更新本机 CLI
 
 ```bash
 uv tool install specify-cli --force \
-  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.1
-```
-
-For `pipx` environments:
-
-```bash
-pipx install --force \
-  git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.1
-```
-
-Verify the pinned package version:
-
-```bash
+  --from git+https://github.com/EuphoriaYan/spec-kit.git@main
 specify --version
 ```
 
-Expected output includes:
+企业环境应把审核过的 commit 或 wheel 固定在内部制品库，不要让每台开发机在不同时间
+直接追踪变化中的 `main`。
 
-```text
-specify 0.12.5+teamwork.1
-```
+## 刷新项目安装
 
-## Refresh Project Files
-
-Installing the CLI does not silently replace a project's existing commands,
-templates, extensions, presets, or workflow state. From the project root,
-refresh only the integration and components the team has selected.
-
-Inspect the active setup first:
+更新 CLI 不会自动覆盖业务仓文件。进入代码仓，先提交或暂存当前改动，然后执行：
 
 ```bash
-specify version --features
-specify integration list
-specify extension list
-specify preset list
-specify workflow list
+specify init . --integration <codex|claude|cursor-agent|trae>
+git diff
 ```
 
-Re-run project initialization only when the team has reviewed which managed
-files may be refreshed:
+重点检查：
 
-```bash
-specify init --here --integration <your-agent>
-```
+- 六个 Team Skills 是否更新；
+- `AGENTS.md` 和工具规则中只有一段受管理入口；
+- 项目自有规则没有被覆盖；
+- `.specify/team/ai-team-config.yml` 的项目配置仍被保留；
+- `.gitignore` 继续忽略 Feature/Bugfix 本地工作包；
+- 没有突然安装 `full` profile 的原生命令。
 
-Do not use `--force` casually in an established project. Preserve customized
-project files and review the generated diff before committing.
+不要在已有项目中随意使用破坏性 `--force` 覆盖项目自有文件。出现冲突时，应先比较
+生成文件与项目规则，再决定迁移方式。
 
-## Moving To A Future Teamwork Release
+## 发布新固定版本
 
-A future release must publish a new reviewed tag and update the pinned version
-in this guide. Do not follow the latest upstream Spec Kit release implicitly;
-the AI Team distribution remains locked until maintainers approve a new
-one-time baseline or Teamwork release.
+维护者发布新 Teamwork tag 时，需要同时完成：
+
+1. 六技能安装和四种 integration 的样例验证；
+2. 更新中文与英文安装文档中的版本来源；
+3. 记录 CodeGraph 和 Python 最低版本；
+4. 说明生成文件变化和项目刷新步骤；
+5. 提供从上一审核版本升级的回滚方式。
