@@ -50,7 +50,7 @@
     "team": {
       "name": "AI Team SDD Roles",
       "id": "team",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "description": "Six role-oriented enterprise SDD skills for feature and bugfix work from intake through pull request review.",
       "author": "AI Team Template",
       "repository": "https://github.com/EuphoriaYan/spec-kit",

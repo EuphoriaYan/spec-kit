@@ -28,6 +28,7 @@ Specify does not execute third-party installation scripts automatically."""
 @dataclass(frozen=True)
 class TeamSetupResult:
     installed: bool
+    updated: bool
     rule_files: tuple[str, ...]
 
 
@@ -76,7 +77,7 @@ def _initialize_rules(project_root: Path, source: Path) -> list[str]:
 
 def install_bundled_team(project_root: Path) -> TeamSetupResult:
     """Register packaged Team skills, then initialize project-owned state."""
-    from .extensions import ExtensionManager
+    from .extensions import ExtensionManager, ExtensionManifest
 
     _require_codegraph()
 
@@ -88,12 +89,39 @@ def install_bundled_team(project_root: Path) -> TeamSetupResult:
 
     manager = ExtensionManager(project_root)
     already_installed = manager.registry.is_installed("team")
+    manifest = ExtensionManifest(source / "extension.yml")
+    installed_metadata = manager.registry.get("team") or {}
+    updated = False
+    if already_installed and installed_metadata.get("source") == "bundled":
+        updated = (
+            installed_metadata.get("version") != manifest.version
+            or installed_metadata.get("manifest_hash") != manifest.get_hash()
+        )
+
+    state_dir = project_root / ".specify" / "team"
+    preserved_state = (
+        {
+            path.name: path.read_bytes()
+            for path in state_dir.iterdir()
+            if updated and path.is_file() and not path.is_symlink()
+        }
+        if state_dir.is_dir()
+        else {}
+    )
+
+    if updated:
+        manager.check_compatibility(manifest, get_speckit_version())
+        manager.remove("team")
+        manager.install_bundled_from_directory(source, get_speckit_version())
+        state_dir.mkdir(parents=True, exist_ok=True)
+        for name, content in preserved_state.items():
+            (state_dir / name).write_bytes(content)
+
     created_state: list[Path] = []
     if not already_installed:
         manager.install_bundled_from_directory(source, get_speckit_version())
 
     try:
-        state_dir = project_root / ".specify" / "team"
         state_dir.mkdir(parents=True, exist_ok=True)
         for source_file, name in (
             (source / "docs" / "context-bootstrap.md", "context-bootstrap.md"),
@@ -130,5 +158,6 @@ def install_bundled_team(project_root: Path) -> TeamSetupResult:
 
     return TeamSetupResult(
         installed=not already_installed,
+        updated=updated,
         rule_files=tuple(rules),
     )

@@ -614,7 +614,13 @@ def register(app: typer.Typer) -> None:
                     from ..team_setup import install_bundled_team
 
                     team_result = install_bundled_team(project_path)
-                    action = "installed" if team_result.installed else "already present"
+                    action = (
+                        "installed"
+                        if team_result.installed
+                        else "updated"
+                        if team_result.updated
+                        else "already present"
+                    )
                     tracker.complete(
                         "team",
                         f"extension {action}; {len(team_result.rule_files)} rule files",

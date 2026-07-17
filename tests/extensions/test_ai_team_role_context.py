@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -195,6 +196,66 @@ def test_codegraph_version_check_accepts_supported_release(
     )
 
     assert team_setup._require_codegraph() == ("/tools/codegraph", "1.4.1")
+
+
+def test_team_setup_refreshes_old_bundled_skills_and_preserves_project_state(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from specify_cli import team_setup
+    from specify_cli._assets import get_speckit_version
+    from specify_cli.extensions import ExtensionManager
+
+    project = tmp_path / "project"
+    specify = project / ".specify"
+    specify.mkdir(parents=True)
+    (specify / "init-options.json").write_text(
+        json.dumps({"ai": "codex", "integration": "codex", "ai_skills": True}),
+        encoding="utf-8",
+    )
+
+    old_team = tmp_path / "team-0.5.0"
+    shutil.copytree(AI_TEAM, old_team)
+    old_manifest = old_team / "extension.yml"
+    old_manifest.write_text(
+        old_manifest.read_text(encoding="utf-8").replace(
+            'version: "0.5.1"', 'version: "0.5.0"'
+        ),
+        encoding="utf-8",
+    )
+    old_plan = old_team / "commands" / "speckit.team.plan-and-task.md"
+    old_plan.write_text(
+        "---\ndescription: old plan\n---\n\nOLD ADAPTER PLAN\n", encoding="utf-8"
+    )
+
+    manager = ExtensionManager(project)
+    manager.install_bundled_from_directory(old_team, get_speckit_version())
+    state = specify / "team"
+    state.mkdir()
+    config = state / "ai-team-config.yml"
+    config.write_text("project_owned: true\n", encoding="utf-8")
+
+    monkeypatch.setattr(team_setup, "_locate_bundled_extension", lambda _id: AI_TEAM)
+    monkeypatch.setattr(
+        team_setup, "_require_codegraph", lambda: ("codegraph", "1.4.1")
+    )
+
+    result = team_setup.install_bundled_team(project)
+
+    installed_plan = (
+        project / ".agents/skills/speckit-team-plan-and-task/SKILL.md"
+    ).read_text(encoding="utf-8")
+    metadata = ExtensionManager(project).registry.get("team")
+    assert result.installed is False
+    assert result.updated is True
+    assert "OLD ADAPTER PLAN" not in installed_plan
+    assert "required CodeGraph" in installed_plan
+    assert metadata is not None
+    assert metadata["version"] == "0.5.1"
+    assert config.read_text(encoding="utf-8") == "project_owned: true\n"
+
+    second = team_setup.install_bundled_team(project)
+    assert second.installed is False
+    assert second.updated is False
 
 
 @pytest.mark.parametrize(
