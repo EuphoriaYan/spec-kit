@@ -105,6 +105,12 @@ Load release, security, dependency, operations, memory, or adjacent-module
 material only when the Issue or impact evidence touches that concern. Record
 why the context radius expanded.
 
+For Plan-and-Task, Assess, Fix, Implement, and Review, read
+`references/memory-runtime.md` and run its task-scoped retrieval after the
+affected modules are known. Binding Knowledge applies within its declared
+scope. Memory remains advisory. Re-run retrieval when impact analysis expands
+the module set; do not preload the full memory store.
+
 ## Refresh Check
 
 Before handoff, re-read the Issue status and update time, current source

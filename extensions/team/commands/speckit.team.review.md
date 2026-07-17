@@ -59,6 +59,11 @@ association does not prevent code review, but it makes lifecycle alignment
 
 ## Phase 2: Code Review
 
+Read `references/memory-runtime.md` and retrieve guidance for role `review`, the
+resolved work type, and changed modules. Review binding Knowledge as project
+policy. Use advisory Memory only to look for recurrent failure patterns; never
+raise a finding solely because a past attempt differed.
+
 Review the diff, not just the PR description. Prioritize findings that affect:
 
 - functional correctness, edge cases, error handling, concurrency, and data

@@ -68,6 +68,11 @@ Read `references/context.md`. Resume from `WORK_CONTEXT` when present; for an
 older Bugfix directory, bootstrap a minimal package from `assessment.md`.
 Reconcile identity or phase conflicts before changing source.
 
+Read `references/memory-runtime.md` and retrieve guidance for role `fix`, work
+type `bugfix`, and the assessment's affected modules. Binding Knowledge
+constrains the fix. Advisory Memory may suggest a known pattern but cannot
+replace the assessment or current source evidence.
+
 Set `FLOW_KIND=feature-correction` only when the assessment contains both
 `Parent Feature` and `User Stories`; otherwise set
 `FLOW_KIND=standalone-bugfix`.

@@ -109,6 +109,10 @@ updates a local index, and ensures local/department/private-release paths are
 ignored by Git. A Mem0 adapter is optional and mirrors sanitized department or
 enterprise cards using the official `MemoryClient.add` interface.
 
+Create new cards under `.specify/team/memory/staging/` before invoking the
+adapter. Staging is local and Git-ignored; persistence validates the card and
+writes its reviewed copy into the selected canonical tier.
+
 The memory shape remains compatible with mem0-style memory:
 
 - a memory entry is a small card, not a raw transcript;

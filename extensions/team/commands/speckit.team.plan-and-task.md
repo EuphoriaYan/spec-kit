@@ -77,6 +77,10 @@ If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
    responsibilities, contracts, dependencies, existing tests, reuse candidates,
    and likely change paths. Record an owner or review route when the repository
    declares one, but do not block Task decomposition merely because none exists.
+   Then read `references/memory-runtime.md` and run its installed retrieval for
+   role `plan-and-task`, work type `feature`, and the affected modules. Apply
+   binding Knowledge to the HLD and cite advisory Memory only when current
+   source and Issue evidence still support it.
 7. Read `references/plan-and-task-format.md` immediately before creating or
    updating `plan-and-task.md`. The Plan is Issue-wide HLD: architecture
    before/after, contract impact, declared scope, per-module change,

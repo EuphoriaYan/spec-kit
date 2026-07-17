@@ -56,6 +56,11 @@ ROUTES = (
         "A pull request needs correctness and SDD review",
         "produce prioritized findings and a merge recommendation",
     ),
+    (
+        "speckit.team.memory-consolidate",
+        "A reviewed lesson, decision, or durable coding requirement should be reused",
+        "store advisory Memory or promote human-approved project Knowledge",
+    ),
 )
 
 
@@ -122,8 +127,10 @@ def _managed_section(target: str, root: Path | None = None) -> str:
         "`.specify/feature/<work_id>/` for Features and "
         "`.specify/bugfix/<bug_slug>/` for Bugfixes. These work roots are "
         "Git-ignored local runtime context; share accepted facts through "
-        "Issues, PRs, source, tests, and explicitly promoted HLD. Human "
-        "decisions are required only for requirement acceptance, HLD or "
+        "Issues, PRs, source, tests, and explicitly promoted HLD. "
+        "Role Skills retrieve task-scoped binding Knowledge and advisory "
+        "Memory when relevant; saved Memory alone is never a project rule. "
+        "Decisions are required only for requirement acceptance, HLD or "
         "cross-module/public-interface design, dependency/security/license "
         "or incompatibility, expansion beyond the Plan, and final merge.\n"
         f"{END}\n"

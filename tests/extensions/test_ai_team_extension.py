@@ -99,6 +99,7 @@ def test_ai_team_extension_command_files_exist():
         "speckit.team.fix",
         "speckit.team.implement",
         "speckit.team.review",
+        "speckit.team.memory-consolidate",
     }
 
     for command in manifest["provides"]["commands"]:
@@ -148,6 +149,8 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["memory"]["tiers"]["enterprise"]["upload"] is True
     assert config["memory"]["tiers"]["enterprise"]["docs"] is True
     assert config["memory"]["tiers"]["enterprise"]["git_policy"] == "commit-after-review"
+    assert config["knowledge"]["rules_root"] == "docs/ai-team/knowledge/rules"
+    assert config["knowledge"]["memory_is_advisory"] is True
     assert config["release_archive"]["private_root"] == ".specify/team/releases/private"
     assert config["release_archive"]["enterprise_root"] == "docs/ai-team/memory/releases"
     assert config["release_archive"]["default_privacy"] == "department-internal"
@@ -354,6 +357,133 @@ def test_memory_adapter_rejects_private_mem0_sync(tmp_path, monkeypatch):
             tier="local",
             backend="mem0",
         )
+
+
+def test_department_memory_retrieval_requires_approved_namespace(tmp_path):
+    adapter = _load_memory_adapter()
+
+    with pytest.raises(adapter.MemoryAdapterError, match="approved namespace"):
+        adapter.retrieve_context(
+            project_root=tmp_path,
+            role="review",
+            work_type="bugfix",
+            include_department=True,
+        )
+
+
+def test_memory_requirement_stays_advisory_until_human_approved(tmp_path):
+    adapter = _load_memory_adapter()
+    source = _staged_card(
+        tmp_path,
+        "strategy.md",
+        """---
+memory_type: decision
+tier: enterprise
+privacy: public-safe
+owner: architecture-team
+authority: advisory
+status: active
+scope:
+  roles: [implement, review]
+  work_types: [feature]
+  modules: [src/extensions]
+evidence: [https://example.com/pr/12]
+---
+
+# Extension rule
+
+Extensions should follow the Strategy pattern.
+""",
+    )
+    persisted = adapter.persist_memory(
+        project_root=tmp_path, source=source, tier="enterprise"
+    )
+
+    with pytest.raises(adapter.MemoryAdapterError, match="approved-guidance"):
+        adapter.promote_memory_to_knowledge(
+            project_root=tmp_path,
+            source=tmp_path / persisted["path"],
+            knowledge_type="coding-standard",
+        )
+
+    context = adapter.retrieve_context(
+        project_root=tmp_path,
+        role="implement",
+        work_type="feature",
+        modules=["src/extensions"],
+    )
+    assert "Enterprise Memory (Advisory)" in context
+    assert "## Binding Knowledge" not in context
+
+
+def test_memory_promotion_creates_scoped_binding_knowledge(tmp_path):
+    adapter = _load_memory_adapter()
+    source = _staged_card(
+        tmp_path,
+        "strategy.md",
+        """---
+memory_type: decision
+tier: enterprise
+privacy: public-safe
+owner: architecture-team
+authority: approved-guidance
+status: active
+approved_by: chief-architect
+approved_at: 2026-07-17T09:00:00Z
+scope:
+  roles: [implement, review]
+  work_types: [feature]
+  modules: [src/extensions]
+evidence: [https://example.com/decisions/12]
+---
+
+# Extension rule
+
+Extensions must follow the Strategy pattern.
+""",
+    )
+    persisted = adapter.persist_memory(
+        project_root=tmp_path, source=source, tier="enterprise"
+    )
+    result = adapter.promote_memory_to_knowledge(
+        project_root=tmp_path,
+        source=tmp_path / persisted["path"],
+        knowledge_type="coding-standard",
+    )
+
+    assert result["path"] == "docs/ai-team/knowledge/rules/strategy.md"
+    matching = adapter.retrieve_context(
+        project_root=tmp_path,
+        role="implement",
+        work_type="feature",
+        modules=["src/extensions"],
+    )
+    assert "Binding Knowledge" in matching
+    assert "must follow the Strategy pattern" in matching
+    assert matching.count("must follow the Strategy pattern") == 1
+
+    unrelated = adapter.retrieve_context(
+        project_root=tmp_path,
+        role="fix",
+        work_type="bugfix",
+        modules=["src/payment"],
+    )
+    assert "must follow the Strategy pattern" not in unrelated
+
+
+def test_unscoped_legacy_memory_is_not_injected_automatically(tmp_path):
+    adapter = _load_memory_adapter()
+    source = _staged_card(tmp_path, "legacy.md", _memory_card("enterprise", "public-safe"))
+    adapter.persist_memory(project_root=tmp_path, source=source, tier="enterprise")
+
+    context = adapter.retrieve_context(
+        project_root=tmp_path,
+        role="review",
+        work_type="bugfix",
+        modules=["src/payment"],
+    )
+
+    assert "Retry exhaustion" not in context
 
 
 def test_ai_team_support_model_document_exists():

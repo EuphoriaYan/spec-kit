@@ -83,9 +83,13 @@ Merge the old permission, impact, and assessment-review concepts into this asses
    files, functions, routes, modules, tests, data flow, and blast radius. For an
    existing project, stop when CodeGraph is unavailable or its index is not
    usable; do not substitute an unreviewed source-search fallback.
-3. **Impact Analysis**: identify blast radius, public API effects, data/storage concerns, migration risk, security risk, and regression risk.
-4. **Permission Boundary**: define proposed write paths and proposed verification commands for the later fix command. These are recommendations, not source changes.
-5. **Risk Routing**: mark the assessment `ready` when the evidence is sufficient
+3. **Task Guidance**: after the affected modules are known, read
+   `references/memory-runtime.md` and retrieve guidance for role `assess` and
+   work type `bugfix`. Binding Knowledge constrains expected behavior. Similar
+   Bugfix Memory is only a hypothesis or debugging lead, never root-cause proof.
+4. **Impact Analysis**: identify blast radius, public API effects, data/storage concerns, migration risk, security risk, and regression risk.
+5. **Permission Boundary**: define proposed write paths and proposed verification commands for the later fix command. These are recommendations, not source changes.
+6. **Risk Routing**: mark the assessment `ready` when the evidence is sufficient
    and the proposed fix stays in one repository and module, inside an accepted
    Plan when present, with no public-contract, dependency, security, license,
    incompatibility, or scope-expansion decision. Mark it `approval-required`
