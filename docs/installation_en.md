@@ -49,8 +49,9 @@ Initialization:
 4. ignores Feature/Bugfix work packages, the `.codegraph/` index, and only the
    generated `speckit-team-*` Skill directories; it does not blanket-ignore
    `.agents/` or `.specify/`;
-5. defers the CodeGraph version and index check until Plan or Assess, without
-   running remote installers.
+5. checks the CodeGraph version before writing Team files and fails safely when
+   it is missing or incompatible, without running remote installers. Existing
+   projects still initialize the index before Plan or Assess.
 
 | Tool | Skills | Rule entry |
 |---|---|---|

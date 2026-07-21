@@ -36,7 +36,7 @@ def test_team_manifest_is_valid_and_declares_execution_commands():
         {
             "name": "codegraph",
             "version": ">=1.0.0,<2.0.0",
-            "required": False,
+            "required": True,
         },
     ]
     for command_file in commands.values():

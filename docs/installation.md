@@ -79,8 +79,8 @@ specify init . --integration codex --skill-profile full
 4. 在 `AGENTS.md` 以及当前工具规则入口写入一段受管理的自然语言路由；
 5. 把 Feature/Bugfix 工作包、`.codegraph/` 索引及生成的 `speckit-team-*`
    Skills 加入 `.gitignore`；不会整目录忽略 `.agents/` 或 `.specify/`；
-6. 不要求初始化时已经安装 CodeGraph；第一次进入 Plan 或 Assess 时才检查
-   CodeGraph 版本和索引状态，也不会擅自执行第三方远程安装脚本。
+6. 在写入 Team 文件前检查 CodeGraph 版本；缺失或版本不兼容时安全失败，
+   也不会擅自执行第三方远程安装脚本。已有项目仍需在 Plan 或 Assess 前建立索引。
 
 不同工具的主要安装位置：
 

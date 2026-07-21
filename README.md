@@ -55,8 +55,8 @@ Bugfix: 现象或问题 -> Assess -> Fix -> Review/Assess/Fix
 
 ## 安装
 
-准备 Python 3.11+、Git、uv。CodeGraph CLI 1.x 可以稍后安装，但第一次进入
-Plan 或 Assess 前必须可用：
+准备 Python 3.11+、Git、uv 和 CodeGraph CLI 1.x。Team profile 会在初始化前
+检查 CodeGraph，未安装或版本不兼容时不会写入 Team 文件：
 
 ```bash
 npm install -g @colbymchenry/codegraph@^1

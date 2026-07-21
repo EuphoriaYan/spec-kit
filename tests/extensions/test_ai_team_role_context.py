@@ -255,7 +255,7 @@ def test_direct_team_setup_rolls_back_extension_when_rules_fail(
     assert not (specify / "team" / "context-bootstrap.md").exists()
 
 
-def test_direct_team_setup_defers_codegraph_requirement(
+def test_direct_team_setup_requires_codegraph_before_writing_files(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from specify_cli import team_setup
@@ -269,10 +269,11 @@ def test_direct_team_setup_defers_codegraph_requirement(
     )
     monkeypatch.setattr(team_setup, "_locate_bundled_extension", lambda _id: AI_TEAM)
 
-    result = team_setup.install_bundled_team(tmp_path)
+    with pytest.raises(RuntimeError, match="required to install the AI Team profile"):
+        team_setup.install_bundled_team(tmp_path)
 
-    assert result.installed is True
-    assert (tmp_path / ".agents/skills/speckit-team-plan-and-task/SKILL.md").is_file()
+    assert not (tmp_path / ".specify/extensions/team").exists()
+    assert not (tmp_path / ".agents/skills/speckit-team-plan-and-task/SKILL.md").exists()
 
 
 def test_codegraph_version_check_rejects_missing_or_unsupported_release(
@@ -281,7 +282,7 @@ def test_codegraph_version_check_rejects_missing_or_unsupported_release(
     from specify_cli import team_setup
 
     monkeypatch.setattr(team_setup.shutil, "which", lambda _name: None)
-    with pytest.raises(RuntimeError, match="planning and defect assessment"):
+    with pytest.raises(RuntimeError, match="required to install the AI Team profile"):
         team_setup._require_codegraph()
 
     monkeypatch.setattr(team_setup.shutil, "which", lambda _name: "codegraph")
