@@ -88,7 +88,9 @@ not a Bug Issue. Never apply the `type/bugfix` gate to `Parent Feature`, its
 Issue URL, or the original Issue URL carried by the correction handoff.
 
 Use an authenticated repository integration or host CLI to inspect the supplied
-Issue before modifying source code. Stop if its repository or labels cannot be
+Issue before modifying source code. For GitCode, read
+`references/gitcode-host-contract.md` and run its capability probe. Stop if
+its repository or labels cannot be
 verified. Require the Issue to belong to the coding repository and have
 `type/bugfix`.
 

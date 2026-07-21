@@ -82,8 +82,12 @@ Feature Spec, Plan, or Task fields.
 Feature and Bugfix work packages are runtime context owned by the installed
 Team extension. The installer adds `/.specify/feature/` and
 `/.specify/bugfix/` to the target coding repository's `.gitignore`; do not
-commit them. `.specify/team/` remains separately governed project
-configuration and is not covered by these ignore rules.
+commit them. It also ignores the local `/.codegraph/` index and only the
+generated `speckit-team-*` Skill directories for supported integrations.
+Do not ignore all of `.agents/` or `.specify/`: those roots may contain
+project-owned Skills and shared `.specify/team/` configuration. Stable Team
+configuration remains separately governed and is not covered by these ignore
+rules.
 
 Cross-person handoff uses the authoritative Issue and PR discussion. Publish a
 public-safe User Story, accepted Plan/Task summary, verification result, and

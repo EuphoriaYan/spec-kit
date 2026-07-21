@@ -1,0 +1,15 @@
+schema: ai-team-evidence-steps/v1
+revision: ""
+steps:
+  - id: STEP-001
+    title: ""
+    kind: deterministic
+    prerequisites:
+      - ""
+    action: ""
+    expected: ""
+    actual: ""
+    evidence: ""
+    result: NOT_RUN
+    missing_condition: "Complete the named prerequisite before execution."
+    recovery: ""

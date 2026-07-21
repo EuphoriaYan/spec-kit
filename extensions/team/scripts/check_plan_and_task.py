@@ -24,6 +24,8 @@ PLACEHOLDER = re.compile(r"(?i)\b(?:TBD|TODO|FIXME)\b|<[^>]+>|path/to/file")
 ID_SPLIT = re.compile(r"\s*(?:,|;|<br\s*/?>)\s*", re.IGNORECASE)
 HTTP_URL = re.compile(r"^https?://\S+$", re.IGNORECASE)
 EMPTY_REFERENCES = {"", "-", "none", "n/a", "not-applicable"}
+RESPONSIBILITIES = {"business-software", "framework", "external-prerequisite"}
+PR_STRATEGIES = {"business-only", "framework-only", "single-pr", "linked-prs"}
 
 
 @dataclass(frozen=True)
@@ -120,6 +122,14 @@ def _list(value: object) -> list[str]:
 def _meaningful(section: str) -> bool:
     content = re.sub(r"<!--.*?-->", "", section, flags=re.DOTALL).strip()
     return bool(content) and not PLACEHOLDER.search(content)
+
+
+def _meaningful_value(value: object) -> bool:
+    text = str(value or "").strip()
+    return (
+        text.lower() not in EMPTY_REFERENCES
+        and not PLACEHOLDER.search(text)
+    )
 
 
 def _evidence_file(project_root: Path, value: object) -> bool:
@@ -269,6 +279,7 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
         plan_common = {
             "Plan (HLD)",
             "Source And Code Graph Evidence",
+            "Requirement Responsibility And PR Strategy",
             "Module Change Plan",
             "Architecture And Contract Impact",
             "Declared Change Scope",
@@ -294,6 +305,7 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
         )
         plan_leaf_sections = {
             "Source And Code Graph Evidence",
+            "Requirement Responsibility And PR Strategy",
             "Architecture And Contract Impact",
             "Declared Change Scope",
             "Implementation Plan",
@@ -377,6 +389,95 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             if contract_ok
             else "public contract change requires a named architecture or contract authority and an http(s) decision URL",
             blocked=True,
+        )
+
+        responsibility = _table(
+            plan_body, "Requirement Responsibility And PR Strategy"
+        )
+        responsibility_columns = {
+            "User Story ID",
+            "Responsibility",
+            "Target repository",
+            "Delivery unit",
+            "Dependency",
+            "Review route",
+        }
+        responsibility_shape = bool(responsibility) and responsibility_columns.issubset(
+            responsibility[0]
+        )
+        strategy = plan_meta.get("delivery_strategy")
+        strategy = strategy if isinstance(strategy, dict) else {}
+        strategy_name = str(strategy.get("pr_strategy", "")).strip()
+        repositories = set(_list(strategy.get("repositories")))
+        domains = {
+            row["Responsibility"].strip() for row in responsibility
+        } if responsibility_shape else set()
+        target_repositories = {
+            row["Target repository"].strip() for row in responsibility
+        } if responsibility_shape else set()
+        delivery_units = {
+            row["Delivery unit"].strip() for row in responsibility
+        } if responsibility_shape else set()
+        base_responsibility_ok = (
+            responsibility_shape
+            and {row["User Story ID"].strip() for row in responsibility} == story_ids
+            and len(responsibility) == len(story_ids)
+            and bool(domains)
+            and domains.issubset(RESPONSIBILITIES)
+            and strategy_name in PR_STRATEGIES
+            and repositories == target_repositories
+            and all(
+                _meaningful_value(row["Target repository"])
+                and _meaningful_value(row["Delivery unit"])
+                and _meaningful_value(row["Review route"])
+                for row in responsibility
+            )
+        )
+        strategy_ok = base_responsibility_ok
+        strategy_detail = "requirements are classified and the PR boundary is coherent"
+        if base_responsibility_ok and "external-prerequisite" in domains:
+            strategy_ok = False
+            strategy_detail = (
+                "external prerequisites must be resolved or remain BLOCKED before a ready implementation plan"
+            )
+        elif base_responsibility_ok and domains == {"business-software"}:
+            strategy_ok = strategy_name == "business-only"
+        elif base_responsibility_ok and domains == {"framework"}:
+            strategy_ok = strategy_name == "framework-only"
+        elif base_responsibility_ok and {"business-software", "framework"}.issubset(domains):
+            if strategy_name == "single-pr":
+                framework_review = strategy.get("framework_review")
+                framework_review = (
+                    framework_review if isinstance(framework_review, dict) else {}
+                )
+                strategy_ok = (
+                    len(repositories) == 1
+                    and len(delivery_units) == 1
+                    and impact.get("cross_module") is True
+                    and strategy.get("shared_release_and_rollback") is True
+                    and _meaningful_value(strategy.get("atomic_reason"))
+                    and _named_decider(framework_review.get("decided_by"))
+                    and _decision_evidence(framework_review.get("evidence_url"))
+                )
+                strategy_detail = (
+                    "combined business/framework PR has one repository, one atomic delivery unit, shared rollback, and owner evidence"
+                )
+            elif strategy_name == "linked-prs":
+                strategy_ok = len(delivery_units) >= 2 and any(
+                    _references(row["Dependency"]) for row in responsibility
+                )
+                strategy_detail = (
+                    "business/framework work uses linked delivery units with explicit dependency order"
+                )
+            else:
+                strategy_ok = False
+        record(
+            "RESPONSIBILITY_BOUNDARY",
+            strategy_ok,
+            strategy_detail
+            if strategy_ok
+            else "classify every User Story and use a valid business-only, framework-only, atomic single-pr, or linked-prs boundary",
+            blocked=not base_responsibility_ok or "external-prerequisite" in domains,
         )
 
         stage = str(plan_meta.get("planning_stage", "")).strip().lower()

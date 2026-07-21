@@ -131,7 +131,7 @@ class TestCheckTip:
         output = strip_ansi(result.output)
         assert result.exit_code == 0
         assert (
-            "AI Team distribution: pinned to v0.12.5+teamwork.2"
+            "AI Team distribution: pinned to v0.12.5+teamwork.3"
             in output
         )
 

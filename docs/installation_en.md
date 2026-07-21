@@ -9,7 +9,7 @@ CLI workflow.
 ## Prerequisites
 
 - Python 3.11+, Git, and uv;
-- CodeGraph CLI `>=1.0.0,<2.0.0`;
+- CodeGraph CLI `>=1.0.0,<2.0.0` before the first Plan or Assess run;
 - one supported integration: `codex`, `claude`, `cursor-agent`, or `trae`.
 
 ```bash
@@ -27,7 +27,7 @@ Install the reviewed six-skill build from its fixed tag:
 
 ```bash
 uv tool install specify-cli --force \
-  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.2
+  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.3
 specify --version
 
 cd <coding-repository>
@@ -46,8 +46,12 @@ Initialization:
 1. installs six self-contained primary Team Skills and advanced extension entries;
 2. creates `.specify/team/` context and configuration;
 3. adds a managed natural-language router to `AGENTS.md` and tool-specific rules;
-4. ignores `.specify/feature/` and `.specify/bugfix/` local work packages;
-5. validates CodeGraph without running remote installers.
+4. ignores Feature/Bugfix work packages, the `.codegraph/` index, and only the
+   generated `speckit-team-*` Skill directories; it does not blanket-ignore
+   `.agents/` or `.specify/`;
+5. checks the CodeGraph version before writing Team files and fails safely when
+   it is missing or incompatible, without running remote installers. Existing
+   projects still initialize the index before Plan or Assess.
 
 | Tool | Skills | Rule entry |
 |---|---|---|

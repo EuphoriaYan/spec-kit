@@ -27,11 +27,11 @@ Trae 可以只使用 IDE Skills；只有进行无界面调度时才额外需要 
 
 ## 2. 安装 Specify CLI
 
-当前六技能版本固定为 `v0.12.5+teamwork.2`：
+当前六技能版本固定为 `v0.12.5+teamwork.3`：
 
 ```bash
 uv tool install specify-cli --force \
-  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.2
+  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.3
 specify --version
 ```
 
@@ -77,8 +77,10 @@ specify init . --integration codex --skill-profile full
 2. 每个 Skill 只携带自己需要的 references 和 scripts；
 3. 写入 `.specify/team/context-bootstrap.md` 和可编辑配置；
 4. 在 `AGENTS.md` 以及当前工具规则入口写入一段受管理的自然语言路由；
-5. 把 `.specify/feature/` 和 `.specify/bugfix/` 加入 `.gitignore`；
-6. 检查 CodeGraph 版本，但不会擅自执行第三方远程安装脚本。
+5. 把 Feature/Bugfix 工作包、`.codegraph/` 索引及生成的 `speckit-team-*`
+   Skills 加入 `.gitignore`；不会整目录忽略 `.agents/` 或 `.specify/`；
+6. 在写入 Team 文件前检查 CodeGraph 版本；缺失或版本不兼容时安全失败，
+   也不会擅自执行第三方远程安装脚本。已有项目仍需在 Plan 或 Assess 前建立索引。
 
 不同工具的主要安装位置：
 

@@ -41,12 +41,13 @@ Bugfix: symptom -> Assess -> Fix -> Review/Assess/Fix
 
 ## Install
 
-Install Python 3.11+, Git, uv, and CodeGraph CLI 1.x, then run:
+Install Python 3.11+, Git, and uv. CodeGraph CLI 1.x may be installed later,
+but it must be available before the first Plan or Assess run:
 
 ```bash
 npm install -g @colbymchenry/codegraph@^1
 uv tool install specify-cli --force \
-  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.2
+  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.3
 specify init . --integration codex
 ```
 
@@ -54,7 +55,7 @@ Supported integrations are `codex`, `claude`, `cursor-agent`, and `trae`.
 Use `--skill-profile full` only when the native Spec Kit skill set is also
 required.
 
-The current six-skill distribution is pinned to `v0.12.5+teamwork.2`. Do not
+The current six-skill distribution is pinned to `v0.12.5+teamwork.3`. Do not
 replace the shared Team version with the moving `main` branch.
 
 Users can remain in chat and describe work naturally. See the
