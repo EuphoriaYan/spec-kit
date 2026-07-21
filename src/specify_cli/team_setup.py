@@ -17,8 +17,8 @@ from ._assets import _locate_bundled_extension, get_speckit_version
 CODEGRAPH_MIN_VERSION = Version("1.0.0")
 CODEGRAPH_MAX_VERSION = Version("2.0.0")
 CODEGRAPH_VERSION = re.compile(r"(?<![0-9])([0-9]+\.[0-9]+\.[0-9]+)(?![0-9])")
-CODEGRAPH_INSTALL_ERROR = """CodeGraph CLI 1.x is required by AI Team.
-Install it, open a new terminal, then run specify init again:
+CODEGRAPH_INSTALL_ERROR = """CodeGraph CLI 1.x is required for AI Team planning and defect assessment.
+Install it, open a new terminal, then retry the Plan-and-Task or Assess phase:
 - Windows PowerShell: irm https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.ps1 | iex
 - macOS/Linux: curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install.sh | sh
 - npm: npm install -g @colbymchenry/codegraph@^1
@@ -103,8 +103,6 @@ def _initialize_rules(project_root: Path, source: Path) -> list[str]:
 def install_bundled_team(project_root: Path) -> TeamSetupResult:
     """Register packaged Team skills, then initialize project-owned state."""
     from .extensions import ExtensionManager, ExtensionManifest
-
-    _require_codegraph()
 
     source = _locate_bundled_extension("team")
     if source is None:

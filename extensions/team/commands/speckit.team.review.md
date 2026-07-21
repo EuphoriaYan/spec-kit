@@ -33,7 +33,9 @@ permission boundary and trigger none of the permanent human decisions.
    uncommitted diff, changed files, and local verification evidence. Do not
    require a PR or remote CLI.
 3. For a non-GitHub PR such as GitCode, use an authenticated host integration
-   when available. Otherwise review the matching local branch/diff plus
+   when available. For GitCode, first read
+   `references/gitcode-host-contract.md` and run its capability probe.
+   Otherwise review the matching local branch/diff plus
    user-supplied PR metadata. Clearly mark remote checks or comments that could
    not be fetched; do not block source review solely because `gh` is absent.
 4. Confirm the PR belongs to the current repository. Do not check out the PR or
@@ -77,6 +79,12 @@ Review the diff, not just the PR description. Prioritize findings that affect:
 For every finding, cite the narrowest file and line range available and state
 the concrete impact and required action. Do not inflate style preferences into
 findings.
+
+When the diff delivers a tutorial, runbook, deployment guide, or walkthrough,
+read `references/evidence-step-contract.md` and run the installed
+`scripts/check_evidence_steps.py` against its evidence file. Confirm each step
+is deterministic or evaluable, and that `PASS`, `FAIL`, `BLOCKED`, and
+`NOT_RUN` are not collapsed into an unsupported success claim.
 
 ## Phase 3: Lifecycle Alignment
 
@@ -211,8 +219,9 @@ unrelated or dirty working tree without the user's permission.
 ## Host Output
 
 For GitHub with authenticated automation, post the review or progress comment
-when the user requested remote review. For GitCode or another host without a
-usable CLI/API, output a complete `## Paste Into PR Discussion` Markdown block
+when the user requested remote review. For GitCode, use the verified-write
+procedure in `references/gitcode-host-contract.md`; if unavailable, output a
+complete `## Paste Into PR Discussion` Markdown block
 containing findings, evidence, current correction round, residual risk, and
 final conclusion. State that manual posting is a transport step, not a
 technical approval gate.

@@ -93,6 +93,10 @@ Then re-run:
 For a passing review, update only the Readiness section of `context-pack.md`;
 do not edit the specification or the Plan section.
 
+If a selected Task delivers a tutorial, runbook, deployment guide, or
+walkthrough, read `references/evidence-step-contract.md` before implementation.
+Require its evidence file and checker command in the Task completion criteria.
+
 ## Phase 3: Permission
 
 Require `permission-envelope.yml`. Run the installed
@@ -149,7 +153,11 @@ and changed files.
 4. Write `evidence/implementation-report.md` with scope, completed task IDs,
    changed files, commands and exit results, skipped checks, failures, and
    residual risks.
-5. Update the Verification section of `context-pack.md`.
+5. For tutorial-like deliverables, run the installed
+   `scripts/check_evidence_steps.py` against the completed evidence file. Keep
+   missing prerequisites as `BLOCKED` or `NOT_RUN`; never rewrite them as
+   success to make the report green.
+6. Update the Verification section of `context-pack.md`.
 
 Output `## Verification Report`. Verification passes only when every selected
 task is checked, required checks pass, and the diff stays in scope. On success,

@@ -16,7 +16,7 @@ requires:
       required: false
     - name: codegraph
       version: ">=1.0.0,<2.0.0"
-      required: true
+      required: false
 
 provides:
   commands:
@@ -26,12 +26,20 @@ provides:
       resources:
         - source: docs/repository-boundary.md
           target: references/repository-boundary.md
+        - source: docs/gitcode-host-contract.md
+          target: references/gitcode-host-contract.md
     - name: speckit.team.plan-and-task
       file: commands/speckit.team.plan-and-task.md
       description: "Architect role: summarize an accepted Feature Issue and produce Code Graph grounded Plan, parallel Tasks, self-tests, and one readiness check."
       resources:
         - source: docs/code-graph-contract.md
           target: references/code-graph-contract.md
+        - source: docs/requirement-responsibility.md
+          target: references/requirement-responsibility.md
+        - source: docs/gitcode-host-contract.md
+          target: references/gitcode-host-contract.md
+        - source: docs/evidence-step-contract.md
+          target: references/evidence-step-contract.md
         - source: docs/permission-envelope.md
           target: references/permission-envelope.md
         - source: docs/memory-runtime.md
@@ -44,8 +52,12 @@ provides:
           target: references/feature-spec.md
         - source: templates/plan-and-task-template.md
           target: references/plan-and-task-format.md
+        - source: templates/evidence-steps-template.yml
+          target: references/evidence-steps-template.yml
         - source: scripts/check_plan_and_task.py
           target: scripts/check_plan_and_task.py
+        - source: scripts/check_evidence_steps.py
+          target: scripts/check_evidence_steps.py
         - source: scripts/check_permission_envelope.py
           target: scripts/check_permission_envelope.py
         - source: scripts/work_item_paths.py
@@ -76,6 +88,8 @@ provides:
       file: commands/speckit.team.fix.md
       description: "Bug fixer role: apply a ready or risk-approved assessment, verify it, update PR progress, and re-enter review."
       resources:
+        - source: docs/gitcode-host-contract.md
+          target: references/gitcode-host-contract.md
         - source: references/internal/context.md
           target: references/context.md
         - source: docs/memory-runtime.md
@@ -86,12 +100,18 @@ provides:
       file: commands/speckit.team.implement.md
       description: "Developer role: implement task-ready Feature work, verify it, and enter the automatic quality loop before PR submission."
       resources:
+        - source: docs/gitcode-host-contract.md
+          target: references/gitcode-host-contract.md
+        - source: docs/evidence-step-contract.md
+          target: references/evidence-step-contract.md
         - source: references/internal/context.md
           target: references/context.md
         - source: references/internal/implement-pr.md
           target: references/implement-pr.md
         - source: scripts/check_permission_envelope.py
           target: scripts/check_permission_envelope.py
+        - source: scripts/check_evidence_steps.py
+          target: scripts/check_evidence_steps.py
         - source: scripts/work_item_paths.py
           target: scripts/work_item_paths.py
         - source: docs/memory-runtime.md
@@ -102,12 +122,18 @@ provides:
       file: commands/speckit.team.review.md
       description: "Reviewer role: assess a PR or local diff, route repairable findings, and produce a merge recommendation."
       resources:
+        - source: docs/gitcode-host-contract.md
+          target: references/gitcode-host-contract.md
+        - source: docs/evidence-step-contract.md
+          target: references/evidence-step-contract.md
         - source: references/internal/context.md
           target: references/context.md
         - source: docs/memory-runtime.md
           target: references/memory-runtime.md
         - source: scripts/memory_adapter.py
           target: scripts/memory_adapter.py
+        - source: scripts/check_evidence_steps.py
+          target: scripts/check_evidence_steps.py
     - name: speckit.team.memory-consolidate
       file: commands/speckit.team.memory-consolidate.md
       description: "Advanced extension entry: capture advisory lessons and promote human-approved requirements into task-scoped project Knowledge."

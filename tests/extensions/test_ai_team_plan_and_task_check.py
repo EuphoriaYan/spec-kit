@@ -89,6 +89,15 @@ planning_stage: {stage}
 plan_review:
   decision: {plan_decision}
   decided_by: {plan_decider}
+delivery_strategy:
+  pr_strategy: business-only
+  repositories:
+    - example.com/org/repo
+  atomic_reason: not-applicable
+  shared_release_and_rollback: true
+  framework_review:
+    decided_by: not-required
+    evidence_url: not-required
 source_revision: abc123
 declared_paths:
   - src/export.py
@@ -114,6 +123,11 @@ impact_analysis:
 
 ### Source And Code Graph Evidence
 The export service and its test are the complete affected slice.
+
+### Requirement Responsibility And PR Strategy
+| User Story ID | Responsibility | Target repository | Delivery unit | Dependency | Review route |
+|---|---|---|---|---|---|
+| US-001 | business-software | example.com/org/repo | primary-pr | none | product-owner |
 
 ### Module Change Plan
 | Module | Module path | Current responsibility | Planned change | Contract impact | Review route (optional) |
@@ -241,6 +255,67 @@ def test_independent_module_tasks_can_share_a_parallel_group(tmp_path: Path) -> 
     assert "| MODULE_SCOPE | PASS |" in rendered
     assert "| TASK_DEPENDENCIES | PASS |" in rendered
     assert "| PARALLEL_SCOPE | PASS |" in rendered
+
+
+def test_atomic_business_and_framework_work_can_share_one_pr(tmp_path: Path) -> None:
+    module = _module()
+    root = _write_package(tmp_path, "117", "feature", cross_module=True)
+    spec_path = root / "spec.md"
+    spec_path.write_text(
+        spec_path.read_text(encoding="utf-8")
+        + """
+
+### US-002 [P1] Framework hook
+As a maintainer, I want the shared hook, so that the export remains reusable.
+
+- Preconditions: the export module is installed.
+- Main scenario: the hook passes the validated result.
+- Boundary or failure scenario: incompatible implementations fail closed.
+- Verification (`VER-002`): the hook contract test passes.
+""",
+        encoding="utf-8",
+    )
+    plan_path = root / "plan-and-task.md"
+    plan = plan_path.read_text(encoding="utf-8")
+    plan = plan.replace(
+        "pr_strategy: business-only\n  repositories:",
+        "pr_strategy: single-pr\n  repositories:",
+    ).replace(
+        "atomic_reason: not-applicable",
+        "atomic_reason: one validated export contract requires both changes",
+    ).replace(
+        "decided_by: not-required\n    evidence_url: not-required",
+        "decided_by: framework-owner@example.com\n    evidence_url: https://example.com/org/repo/issues/117#framework-owner",
+    ).replace(
+        "| US-001 | business-software | example.com/org/repo | primary-pr | none | product-owner |",
+        "| US-001 | business-software | example.com/org/repo | primary-pr | none | product-owner |\n"
+        "| US-002 | framework | example.com/org/repo | primary-pr | none | framework-owner |",
+    ).replace(
+        "| US-001 | VER-001 | T001 |",
+        "| US-001 | VER-001 | T001 |\n| US-002 | VER-002 | T001 |",
+    ).replace("| T001 | [ ] | export | VER-001 |", "| T001 | [ ] | export | VER-001, VER-002 |")
+    plan_path.write_text(plan, encoding="utf-8")
+
+    result, rendered = module.evaluate(tmp_path, "feature", "117")
+
+    assert result == "ready", rendered
+    assert "| RESPONSIBILITY_BOUNDARY | PASS |" in rendered
+
+
+def test_cross_repository_work_cannot_claim_one_combined_pr(tmp_path: Path) -> None:
+    module = _module()
+    root = _write_package(tmp_path, "118", "feature", cross_module=True)
+    plan_path = root / "plan-and-task.md"
+    plan = plan_path.read_text(encoding="utf-8").replace(
+        "| US-001 | business-software | example.com/org/repo | primary-pr | none | product-owner |",
+        "| US-001 | business-software | example.com/other/framework | primary-pr | none | framework-owner |",
+    )
+    plan_path.write_text(plan, encoding="utf-8")
+
+    result, rendered = module.evaluate(tmp_path, "feature", "118")
+
+    assert result == "blocked"
+    assert "| RESPONSIBILITY_BOUNDARY | BLOCK |" in rendered
 
 
 def test_parallel_tasks_cannot_claim_the_same_path(tmp_path: Path) -> None:

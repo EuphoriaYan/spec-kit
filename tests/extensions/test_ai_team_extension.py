@@ -188,6 +188,17 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["work_artifacts"]["ignored_roots"] == [
         ".specify/feature/",
         ".specify/bugfix/",
+        ".codegraph/",
+    ]
+    assert config["work_artifacts"]["ignored_generated_skill_patterns"] == [
+        ".agents/skills/speckit-team-*/",
+        ".claude/skills/speckit-team-*/",
+        ".cursor/skills/speckit-team-*/",
+        ".trae/skills/speckit-team-*/",
+    ]
+    assert config["work_artifacts"]["preserve_project_owned_roots"] == [
+        ".agents/",
+        ".specify/team/",
     ]
     assert config["gates"]["require_work_item_anchor"] is True
     assert config["gates"]["allow_same_root_cause_issue_grouping"] is True
@@ -204,10 +215,24 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
         "pause-for-discussion",
         "revise-plan",
     ]
+    assert config["planning"]["plan_review_user_options"][
+        "continue-to-tasks"
+    ]["zh-CN"] == "继续拆任务"
+    assert "下一步" in config["planning"]["plan_review_user_options"][
+        "continue-to-tasks"
+    ]["aliases"]
+    assert config["planning"]["require_localized_gate_prompt"] is True
     assert config["planning"]["final_check_after_task_design"] is True
     assert config["issue_publishing"]["default_adapter"] == "auto"
     assert config["issue_publishing"]["require_verified_issue_url"] is True
     assert config["issue_publishing"]["require_feature_readiness_pass"] is True
+    assert config["issue_publishing"]["gitcode"] == {
+        "base_url": "https://api.gitcode.com/api/v5",
+        "token_env": "GITCODE_TOKEN",
+        "require_capability_probe": True,
+        "require_write_readback": True,
+        "forbid_logged_query_tokens": True,
+    }
     assert config["code_graph"]["tool"] == "codegraph"
     assert config["code_graph"]["required_version"] == ">=1.0.0,<2.0.0"
     assert config["code_graph"]["local_index"] == ".codegraph/codegraph.db"

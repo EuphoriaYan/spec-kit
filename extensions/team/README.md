@@ -77,8 +77,9 @@ AGENTS.md 和工具规则中的受管理入口
 `-- evidence/
 ```
 
-两个工作根默认进入 `.gitignore`。跨成员事实通过 Issue、PR、源码、测试和明确晋升的
-HLD/项目知识共享，不通过提交本地工作包共享。
+两个工作根、`.codegraph/` 本地索引和生成的 `speckit-team-*` Skill 目录默认进入
+`.gitignore`。不要整目录忽略 `.agents/` 或 `.specify/`，其中可能包含项目自有 Skill
+和共享配置。跨成员事实通过 Issue、PR、源码、测试和明确晋升的 HLD/项目知识共享。
 
 ## 关键 Gate
 

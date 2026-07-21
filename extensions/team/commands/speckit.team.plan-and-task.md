@@ -20,7 +20,9 @@ $ARGUMENTS
 
 Use an authenticated repository integration or CLI to read the Issue. GitHub
 may use a GitHub integration or `gh`; other hosts may use their API, CLI, or an
-authenticated browser. If the preferred tool is unavailable or fails, try an
+authenticated browser. For GitCode, read
+`references/gitcode-host-contract.md` and run its capability probe. If the
+preferred tool is unavailable or fails, try an
 available read-only method for that host. Stop when the Issue body, comments,
 labels, and stable URL cannot be verified. Do not plan from a title or copied
 excerpt alone.
@@ -72,7 +74,17 @@ If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
    to the exact source revision. For an existing project, stop when CodeGraph
    is unavailable, uninitialized, incomplete, or stale; do not silently replace
    it with source search.
-6. Identify affected and adjacent modules from source layout, build metadata,
+6. Read `references/requirement-responsibility.md`. Classify every accepted
+   User Story as `business-software`, `framework`, or `external-prerequisite`
+   before designing the solution. Record the classification and PR delivery
+   boundary in the Plan. Business and framework changes default to linked PRs.
+   They may share one PR only when they are in the same repository, form one
+   atomic outcome, share release and rollback, remain backward compatible,
+   have separate Tasks/tests, and carry named framework-owner decision
+   evidence. Cross-repository delivery always uses linked PRs. Missing external
+   or framework capability remains `BLOCKED`; never create a scenario-private
+   substitute to manufacture completeness.
+7. Identify affected and adjacent modules from source layout, build metadata,
    architecture guidance, and the Code Graph. Record module paths,
    responsibilities, contracts, dependencies, existing tests, reuse candidates,
    and likely change paths. Record an owner or review route when the repository
@@ -81,25 +93,47 @@ If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
    role `plan-and-task`, work type `feature`, and the affected modules. Apply
    binding Knowledge to the HLD and cite advisory Memory only when current
    source and Issue evidence still support it.
-7. Read `references/plan-and-task-format.md` immediately before creating or
+8. Read `references/plan-and-task-format.md` immediately before creating or
    updating `plan-and-task.md`. The Plan is Issue-wide HLD: architecture
    before/after, contract impact, declared scope, per-module change,
    sequencing, compatibility, risk, and rollback. Set `planning_stage:
    plan-review` without inventing Tasks.
-8. Present the Plan and ask the user to continue to Tasks, pause for discussion,
-   or revise the Plan. Before asking, update `work-context.yml` to
+9. Present the Plan and ask the user to choose one localized option:
+   - **继续拆任务（`continue-to-tasks`）**: accept the HLD and enter Task
+     decomposition. At this gate, “下一步”, “继续”, or “继续拆 Task” maps to
+     this option;
+   - **暂停讨论（`pause-for-discussion`）**: preserve the Plan and stop for
+     discussion. “先暂停” maps to this option;
+   - **修改方案（`revise-plan`）**: stay in planning and revise the named HLD
+     part. “修改方案：……” maps to this option.
+   Show labels in the user's language, retain each stable internal value in
+   parentheses, explain the effect in one sentence, and state that a natural
+   phrase is sufficient. The second option means “pause for discussion”; this
+   English explanation is not another value the user must type. “下一步” is
+   only an alias while this exact gate is
+   active; never infer it across an ambiguous phase boundary. Before asking,
+   update `work-context.yml` to
    `phase: plan-review`, with this Skill as both the last completed and next
    Skill, and summarize unresolved decisions in `context-pack.md`. Record the
    decision and named human. For pause or revision, set `phase: plan-paused`
    and preserve the next action so another session can resume. A material Plan
    revision invalidates Tasks and returns to this decision.
-9. After `continue-to-tasks`, derive LLD-level Tasks. Every Task belongs to one
+10. After `continue-to-tasks`, derive LLD-level Tasks. Every Task belongs to one
    module, declares exact paths and completion criteria, and has at least one
    concrete self-verification scenario. Design Tasks for parallel assignment by
    default. When serialization is necessary, describe the dependency, handoff
    artifact, reason, and unblock evidence in the Plan. Reject cycles.
-10. Map every Task to User Stories and their Verification behavior.
-11. Revise the same Permission Envelope to `mode: implementation` for the
+   In the localized gate, this means “continue to Tasks”; it is an explanation,
+   not another value the user must type.
+11. Map every Task to User Stories and their Verification behavior.
+12. When the accepted Feature delivers a tutorial, runbook, deployment guide,
+    or walkthrough, read `references/evidence-step-contract.md`. Add a Task
+    that instantiates `references/evidence-steps-template.yml` and requires the
+    installed `scripts/check_evidence_steps.py` to pass. Every tutorial step
+    must be deterministic or evaluable and must record exactly one of `PASS`,
+    `FAIL`, `BLOCKED`, or `NOT_RUN`; a missing prerequisite is never `PASS`.
+    Ordinary code-only Features do not need this additional artifact.
+13. Revise the same Permission Envelope to `mode: implementation` for the
     complete Task batch. Use `status: ready` when work stays in one repository
     and one module, follows the approved Plan, preserves public contracts and
     compatibility, and adds no dependency, security, or license decision. Put
@@ -108,7 +142,7 @@ If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
     public contract, adds a dependency/security/license decision, is
     incompatible, or exceeds the approved Plan. One named human may approve
     the complete batch; never request approval Task by Task.
-12. Set `planning_stage: ready-for-check`, update the Context Package to
+14. Set `planning_stage: ready-for-check`, update the Context Package to
     `phase: planning-check`, and then run the installed
     `scripts/check_plan_and_task.py` by its resolved path with
     `--work-type feature --work-id <work_id>`. The script owns
@@ -121,12 +155,13 @@ If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
     `context-pack.md`. On failure, set `phase: planning-blocked`, keep
     `next_skill` as `speckit.team.plan-and-task`, and record the unresolved
     check findings.
-13. On `ready`, publish a public-safe Plan/Task handoff to the primary Issue.
+15. On `ready`, publish a public-safe Plan/Task handoff to the primary Issue.
     Include the Issue-wide HLD summary, affected modules, public-contract and
     compatibility impact, Task IDs and module/path scope, dependency/parallel
     groups, minimum self-tests, permission status, and unresolved risks. For
-    GitHub with authenticated automation, post the comment. For GitCode or a
-    host without a usable CLI/API, output the complete Markdown under
+    GitHub with authenticated automation, post the comment. For GitCode, use
+    the verified-write procedure in `references/gitcode-host-contract.md`; if
+    the probe or read-back fails, output the complete Markdown under
     `## Paste Into Issue Discussion`. Never publish private override content.
     This Issue handoff, not the local `.specify/feature/` directory, enables a
     different contributor to reconstruct the accepted work package.
@@ -140,8 +175,12 @@ Team Plan And Task:
 - accepted Issue summary:
 - CodeGraph evidence:
 - affected modules and paths:
+- requirement responsibilities and PR strategy:
 - optional owners or review routes:
 - architecture and public-contract deltas:
+- current step: Plan review
+- next options: localized label + stable value + natural-language alias
+- recommended next step: one option plus a short reason; never choose it for the user
 - plan and task: .specify/feature/<work_id>/plan-and-task.md
 - feature spec: .specify/feature/<work_id>/spec.md
 - check: .specify/feature/<work_id>/plan-and-task-check.md

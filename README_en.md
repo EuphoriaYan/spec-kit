@@ -41,7 +41,8 @@ Bugfix: symptom -> Assess -> Fix -> Review/Assess/Fix
 
 ## Install
 
-Install Python 3.11+, Git, uv, and CodeGraph CLI 1.x, then run:
+Install Python 3.11+, Git, and uv. CodeGraph CLI 1.x may be installed later,
+but it must be available before the first Plan or Assess run:
 
 ```bash
 npm install -g @colbymchenry/codegraph@^1
