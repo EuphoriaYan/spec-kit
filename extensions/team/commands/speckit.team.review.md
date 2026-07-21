@@ -81,8 +81,8 @@ the concrete impact and required action. Do not inflate style preferences into
 findings.
 
 When the diff delivers a tutorial, runbook, deployment guide, or walkthrough,
-read `references/evidence-step-contract.md` and run the installed
-`scripts/check_evidence_steps.py` against its evidence file. Confirm each step
+run the installed `scripts/check_evidence_steps.py` against its evidence file.
+Confirm each step
 is deterministic or evaluable, and that `PASS`, `FAIL`, `BLOCKED`, and
 `NOT_RUN` are not collapsed into an unsupported success claim.
 

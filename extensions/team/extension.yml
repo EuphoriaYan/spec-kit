@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: team
   name: "AI Team SDD Skills"
-  version: "0.6.0"
+  version: "0.7.0"
   description: "Six primary enterprise SDD skills plus optional advanced Knowledge and Memory capabilities."
   author: AI Team Template
   repository: https://github.com/EuphoriaYan/spec-kit
@@ -34,12 +34,8 @@ provides:
       resources:
         - source: docs/code-graph-contract.md
           target: references/code-graph-contract.md
-        - source: docs/requirement-responsibility.md
-          target: references/requirement-responsibility.md
         - source: docs/gitcode-host-contract.md
           target: references/gitcode-host-contract.md
-        - source: docs/evidence-step-contract.md
-          target: references/evidence-step-contract.md
         - source: docs/permission-envelope.md
           target: references/permission-envelope.md
         - source: docs/memory-runtime.md
@@ -102,8 +98,6 @@ provides:
       resources:
         - source: docs/gitcode-host-contract.md
           target: references/gitcode-host-contract.md
-        - source: docs/evidence-step-contract.md
-          target: references/evidence-step-contract.md
         - source: references/internal/context.md
           target: references/context.md
         - source: references/internal/implement-pr.md
@@ -124,8 +118,6 @@ provides:
       resources:
         - source: docs/gitcode-host-contract.md
           target: references/gitcode-host-contract.md
-        - source: docs/evidence-step-contract.md
-          target: references/evidence-step-contract.md
         - source: references/internal/context.md
           target: references/context.md
         - source: docs/memory-runtime.md

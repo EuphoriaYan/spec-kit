@@ -27,11 +27,11 @@ Trae 可以只使用 IDE Skills；只有进行无界面调度时才额外需要 
 
 ## 2. 安装 Specify CLI
 
-当前六技能版本固定为 `v0.12.5+teamwork.2`：
+当前六技能版本固定为 `v0.12.5+teamwork.3`：
 
 ```bash
 uv tool install specify-cli --force \
-  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.2
+  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.3
 specify --version
 ```
 

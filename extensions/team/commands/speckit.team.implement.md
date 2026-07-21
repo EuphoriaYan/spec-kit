@@ -94,8 +94,8 @@ For a passing review, update only the Readiness section of `context-pack.md`;
 do not edit the specification or the Plan section.
 
 If a selected Task delivers a tutorial, runbook, deployment guide, or
-walkthrough, read `references/evidence-step-contract.md` before implementation.
-Require its evidence file and checker command in the Task completion criteria.
+walkthrough, require its evidence file and `scripts/check_evidence_steps.py`
+command in the Task completion criteria.
 
 ## Phase 3: Permission
 

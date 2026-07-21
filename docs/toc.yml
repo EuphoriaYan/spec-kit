@@ -37,6 +37,8 @@
       href: local-development.md
     - name: 文档管理
       href: README.md
+    - name: v0.12.5+teamwork.3 发布说明
+      href: releases/v0.12.5-teamwork.3.md
     - name: v0.12.5+teamwork.2 发布说明
       href: releases/v0.12.5-teamwork.2.md
 

@@ -27,7 +27,7 @@ Install the reviewed six-skill build from its fixed tag:
 
 ```bash
 uv tool install specify-cli --force \
-  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.2
+  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.3
 specify --version
 
 cd <coding-repository>

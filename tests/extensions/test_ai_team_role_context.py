@@ -333,7 +333,7 @@ def test_team_setup_refreshes_old_bundled_skills_and_preserves_project_state(
     old_manifest = old_team / "extension.yml"
     old_manifest.write_text(
         old_manifest.read_text(encoding="utf-8").replace(
-            'version: "0.6.0"', 'version: "0.5.1"'
+            'version: "0.7.0"', 'version: "0.6.0"'
         ),
         encoding="utf-8",
     )
@@ -365,7 +365,7 @@ def test_team_setup_refreshes_old_bundled_skills_and_preserves_project_state(
     assert "OLD ADAPTER PLAN" not in installed_plan
     assert "required CodeGraph" in installed_plan
     assert metadata is not None
-    assert metadata["version"] == "0.6.0"
+    assert metadata["version"] == "0.7.0"
     assert config.read_text(encoding="utf-8") == "project_owned: true\n"
 
     second = team_setup.install_bundled_team(project)
@@ -426,13 +426,11 @@ def test_team_skills_install_with_local_references_and_scripts(
     } == {
         "code-graph-contract.md",
         "context.md",
-        "evidence-step-contract.md",
         "feature-spec.md",
         "gitcode-host-contract.md",
         "handoff-spec-sync.md",
         "permission-envelope.md",
         "plan-and-task-format.md",
-        "requirement-responsibility.md",
         "memory-runtime.md",
     }
     assert (plan_skill / "references/evidence-steps-template.yml").is_file()
@@ -452,7 +450,6 @@ def test_team_skills_install_with_local_references_and_scripts(
         path.name for path in (review_skill / "references").glob("*.md")
     } == {
         "context.md",
-        "evidence-step-contract.md",
         "gitcode-host-contract.md",
         "memory-runtime.md",
     }
@@ -464,7 +461,6 @@ def test_team_skills_install_with_local_references_and_scripts(
         path.name for path in (implement_skill / "references").glob("*.md")
     } == {
         "context.md",
-        "evidence-step-contract.md",
         "gitcode-host-contract.md",
         "implement-pr.md",
         "memory-runtime.md",
@@ -729,7 +725,6 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
     }
     assert commands["speckit.team.review"] == {
         "references/context.md",
-        "references/evidence-step-contract.md",
         "references/gitcode-host-contract.md",
         "references/memory-runtime.md",
         "scripts/check_evidence_steps.py",
@@ -737,7 +732,6 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
     }
     assert commands["speckit.team.implement"] == {
         "references/context.md",
-        "references/evidence-step-contract.md",
         "references/gitcode-host-contract.md",
         "references/implement-pr.md",
         "references/memory-runtime.md",
@@ -752,11 +746,9 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
     }
     assert {
         "references/code-graph-contract.md",
-        "references/evidence-step-contract.md",
         "references/evidence-steps-template.yml",
         "references/gitcode-host-contract.md",
         "references/permission-envelope.md",
-        "references/requirement-responsibility.md",
         "references/memory-runtime.md",
         "scripts/check_permission_envelope.py",
         "scripts/check_evidence_steps.py",

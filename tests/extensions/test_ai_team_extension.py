@@ -737,6 +737,10 @@ def test_human_facing_ai_team_docs_use_chinese_primary_and_english_backup():
             REPO_ROOT / "docs/install/air-gapped_en.md",
         ),
         (
+            REPO_ROOT / "docs/releases/v0.12.5-teamwork.3.md",
+            REPO_ROOT / "docs/releases/v0.12.5-teamwork.3_en.md",
+        ),
+        (
             REPO_ROOT / "docs/releases/v0.12.5-teamwork.2.md",
             REPO_ROOT / "docs/releases/v0.12.5-teamwork.2_en.md",
         ),
@@ -763,7 +767,7 @@ def test_human_facing_ai_team_docs_use_chinese_primary_and_english_backup():
 
 
 def test_current_install_guides_pin_the_reviewed_team_release():
-    release = "v0.12.5+teamwork.2"
+    release = "v0.12.5+teamwork.3"
     install_guides = (
         REPO_ROOT / "README.md",
         REPO_ROOT / "README_en.md",
@@ -784,7 +788,7 @@ def test_current_install_guides_pin_the_reviewed_team_release():
 
     pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
     cli = (REPO_ROOT / "src/specify_cli/__init__.py").read_text(encoding="utf-8")
-    assert 'version = "0.12.5+teamwork.2"' in pyproject
+    assert 'version = "0.12.5+teamwork.3"' in pyproject
     assert f"pinned to {release}" in cli
 
 

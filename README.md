@@ -61,7 +61,7 @@ Plan 或 Assess 前必须可用：
 ```bash
 npm install -g @colbymchenry/codegraph@^1
 uv tool install specify-cli --force \
-  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.2
+  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.3
 ```
 
 在真实代码仓根目录执行一次初始化：
@@ -78,7 +78,7 @@ specify init . --integration codex
 specify init . --integration codex --skill-profile full
 ```
 
-> 当前六技能版本固定为 `v0.12.5+teamwork.2`。请勿用变化中的 `main`
+> 当前六技能版本固定为 `v0.12.5+teamwork.3`。请勿用变化中的 `main`
 > 替代团队统一安装版本。
 
 ## 从聊天开始

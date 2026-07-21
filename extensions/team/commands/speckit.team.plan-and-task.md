@@ -74,8 +74,8 @@ If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
    to the exact source revision. For an existing project, stop when CodeGraph
    is unavailable, uninitialized, incomplete, or stale; do not silently replace
    it with source search.
-6. Read `references/requirement-responsibility.md`. Classify every accepted
-   User Story as `business-software`, `framework`, or `external-prerequisite`
+6. Classify every accepted User Story as `business-software`, `framework`, or
+   `external-prerequisite`
    before designing the solution. Record the classification and PR delivery
    boundary in the Plan. Business and framework changes default to linked PRs.
    They may share one PR only when they are in the same repository, form one
@@ -127,8 +127,8 @@ If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
    not another value the user must type.
 11. Map every Task to User Stories and their Verification behavior.
 12. When the accepted Feature delivers a tutorial, runbook, deployment guide,
-    or walkthrough, read `references/evidence-step-contract.md`. Add a Task
-    that instantiates `references/evidence-steps-template.yml` and requires the
+    or walkthrough, add a Task that instantiates
+    `references/evidence-steps-template.yml` and requires the
     installed `scripts/check_evidence_steps.py` to pass. Every tutorial step
     must be deterministic or evaluable and must record exactly one of `PASS`,
     `FAIL`, `BLOCKED`, or `NOT_RUN`; a missing prerequisite is never `PASS`.
