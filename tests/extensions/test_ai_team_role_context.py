@@ -431,6 +431,11 @@ def test_team_skills_install_with_local_references_and_scripts(
     assert (specify_skill / "scripts/feature_records.py").is_file()
     assert (specify_skill / "scripts/check_feature_record.py").is_file()
     assert not (specify_skill / "scripts/init_role_context.py").exists()
+    specify_content = (specify_skill / "SKILL.md").read_text(encoding="utf-8")
+    assert "scripts/feature_records.py" in specify_content
+    assert "scripts/check_feature_record.py" in specify_content
+    assert ".specify/scripts/feature_records.py" not in specify_content
+    assert ".specify/scripts/check_feature_record.py" not in specify_content
     assert {
         path.name for path in (plan_skill / "references").glob("*.md")
     } == {

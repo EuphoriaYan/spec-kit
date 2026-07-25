@@ -141,6 +141,11 @@ readable and the Feature Record must be accepted. If the input is
    include a checked no-impact rationale; when an update is required, name the
    exact architecture files and completion criteria. Architecture synchronization
    is part of implementation Definition of Done, not a later documentation pass.
+   Declare and assign the standard
+   `.specify/<feature_id>/evidence/implementation-report.md` verification
+   artifact required by Implement, in addition to any feature-specific
+   evidence file. Include every runnable package or module entrypoint needed by
+   the self-test commands in the exact declared paths and owning Task.
    In the localized gate, this means “continue to Tasks”; it is an explanation,
    not another value the user must type.
 11. Map every Task to User Stories and their Verification behavior.
@@ -160,6 +165,11 @@ readable and the Feature Record must be accepted. If the input is
     public contract, adds a dependency/security/license decision, is
     incompatible, or exceeds the approved Plan. One named human may approve
     the complete batch; never request approval Task by Task.
+    In record-backed mode, `allow.write_paths` must include the exact resolved
+    repository-relative Feature Record path because Implement must update its
+    delivery phase and evidence-backed Definition of Done. Do not authorize
+    the whole Feature Record directory, Catalog, or other Feature Records, and
+    do not place a parent of the authorized record in `deny.write_paths`.
 14. Set `planning_stage: ready-for-check`, update the Context Package to
     `phase: planning-check`, and then run the installed
     `scripts/check_plan_and_task.py` by its resolved path with

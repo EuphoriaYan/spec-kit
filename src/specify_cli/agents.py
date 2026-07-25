@@ -313,6 +313,7 @@ class CommandRegistrar:
         source_id: str,
         source_file: str,
         project_root: Path,
+        resources: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
         """Render a command override as a SKILL.md file.
 
@@ -332,7 +333,16 @@ class CommandRegistrar:
         agent_config = self.AGENT_CONFIGS.get(agent_name, {})
         if agent_config.get("extension") == "/SKILL.md":
             body = self.resolve_skill_placeholders(
-                agent_name, frontmatter, body, project_root
+                agent_name,
+                frontmatter,
+                body,
+                project_root,
+                skill_resource_targets=[
+                    str(resource["target"])
+                    for resource in (resources or [])
+                    if isinstance(resource, dict)
+                    and isinstance(resource.get("target"), str)
+                ],
             )
 
         description = frontmatter.get(
@@ -394,9 +404,19 @@ class CommandRegistrar:
 
     @staticmethod
     def resolve_skill_placeholders(
-        agent_name: str, frontmatter: dict, body: str, project_root: Path
+        agent_name: str,
+        frontmatter: dict,
+        body: str,
+        project_root: Path,
+        skill_resource_targets: Optional[List[str]] = None,
     ) -> str:
-        """Resolve script placeholders for skills-backed agents."""
+        """Resolve placeholders while preserving packaged Skill resources.
+
+        A generated Skill can carry deterministic helpers beside ``SKILL.md``
+        under manifest-declared paths such as ``scripts/check.py``. Those
+        paths are Skill-relative and must not be rewritten to the project's
+        shared ``.specify/scripts`` directory.
+        """
         if not isinstance(frontmatter, dict):
             frontmatter = {}
 
@@ -434,7 +454,21 @@ class CommandRegistrar:
 
         body = body.replace("{ARGS}", "$ARGUMENTS").replace("__AGENT__", agent_name)
 
-        return CommandRegistrar.rewrite_project_relative_paths(body)
+        protected: Dict[str, str] = {}
+        for index, target in enumerate(
+            sorted(set(skill_resource_targets or []), key=len, reverse=True)
+        ):
+            if not target:
+                continue
+            marker = f"__SPECKIT_SKILL_RESOURCE_{index}__"
+            if target in body:
+                body = body.replace(target, marker)
+                protected[marker] = target
+
+        body = CommandRegistrar.rewrite_project_relative_paths(body)
+        for marker, target in protected.items():
+            body = body.replace(marker, target)
+        return body
 
     def _convert_argument_placeholder(
         self, content: str, from_placeholder: str, to_placeholder: str
@@ -693,6 +727,7 @@ class CommandRegistrar:
                     source_id,
                     cmd_file,
                     project_root,
+                    cmd_info.get("resources"),
                 )
             elif agent_config["format"] == "markdown":
                 body = self.resolve_skill_placeholders(
@@ -763,6 +798,7 @@ class CommandRegistrar:
                             source_id,
                             cmd_file,
                             project_root,
+                            cmd_info.get("resources"),
                         )
                     elif agent_config["format"] == "markdown":
                         alias_output = self.render_markdown_command(
@@ -792,6 +828,7 @@ class CommandRegistrar:
                             source_id,
                             cmd_file,
                             project_root,
+                            cmd_info.get("resources"),
                         )
 
                 alias_file = (

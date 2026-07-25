@@ -36,8 +36,12 @@ root is `.specify/<feature_id>/`. Reuse an existing legacy
 For legacy `work_id`, use the installed `work_item_paths.py` resolver. Never
 create a remote Feature Issue when a Feature Record is the selected work item.
 
-All feature artifact reads and writes MUST stay under `FEATURE_ROOT`. Do not
-modify workflow files.
+All local SDD work-package artifact reads and writes MUST stay under
+`FEATURE_ROOT`. Product source and test writes must match the checked Plan and
+Permission Envelope. In Feature Record mode, lifecycle phase and Definition of
+Done updates may also write the single resolved Feature Record, but only when
+that exact repository-relative path is authorized by the Permission Envelope.
+Do not modify the Catalog, another Feature Record, or workflow files.
 
 ## Phase 1: Context
 

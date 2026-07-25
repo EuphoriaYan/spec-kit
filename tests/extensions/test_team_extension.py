@@ -180,6 +180,10 @@ def test_feature_and_bugfix_delivery_chains_are_distinct_with_review_bridge():
     specify = _normalized_markdown(commands / "speckit.team.specify.md")
     plan = _normalized_markdown(commands / "speckit.team.plan-and-task.md")
     implement = _normalized_markdown(commands / "speckit.team.implement.md")
+    assert "exact resolved repository-relative Feature Record path" in plan
+    assert ".specify/<feature_id>/evidence/implementation-report.md" in plan
+    assert "single resolved Feature Record" in implement
+    assert "Do not modify the Catalog, another Feature Record" in implement
     assess = _normalized_markdown(commands / "speckit.team.assess.md")
     fix = _normalized_markdown(commands / "speckit.team.fix.md")
     review = _normalized_markdown(commands / "speckit.team.review.md")

@@ -821,6 +821,12 @@ class TestExtensionSkillRegistration:
                         "name": "speckit.scripted-ext.plan",
                         "file": "commands/plan.md",
                         "description": "Scripted plan command",
+                        "resources": [
+                            {
+                                "source": "helpers/local-check.py",
+                                "target": "scripts/local-check.py",
+                            }
+                        ],
                     }
                 ]
             },
@@ -836,8 +842,11 @@ class TestExtensionSkillRegistration:
             "  sh: ../../scripts/bash/setup-plan.sh --json \"{ARGS}\"\n"
             "---\n\n"
             "Run {SCRIPT}\n"
+            "Then run scripts/local-check.py.\n"
             "Review templates/checklist.md and memory/constitution.md for __AGENT__.\n"
         )
+        (ext_dir / "helpers").mkdir()
+        (ext_dir / "helpers" / "local-check.py").write_text("print('ok')\n")
 
         manager = ExtensionManager(project_dir)
         manager.install_from_directory(ext_dir, "0.1.0", register_commands=False)
@@ -847,6 +856,14 @@ class TestExtensionSkillRegistration:
         assert "{ARGS}" not in content
         assert "__AGENT__" not in content
         assert '.specify/scripts/bash/setup-plan.sh --json "$ARGUMENTS"' in content
+        assert "Then run scripts/local-check.py." in content
+        assert ".specify/scripts/local-check.py" not in content
+        assert (
+            skills_dir
+            / "speckit-scripted-ext-plan"
+            / "scripts"
+            / "local-check.py"
+        ).is_file()
         assert ".specify/templates/checklist.md" in content
         assert ".specify/memory/constitution.md" in content
 

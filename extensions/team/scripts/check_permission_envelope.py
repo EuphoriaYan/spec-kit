@@ -10,6 +10,7 @@ from typing import Any
 
 import yaml
 
+from feature_records import resolve_feature_record
 from work_item_paths import resolve_work_root
 
 
@@ -70,6 +71,7 @@ def validate_envelope(
     mode: str,
     require_approved: bool = False,
     require_authorized: bool = False,
+    required_write_paths: list[str] | None = None,
 ) -> list[str]:
     errors: list[str] = []
     try:
@@ -132,16 +134,41 @@ def validate_envelope(
     if not str(root.get("integration", "")).strip():
         errors.append("integration must be a non-empty string")
 
+    capabilities: dict[str, dict[str, list[str]]] = {}
     for section_name in ("allow", "deny"):
         section = _mapping(root.get(section_name), section_name, errors)
+        capabilities[section_name] = {}
         for key in CAPABILITY_KEYS:
             values = _string_list(section.get(key), f"{section_name}.{key}", errors)
+            capabilities[section_name][key] = values
             if key.endswith("paths"):
                 for value in values:
                     if not _safe_relative_path(value):
                         errors.append(
                             f"{section_name}.{key} contains unsafe path: {value}"
                         )
+
+    def covers(container: str, required: str) -> bool:
+        container_path = PurePosixPath(container.replace("\\", "/"))
+        required_path = PurePosixPath(required.replace("\\", "/"))
+        return (
+            container_path == required_path
+            or container_path in required_path.parents
+        )
+
+    for required_path in required_write_paths or []:
+        allowed = capabilities.get("allow", {}).get("write_paths", [])
+        denied = capabilities.get("deny", {}).get("write_paths", [])
+        if not any(covers(value, required_path) for value in allowed):
+            errors.append(
+                "allow.write_paths must authorize required lifecycle path: "
+                f"{required_path}"
+            )
+        if any(covers(value, required_path) for value in denied):
+            errors.append(
+                "deny.write_paths blocks required lifecycle path: "
+                f"{required_path}"
+            )
 
     runtime = _mapping(root.get("runtime"), "runtime", errors)
     if not isinstance(runtime.get("verified"), bool):
@@ -171,9 +198,18 @@ def main() -> int:
     parser.add_argument("--require-authorized", action="store_true")
     args = parser.parse_args()
 
-    root = resolve_work_root(
-        Path(args.project_root).resolve(), args.work_type, args.work_id
-    )
+    project_root = Path(args.project_root).resolve()
+    root = resolve_work_root(project_root, args.work_type, args.work_id)
+    required_write_paths: list[str] = []
+    if args.work_type == "feature" and args.mode in {"implementation", "verification"}:
+        try:
+            feature_record = resolve_feature_record(project_root, args.work_id)
+        except ValueError:
+            feature_record = None
+        if feature_record is not None and feature_record.is_file():
+            required_write_paths.append(
+                feature_record.relative_to(project_root).as_posix()
+            )
     envelope = root / "permission-envelope.yml"
     errors = validate_envelope(
         envelope,
@@ -181,6 +217,7 @@ def main() -> int:
         mode=args.mode,
         require_approved=args.require_approved,
         require_authorized=args.require_authorized,
+        required_write_paths=required_write_paths,
     )
     if errors:
         print("Permission Envelope Check: blocked")

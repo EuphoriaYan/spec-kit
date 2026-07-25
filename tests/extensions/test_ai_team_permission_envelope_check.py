@@ -79,6 +79,91 @@ def _run(project: Path, *extra: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _write_record_backed_project(
+    project: Path, *, allow_record: bool, deny_record_parent: bool = False
+) -> None:
+    config = project / ".specify" / "team" / "ai-team-config.yml"
+    config.parent.mkdir(parents=True)
+    config.write_text(
+        yaml.safe_dump(
+            {
+                "feature_tracking": {
+                    "enabled": True,
+                    "root": "docs/features",
+                    "location": {"status": "confirmed", "locked": True},
+                    "catalog_file": "feature-catalog.yml",
+                    "record_path_template": "{feature_id}.md",
+                    "format": "markdown-frontmatter",
+                    "id_pattern": "^FEAT-[0-9]{3,}$",
+                    "require_committed_records": True,
+                }
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    record = project / "docs" / "features" / "FEAT-001.md"
+    record.parent.mkdir(parents=True)
+    record.write_text("---\nfeature_id: FEAT-001\n---\n", encoding="utf-8")
+    envelope_root = project / ".specify" / "FEAT-001"
+    envelope_root.mkdir(parents=True)
+    document = {
+        "schema_version": "1.0",
+        "work_id": "FEAT-001",
+        "mode": "implementation",
+        "status": "ready",
+        "enforcement_mode": "policy-only",
+        "integration": "codex",
+        "allow": {
+            "read_paths": ["taskcli", "docs/features/FEAT-001.md"],
+            "write_paths": ["taskcli"]
+            + (["docs/features/FEAT-001.md"] if allow_record else []),
+            "commands": ["pytest"],
+            "network": ["none"],
+        },
+        "deny": {
+            "read_paths": [".env"],
+            "write_paths": [".git"]
+            + (["docs/features"] if deny_record_parent else []),
+            "commands": ["git reset --hard"],
+            "network": ["upload-source"],
+        },
+        "approval_required": [],
+        "runtime": {
+            "adapter": "",
+            "verified": False,
+            "gaps": ["policy is not a runtime sandbox"],
+        },
+        "approved_by": "",
+        "approved_at": "",
+        "updated_at": "2026-07-25T10:00:00Z",
+    }
+    (envelope_root / "permission-envelope.yml").write_text(
+        yaml.safe_dump(document, sort_keys=False), encoding="utf-8"
+    )
+
+
+def _run_record_backed(project: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--project-root",
+            str(project),
+            "--work-type",
+            "feature",
+            "--work-id",
+            "FEAT-001",
+            "--mode",
+            "implementation",
+            "--require-authorized",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+
 def test_permission_envelope_check_accepts_approved_matching_envelope(
     tmp_path: Path,
 ) -> None:
@@ -195,3 +280,39 @@ def test_permission_envelope_check_rejects_unsafe_paths(
 
     assert result.returncode == 1
     assert "contains unsafe path" in result.stdout
+
+
+def test_record_backed_implementation_requires_feature_record_write(
+    tmp_path: Path,
+) -> None:
+    _write_record_backed_project(tmp_path, allow_record=False)
+
+    result = _run_record_backed(tmp_path)
+
+    assert result.returncode == 1
+    assert "must authorize required lifecycle path" in result.stdout
+    assert "docs/features/FEAT-001.md" in result.stdout
+
+
+def test_record_backed_implementation_accepts_exact_feature_record_write(
+    tmp_path: Path,
+) -> None:
+    _write_record_backed_project(tmp_path, allow_record=True)
+
+    result = _run_record_backed(tmp_path)
+
+    assert result.returncode == 0
+    assert "Permission Envelope Check: ready" in result.stdout
+
+
+def test_record_backed_implementation_rejects_denied_record_parent(
+    tmp_path: Path,
+) -> None:
+    _write_record_backed_project(
+        tmp_path, allow_record=True, deny_record_parent=True
+    )
+
+    result = _run_record_backed(tmp_path)
+
+    assert result.returncode == 1
+    assert "deny.write_paths blocks required lifecycle path" in result.stdout
