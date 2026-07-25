@@ -45,6 +45,35 @@ def test_team_manifest_is_valid_and_declares_execution_commands():
         assert (EXTENSION_ROOT / command_file).is_file()
 
 
+def test_requirement_and_feature_split_define_both_lifecycle_entries():
+    requirement = _normalized_markdown(
+        EXTENSION_ROOT / "commands" / "speckit.team.requirement.md"
+    )
+    split = _normalized_markdown(
+        EXTENSION_ROOT / "commands" / "speckit.team.feature-split.md"
+    )
+
+    assert "mode=new-project" in requirement
+    assert "mode=existing-project" in requirement
+    assert requirement.index("## New-Project L0 Stage") < requirement.index(
+        "## Requirement Issue"
+    )
+    assert "do not require L0 or L1 documents" in requirement
+    assert "never create one remote Issue per Feature" in requirement
+
+    assert "Confirm Feature Record Location Once" in split
+    assert split.index("Confirm Feature Record Location Once") < split.index(
+        "Feature Classification And Split"
+    )
+    assert "recommended `docs/features/`" in split
+    assert "configure_feature_tracking.py" in split
+    assert "Do not call this helper before the user answers" in split
+    assert "L0/L1 documents are optional" in split
+    assert "Produce L1" in split
+    assert "separate `accepted`, `deferred`, or `rejected` decision" in split
+    assert "not one remote" in split
+
+
 def test_assess_contract_uses_bugfix_root_and_merges_analysis():
     command = _normalized_markdown(
         EXTENSION_ROOT / "commands" / "speckit.team.assess.md"
