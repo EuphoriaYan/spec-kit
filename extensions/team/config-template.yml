@@ -25,6 +25,15 @@ work_artifacts:
   ignored_roots:
     - .specify/feature/
     - .specify/bugfix/
+    - .codegraph/
+  ignored_generated_skill_patterns:
+    - .agents/skills/speckit-team-*/
+    - .claude/skills/speckit-team-*/
+    - .cursor/skills/speckit-team-*/
+    - .trae/skills/speckit-team-*/
+  preserve_project_owned_roots:
+    - .agents/
+    - .specify/team/
   feature_path_template: .specify/feature/{work_id}
   bugfix_path_template: .specify/bugfix/{bug_slug}
   categories:
@@ -138,6 +147,18 @@ planning:
     - continue-to-tasks
     - pause-for-discussion
     - revise-plan
+  plan_review_user_options:
+    continue-to-tasks:
+      zh-CN: 继续拆任务
+      aliases: [下一步, 继续, 继续拆Task]
+    pause-for-discussion:
+      zh-CN: 暂停讨论
+      aliases: [先暂停, 先讨论一下]
+    revise-plan:
+      zh-CN: 修改方案
+      aliases: [修改方案, 回到方案]
+  require_localized_gate_prompt: true
+  require_natural_language_alias: true
   final_check_after_task_design: true
 
 issue_publishing:
@@ -150,6 +171,12 @@ issue_publishing:
     - output-only
   github_cli:
     command: gh
+  gitcode:
+    base_url: https://api.gitcode.com/api/v5
+    token_env: GITCODE_TOKEN
+    require_capability_probe: true
+    require_write_readback: true
+    forbid_logged_query_tokens: true
   fallback: output-only
   require_verified_issue_url: true
   require_feature_readiness_pass: true

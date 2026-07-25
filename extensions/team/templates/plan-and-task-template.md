@@ -16,6 +16,14 @@ planning_stage: plan-review
 plan_review:
   decision: pending
   decided_by: ""
+delivery_strategy:
+  pr_strategy: business-only
+  repositories: []
+  atomic_reason: not-applicable
+  shared_release_and_rollback: true
+  framework_review:
+    decided_by: not-required
+    evidence_url: not-required
 source_revision: ""
 declared_paths: []
 affected_modules: []
@@ -41,6 +49,21 @@ impact_analysis:
 Record the required CodeGraph evidence and the revision it describes. For a
 zero-to-one project with no source code, record the zero-source baseline and
 the point at which the first runnable source skeleton must be indexed.
+
+### Requirement Responsibility And PR Strategy
+
+Classify every accepted User Story. Use `business-software`, `framework`, or
+`external-prerequisite`. Use `business-only`, `framework-only`, `single-pr`, or
+`linked-prs` in `delivery_strategy.pr_strategy`.
+
+| User Story ID | Responsibility | Target repository | Delivery unit | Dependency | Review route |
+|---|---|---|---|---|---|
+| US-001 | business-software | owner/repository | primary-pr | none | product-owner |
+
+Business and framework work may use `single-pr` only when the front matter
+records one repository, a meaningful atomic reason, shared release/rollback,
+and named framework-owner decision evidence. Otherwise use linked PRs and name
+their dependency order.
 
 ### Module Change Plan
 
@@ -83,9 +106,15 @@ dependency, handoff artifact, serialization reason, and unblock evidence. Use
 ### Plan Review Decision
 
 Stop here before Task decomposition. Present the HLD for human discussion and
-record one decision in front matter: `continue-to-tasks`,
-`pause-for-discussion`, or `revise-plan`. Record the named human in
-`plan_review.decided_by`. Any material Plan change returns to this gate.
+record one decision in front matter. Present these user-facing meanings:
+
+- 继续拆任务 (`continue-to-tasks`): accept the HLD and proceed; “下一步” is an
+  alias at this gate;
+- 暂停讨论 (`pause-for-discussion`): preserve the HLD and pause;
+- 修改方案 (`revise-plan`): revise the named part of the HLD.
+
+Record the named human in `plan_review.decided_by`. Any material Plan change
+returns to this gate. The user never needs to type the internal English value.
 
 ## Tasks (LLD)
 

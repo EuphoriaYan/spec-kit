@@ -15,6 +15,11 @@ BOOTSTRAP = ".specify/team/context-bootstrap.md"
 GITIGNORE_START = "# AI TEAM LOCAL WORK START"
 GITIGNORE_END = "# AI TEAM LOCAL WORK END"
 LOCAL_WORK_PATTERNS = (
+    "/.codegraph/",
+    "/.agents/skills/speckit-team-*/",
+    "/.claude/skills/speckit-team-*/",
+    "/.cursor/skills/speckit-team-*/",
+    "/.trae/skills/speckit-team-*/",
     "/.specify/feature/",
     "/.specify/bugfix/",
 )

@@ -106,15 +106,23 @@ request.
 
 Show the exact title, body, repository, and labels, then ask the user to choose:
 
-- `publish`: create the Issue;
-- `output only`: print the final Issue in the current response and create
-  nothing;
-- `revise`: continue the conversation and rerun the affected readiness pass;
-- `stop`: create and persist nothing.
+- **发布（`publish`）**: create the Issue. The user may simply say “发布”;
+- **仅输出（`output only`）**: print the final Issue and create nothing. The
+  user may say “只输出内容”;
+- **修改（`revise`）**: continue the conversation and rerun the affected
+  readiness pass. The user may say “修改需求” and describe the change;
+- **停止（`stop`）**: create and persist nothing. The user may say “先停一下”.
+
+Present the labels in the user's language, keep the stable internal value in
+parentheses, and explicitly say that the user can reply with the natural phrase
+instead of copying the internal value. Never require users to remember an
+English workflow token.
 
 For GitHub, use an available authenticated GitHub integration or `gh`. For
-other Git hosts, use an available authenticated repository integration, API,
-CLI, or browser. If the host is unsupported, authentication is unavailable, a
+GitCode, read `references/gitcode-host-contract.md` and run its capability
+probe before any remote operation. For other Git hosts, use an available
+authenticated repository integration, API, CLI, or browser. If the host is
+unsupported, authentication is unavailable, a
 tool is missing, or publication fails, fall back to `output only`. Report the
 failure honestly and never claim that an Issue was created.
 
@@ -135,7 +143,9 @@ Team Specify Result:
 - privacy boundary:
 - unresolved non-blocking questions:
 - publication decision: published / output-only / revise / stopped
-- next step: Issue discussion / Technical Committee decision / revise / stop
+- current step: Issue publication decision
+- next options: localized labels, stable internal values, and natural-language aliases
+- recommended next step: one option plus a short reason; never choose it for the user
 - result: published-new-issue / output-only / revise / blocked
 ```
 

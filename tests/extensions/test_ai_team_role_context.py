@@ -107,6 +107,11 @@ def test_context_initializer_gitignores_runtime_work_artifacts(tmp_path: Path) -
     module.initialize(tmp_path)
 
     for relative in (
+        ".codegraph/codegraph.db",
+        ".agents/skills/speckit-team-review/SKILL.md",
+        ".claude/skills/speckit-team-review/SKILL.md",
+        ".cursor/skills/speckit-team-review/SKILL.md",
+        ".trae/skills/speckit-team-review/SKILL.md",
         ".specify/feature/123/spec.md",
         ".specify/bugfix/upload-timeout/assessment.md",
     ):
@@ -119,12 +124,19 @@ def test_context_initializer_gitignores_runtime_work_artifacts(tmp_path: Path) -
         )
         assert result.returncode == 0
 
-    team_state = tmp_path / ".specify/team/context-bootstrap.md"
-    result = subprocess.run(
-        ["git", "-C", str(tmp_path), "check-ignore", "-q", str(team_state)],
-        check=False,
-    )
-    assert result.returncode == 1
+    for relative in (
+        ".agents/skills/company-bond-parser/SKILL.md",
+        ".specify/team/context-bootstrap.md",
+        ".specify/team/ai-team-config.yml",
+    ):
+        project_owned = tmp_path / relative
+        project_owned.parent.mkdir(parents=True, exist_ok=True)
+        project_owned.write_text("project owned\n", encoding="utf-8")
+        result = subprocess.run(
+            ["git", "-C", str(tmp_path), "check-ignore", "-q", str(project_owned)],
+            check=False,
+        )
+        assert result.returncode == 1
     text = (tmp_path / ".gitignore").read_text(encoding="utf-8")
     assert text.count(module.GITIGNORE_START) == 1
 
@@ -243,14 +255,35 @@ def test_direct_team_setup_rolls_back_extension_when_rules_fail(
     assert not (specify / "team" / "context-bootstrap.md").exists()
 
 
-def test_direct_team_setup_requires_supported_codegraph(
+def test_direct_team_setup_requires_codegraph_before_writing_files(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from specify_cli import team_setup
 
     monkeypatch.setattr(team_setup.shutil, "which", lambda _name: None)
-    with pytest.raises(RuntimeError, match="CodeGraph CLI 1.x is required"):
+    specify = tmp_path / ".specify"
+    specify.mkdir()
+    (specify / "init-options.json").write_text(
+        json.dumps({"ai": "codex", "integration": "codex", "ai_skills": True}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(team_setup, "_locate_bundled_extension", lambda _id: AI_TEAM)
+
+    with pytest.raises(RuntimeError, match="required to install the AI Team profile"):
         team_setup.install_bundled_team(tmp_path)
+
+    assert not (tmp_path / ".specify/extensions/team").exists()
+    assert not (tmp_path / ".agents/skills/speckit-team-plan-and-task/SKILL.md").exists()
+
+
+def test_codegraph_version_check_rejects_missing_or_unsupported_release(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from specify_cli import team_setup
+
+    monkeypatch.setattr(team_setup.shutil, "which", lambda _name: None)
+    with pytest.raises(RuntimeError, match="required to install the AI Team profile"):
+        team_setup._require_codegraph()
 
     monkeypatch.setattr(team_setup.shutil, "which", lambda _name: "codegraph")
     monkeypatch.setattr(
@@ -261,7 +294,7 @@ def test_direct_team_setup_requires_supported_codegraph(
         ),
     )
     with pytest.raises(RuntimeError, match="requires >=1.0.0,<2.0.0"):
-        team_setup.install_bundled_team(tmp_path)
+        team_setup._require_codegraph()
 
 
 def test_codegraph_version_check_accepts_supported_release(
@@ -301,7 +334,7 @@ def test_team_setup_refreshes_old_bundled_skills_and_preserves_project_state(
     old_manifest = old_team / "extension.yml"
     old_manifest.write_text(
         old_manifest.read_text(encoding="utf-8").replace(
-            'version: "0.6.0"', 'version: "0.5.1"'
+            'version: "0.7.0"', 'version: "0.6.0"'
         ),
         encoding="utf-8",
     )
@@ -333,7 +366,7 @@ def test_team_setup_refreshes_old_bundled_skills_and_preserves_project_state(
     assert "OLD ADAPTER PLAN" not in installed_plan
     assert "required CodeGraph" in installed_plan
     assert metadata is not None
-    assert metadata["version"] == "0.6.0"
+    assert metadata["version"] == "0.7.0"
     assert config.read_text(encoding="utf-8") == "project_owned: true\n"
 
     second = team_setup.install_bundled_team(project)
@@ -387,7 +420,7 @@ def test_team_skills_install_with_local_references_and_scripts(
     assert (specify_skill / "SKILL.md").is_file()
     assert {
         path.name for path in (specify_skill / "references").glob("*.md")
-    } == {"repository-boundary.md"}
+    } == {"repository-boundary.md", "gitcode-host-contract.md"}
     assert not (specify_skill / "scripts/init_role_context.py").exists()
     assert {
         path.name for path in (plan_skill / "references").glob("*.md")
@@ -395,12 +428,15 @@ def test_team_skills_install_with_local_references_and_scripts(
         "code-graph-contract.md",
         "context.md",
         "feature-spec.md",
+        "gitcode-host-contract.md",
         "handoff-spec-sync.md",
         "permission-envelope.md",
         "plan-and-task-format.md",
         "memory-runtime.md",
     }
+    assert (plan_skill / "references/evidence-steps-template.yml").is_file()
     assert (plan_skill / "scripts/check_plan_and_task.py").is_file()
+    assert (plan_skill / "scripts/check_evidence_steps.py").is_file()
     assert (plan_skill / "scripts/check_permission_envelope.py").is_file()
     assert (plan_skill / "scripts/work_item_paths.py").is_file()
     assert (plan_skill / "scripts/memory_adapter.py").is_file()
@@ -408,15 +444,29 @@ def test_team_skills_install_with_local_references_and_scripts(
         path.name for path in (assess_skill / "references").glob("*.md")
     } == {"code-graph-contract.md", "context.md", "memory-runtime.md"}
     assert (assess_skill / "scripts/memory_adapter.py").is_file()
+    assert {
+        path.name for path in (fix_skill / "references").glob("*.md")
+    } == {"context.md", "gitcode-host-contract.md", "memory-runtime.md"}
+    assert {
+        path.name for path in (review_skill / "references").glob("*.md")
+    } == {
+        "context.md",
+        "gitcode-host-contract.md",
+        "memory-runtime.md",
+    }
     for skill in (fix_skill, review_skill):
         assert (skill / "SKILL.md").is_file()
-        assert {
-            path.name for path in (skill / "references").glob("*.md")
-        } == {"context.md", "memory-runtime.md"}
         assert (skill / "scripts/memory_adapter.py").is_file()
+    assert (review_skill / "scripts/check_evidence_steps.py").is_file()
     assert {
         path.name for path in (implement_skill / "references").glob("*.md")
-    } == {"context.md", "implement-pr.md", "memory-runtime.md"}
+    } == {
+        "context.md",
+        "gitcode-host-contract.md",
+        "implement-pr.md",
+        "memory-runtime.md",
+    }
+    assert (implement_skill / "scripts/check_evidence_steps.py").is_file()
     assert (implement_skill / "scripts/check_permission_envelope.py").is_file()
     assert (implement_skill / "scripts/work_item_paths.py").is_file()
     assert (implement_skill / "scripts/memory_adapter.py").is_file()
@@ -591,7 +641,7 @@ def test_team_work_item_layout_and_templates_are_unified() -> None:
     assert "bugfix/" in layout
     assert "<work_id>/" in layout
 
-    expected = {"plan-and-task-template.md"}
+    expected = {"plan-and-task-template.md", "evidence-steps-template.yml"}
     assert {path.name for path in (AI_TEAM / "templates").iterdir() if path.is_file()} == expected
     assert "plan-and-task.md" in layout
     assert "plan-and-task-check.md" in layout
@@ -659,7 +709,8 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
     }
 
     assert commands["speckit.team.specify"] == {
-        "references/repository-boundary.md"
+        "references/gitcode-host-contract.md",
+        "references/repository-boundary.md",
     }
     assert commands["speckit.team.assess"] == {
         "references/code-graph-contract.md",
@@ -669,18 +720,23 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
     }
     assert commands["speckit.team.fix"] == {
         "references/context.md",
+        "references/gitcode-host-contract.md",
         "references/memory-runtime.md",
         "scripts/memory_adapter.py",
     }
     assert commands["speckit.team.review"] == {
         "references/context.md",
+        "references/gitcode-host-contract.md",
         "references/memory-runtime.md",
+        "scripts/check_evidence_steps.py",
         "scripts/memory_adapter.py",
     }
     assert commands["speckit.team.implement"] == {
         "references/context.md",
+        "references/gitcode-host-contract.md",
         "references/implement-pr.md",
         "references/memory-runtime.md",
+        "scripts/check_evidence_steps.py",
         "scripts/check_permission_envelope.py",
         "scripts/memory_adapter.py",
         "scripts/work_item_paths.py",
@@ -691,8 +747,11 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
     }
     assert {
         "references/code-graph-contract.md",
+        "references/evidence-steps-template.yml",
+        "references/gitcode-host-contract.md",
         "references/permission-envelope.md",
         "references/memory-runtime.md",
         "scripts/check_permission_envelope.py",
+        "scripts/check_evidence_steps.py",
         "scripts/memory_adapter.py",
     } <= commands["speckit.team.plan-and-task"]

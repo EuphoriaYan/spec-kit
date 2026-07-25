@@ -8,15 +8,15 @@ AI Team 发行版不会自动跟随上游 Spec Kit 更新。CLI 版本、Team Sk
 ## 当前版本策略
 
 - 上游代码基线固定为 Spec Kit `v0.12.5`；
-- 当前六技能发行版固定为 `v0.12.5+teamwork.2`；
-- 历史 tag `v0.12.5+teamwork.1` 仅保留用于版本追溯；
+- 当前六技能发行版固定为 `v0.12.5+teamwork.3`；
+- 历史 tag `v0.12.5+teamwork.1` 和 `v0.12.5+teamwork.2` 仅用于版本追溯；
 - 不使用 `specify self check` 或 `specify self upgrade` 自动漂移到其他版本。
 
 ## 更新本机 CLI
 
 ```bash
 uv tool install specify-cli --force \
-  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.2
+  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.3
 specify --version
 ```
 
@@ -46,7 +46,11 @@ git diff
 
 ## 发布新固定版本
 
-维护者发布新 Teamwork tag 时，需要同时完成：
+`teamwork.3` 的发布顺序是：合并实现 PR，在合并提交上创建
+`v0.12.5+teamwork.3` tag，然后从该 tag 执行上述安装命令和四种 integration
+冒烟验证。tag 创建前不得对外宣称该安装命令已经可用。
+
+维护者发布后续 Teamwork tag 时，需要同时完成：
 
 1. 六技能安装和四种 integration 的样例验证；
 2. 更新中文与英文安装文档中的版本来源；

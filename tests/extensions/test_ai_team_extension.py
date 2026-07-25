@@ -188,6 +188,17 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["work_artifacts"]["ignored_roots"] == [
         ".specify/feature/",
         ".specify/bugfix/",
+        ".codegraph/",
+    ]
+    assert config["work_artifacts"]["ignored_generated_skill_patterns"] == [
+        ".agents/skills/speckit-team-*/",
+        ".claude/skills/speckit-team-*/",
+        ".cursor/skills/speckit-team-*/",
+        ".trae/skills/speckit-team-*/",
+    ]
+    assert config["work_artifacts"]["preserve_project_owned_roots"] == [
+        ".agents/",
+        ".specify/team/",
     ]
     assert config["gates"]["require_work_item_anchor"] is True
     assert config["gates"]["allow_same_root_cause_issue_grouping"] is True
@@ -204,10 +215,24 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
         "pause-for-discussion",
         "revise-plan",
     ]
+    assert config["planning"]["plan_review_user_options"][
+        "continue-to-tasks"
+    ]["zh-CN"] == "继续拆任务"
+    assert "下一步" in config["planning"]["plan_review_user_options"][
+        "continue-to-tasks"
+    ]["aliases"]
+    assert config["planning"]["require_localized_gate_prompt"] is True
     assert config["planning"]["final_check_after_task_design"] is True
     assert config["issue_publishing"]["default_adapter"] == "auto"
     assert config["issue_publishing"]["require_verified_issue_url"] is True
     assert config["issue_publishing"]["require_feature_readiness_pass"] is True
+    assert config["issue_publishing"]["gitcode"] == {
+        "base_url": "https://api.gitcode.com/api/v5",
+        "token_env": "GITCODE_TOKEN",
+        "require_capability_probe": True,
+        "require_write_readback": True,
+        "forbid_logged_query_tokens": True,
+    }
     assert config["code_graph"]["tool"] == "codegraph"
     assert config["code_graph"]["required_version"] == ">=1.0.0,<2.0.0"
     assert config["code_graph"]["local_index"] == ".codegraph/codegraph.db"
@@ -712,6 +737,10 @@ def test_human_facing_ai_team_docs_use_chinese_primary_and_english_backup():
             REPO_ROOT / "docs/install/air-gapped_en.md",
         ),
         (
+            REPO_ROOT / "docs/releases/v0.12.5-teamwork.3.md",
+            REPO_ROOT / "docs/releases/v0.12.5-teamwork.3_en.md",
+        ),
+        (
             REPO_ROOT / "docs/releases/v0.12.5-teamwork.2.md",
             REPO_ROOT / "docs/releases/v0.12.5-teamwork.2_en.md",
         ),
@@ -738,7 +767,7 @@ def test_human_facing_ai_team_docs_use_chinese_primary_and_english_backup():
 
 
 def test_current_install_guides_pin_the_reviewed_team_release():
-    release = "v0.12.5+teamwork.2"
+    release = "v0.12.5+teamwork.3"
     install_guides = (
         REPO_ROOT / "README.md",
         REPO_ROOT / "README_en.md",
@@ -759,7 +788,7 @@ def test_current_install_guides_pin_the_reviewed_team_release():
 
     pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
     cli = (REPO_ROOT / "src/specify_cli/__init__.py").read_text(encoding="utf-8")
-    assert 'version = "0.12.5+teamwork.2"' in pyproject
+    assert 'version = "0.12.5+teamwork.3"' in pyproject
     assert f"pinned to {release}" in cli
 
 

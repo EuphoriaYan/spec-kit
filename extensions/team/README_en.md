@@ -33,9 +33,11 @@ configuration and bootstrap live under `.specify/team/`; managed agent rules
 are merged without replacing project-owned instructions.
 
 Feature work packages under `.specify/feature/<work_id>/` and Bugfix packages
-under `.specify/bugfix/<bug_slug>/` are local and Git-ignored. Cross-person
-facts move through Issues, PRs, source, tests, and explicitly promoted HLD or
-project knowledge.
+under `.specify/bugfix/<bug_slug>/`, the `.codegraph/` index, and generated
+`speckit-team-*` Skill directories are local and Git-ignored. Do not
+blanket-ignore `.agents/` or `.specify/`, which may contain project-owned
+Skills and shared configuration. Cross-person facts move through Issues, PRs,
+source, tests, and explicitly promoted HLD or project knowledge.
 
 Plan-and-Task requires CodeGraph and a generated deterministic check. A
 Permission Envelope records risk boundaries but is not a runtime sandbox.

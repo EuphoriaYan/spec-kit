@@ -26,8 +26,10 @@ failure below, leave `work-context.yml` at `phase: verified`, do not write a
 5. Read the local `FEATURE_ROOT/evidence/implementation-report.md` and confirm it
    records passing required tests and any skipped checks.
 6. Do not overwrite unrelated user changes. Do not stage or commit them.
-7. Use authenticated GitHub automation when available. For GitCode or another
-   host without a usable CLI/API, give the user a complete title, body, file
+7. Use authenticated GitHub automation when available. For GitCode, read
+   `references/gitcode-host-contract.md`, run its capability probe, and require
+   write read-back. If that is unavailable, or for another host without a
+   usable CLI/API, give the user a complete title, body, file
    list, and `## Paste Into PR Description` block. Manual posting is a transport
    step, not another approval gate.
 
