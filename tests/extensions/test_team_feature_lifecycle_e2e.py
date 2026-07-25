@@ -119,6 +119,8 @@ def test_first_confirmation_to_accepted_feature_sdd_entry(tmp_path: Path) -> Non
     assert ready.returncode == 0, ready.stdout
     payload = json.loads(ready.stdout)
     assert payload["status"] == "ready"
-    assert payload["feature_record"].endswith("docs/features/FEAT-001.md")
-    assert payload["work_root"].endswith(".specify/FEAT-001")
+    assert Path(payload["feature_record"]).as_posix().endswith(
+        "docs/features/FEAT-001.md"
+    )
+    assert Path(payload["work_root"]).as_posix().endswith(".specify/FEAT-001")
 
