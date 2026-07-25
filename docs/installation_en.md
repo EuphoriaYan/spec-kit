@@ -23,7 +23,7 @@ headless dispatch.
 
 ## Install and Initialize
 
-Install the reviewed six-skill build from its fixed tag:
+Install the reviewed Team lifecycle build from its fixed tag:
 
 ```bash
 uv tool install specify-cli --force \
@@ -35,7 +35,7 @@ specify init . --integration codex
 ```
 
 Replace `codex` with `claude`, `cursor-agent`, or `trae` as needed. The default
-`team` profile installs the six primary Team Skills, advanced extension entries,
+`team` profile installs the Team lifecycle Skills, advanced extension entries,
 and their required resources.
 Use `--skill-profile full` only when native Spec Kit Skills are also required.
 
@@ -43,10 +43,12 @@ Use `--skill-profile full` only when native Spec Kit Skills are also required.
 
 Initialization:
 
-1. installs six self-contained primary Team Skills and advanced extension entries;
+1. installs self-contained Team lifecycle Skills and advanced extension entries;
 2. creates `.specify/team/` context and configuration;
 3. adds a managed natural-language router to `AGENTS.md` and tool-specific rules;
-4. ignores Feature/Bugfix work packages, the `.codegraph/` index, and only the
+4. asks for and preserves the repository Feature Record location on first
+   Feature split, then ignores local Feature/Bugfix work packages, the
+   `.codegraph/` index, and only the
    generated `speckit-team-*` Skill directories; it does not blanket-ignore
    `.agents/` or `.specify/`;
 5. checks the CodeGraph version before writing Team files and fails safely when

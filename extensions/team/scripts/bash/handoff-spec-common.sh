@@ -44,7 +44,7 @@ resolve_effective_spec() {
 
 _override_file_name() {
     local repo_root="$1"
-    local config="$repo_root/.specify/extensions/team/ai-team-config.yml"
+    local config="$repo_root/.specify/team/ai-team-config.yml"
     local name="spec.override.md"
     if [[ -f "$config" ]]; then
         local parsed
@@ -98,7 +98,10 @@ _read_url_from_work_context() {
     local repo_root="$1"
     local args_text="${2:-}"
     local work_id="" category=""
-    if [[ "$args_text" =~ work_id=([^[:space:]\"\'\>]+) ]]; then
+    if [[ "$args_text" =~ feature_id=([^[:space:]\"\'\>]+) ]]; then
+        work_id="${BASH_REMATCH[1]}"
+        category="feature"
+    elif [[ "$args_text" =~ work_id=([^[:space:]\"\'\>]+) ]]; then
         work_id="${BASH_REMATCH[1]}"
     fi
     if [[ "$args_text" =~ work_type=([^[:space:]\"\'\>]+) ]]; then
@@ -107,7 +110,12 @@ _read_url_from_work_context() {
         [[ "$category" == "new-project" || "$category" == "template" ]] && category="feature"
     fi
     if [[ -n "$work_id" && ( "$category" == "feature" || "$category" == "bugfix" ) ]]; then
-        local ctx="$repo_root/.specify/$category/$work_id/work-context.yml"
+        local ctx
+        if [[ "$category" == "feature" && -d "$repo_root/.specify/$work_id" ]]; then
+            ctx="$repo_root/.specify/$work_id/work-context.yml"
+        else
+            ctx="$repo_root/.specify/$category/$work_id/work-context.yml"
+        fi
         [[ -f "$ctx" ]] && _parse_url_from_text "$(cat "$ctx")" && return 0
     fi
     return 1
@@ -115,13 +123,26 @@ _read_url_from_work_context() {
 
 resolve_team_work_dir() {
     local repo_root="$1" args_text="${2:-}" work_id="" category=""
-    [[ "$args_text" =~ work_id=([^[:space:]\"\'\>]+) ]] && work_id="${BASH_REMATCH[1]}"
-    [[ "$args_text" =~ work_type=([^[:space:]\"\'\>]+) ]] && category="${BASH_REMATCH[1]}"
+    if [[ "$args_text" =~ feature_id=([^[:space:]\"\'\>]+) ]]; then
+        work_id="${BASH_REMATCH[1]}"
+        category="feature"
+    else
+        [[ "$args_text" =~ work_id=([^[:space:]\"\'\>]+) ]] && work_id="${BASH_REMATCH[1]}"
+        [[ "$args_text" =~ work_type=([^[:space:]\"\'\>]+) ]] && category="${BASH_REMATCH[1]}"
+    fi
     [[ "$category" == "bug" ]] && category="bugfix"
     [[ "$category" == "new-project" || "$category" == "template" ]] && category="feature"
     [[ "$category" == "feature" || "$category" == "bugfix" ]] || return 1
     [[ "$work_id" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]] || return 1
-    echo "$repo_root/.specify/$category/$work_id"
+    if [[ "$category" == "feature" ]]; then
+        if [[ -d "$repo_root/.specify/$work_id" || ! -d "$repo_root/.specify/feature/$work_id" ]]; then
+            echo "$repo_root/.specify/$work_id"
+        else
+            echo "$repo_root/.specify/feature/$work_id"
+        fi
+    else
+        echo "$repo_root/.specify/$category/$work_id"
+    fi
 }
 
 resolve_handoff_requirement_url() {

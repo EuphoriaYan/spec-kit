@@ -3,8 +3,8 @@ schema_version: "1.0"
 extension:
   id: team
   name: "AI Team SDD Skills"
-  version: "0.7.0"
-  description: "Six primary enterprise SDD skills plus optional advanced Knowledge and Memory capabilities."
+  version: "0.8.0"
+  description: "Project, Feature, Bugfix, review, Knowledge, and Memory skills for enterprise SDD delivery."
   author: AI Team Template
   repository: https://github.com/EuphoriaYan/spec-kit
   license: MIT
@@ -20,17 +20,55 @@ requires:
 
 provides:
   commands:
-    - name: speckit.team.specify
-      file: commands/speckit.team.specify.md
-      description: "Business/Product role: clarify Feature User Stories and publish or print the primary Issue."
+    - name: speckit.team.requirement
+      file: commands/speckit.team.requirement.md
+      description: "Business/Product entry: clarify a new-project or existing-project requirement and publish one Requirement Issue."
       resources:
         - source: docs/repository-boundary.md
           target: references/repository-boundary.md
         - source: docs/gitcode-host-contract.md
           target: references/gitcode-host-contract.md
+        - source: docs/feature-lifecycle.md
+          target: references/feature-lifecycle.md
+    - name: speckit.team.feature-split
+      file: commands/speckit.team.feature-split.md
+      description: "Architecture/Product decomposition: review architecture context and create a validated repository Feature Catalog and Feature Records."
+      resources:
+        - source: docs/feature-lifecycle.md
+          target: references/feature-lifecycle.md
+        - source: docs/code-graph-contract.md
+          target: references/code-graph-contract.md
+        - source: docs/gitcode-host-contract.md
+          target: references/gitcode-host-contract.md
+        - source: templates/feature-catalog-template.yml
+          target: references/feature-catalog-template.yml
+        - source: templates/feature-record-template.md
+          target: references/feature-record-template.md
+        - source: scripts/feature_records.py
+          target: scripts/feature_records.py
+        - source: scripts/check_feature_record.py
+          target: scripts/check_feature_record.py
+        - source: scripts/configure_feature_tracking.py
+          target: scripts/configure_feature_tracking.py
+    - name: speckit.team.specify
+      file: commands/speckit.team.specify.md
+      description: "Business/Product role: specify one accepted repository Feature Record, with legacy Feature Issue publication compatibility."
+      resources:
+        - source: docs/feature-lifecycle.md
+          target: references/feature-lifecycle.md
+        - source: docs/repository-boundary.md
+          target: references/repository-boundary.md
+        - source: docs/gitcode-host-contract.md
+          target: references/gitcode-host-contract.md
+        - source: references/internal/feature-spec.md
+          target: references/feature-spec.md
+        - source: scripts/feature_records.py
+          target: scripts/feature_records.py
+        - source: scripts/check_feature_record.py
+          target: scripts/check_feature_record.py
     - name: speckit.team.plan-and-task
       file: commands/speckit.team.plan-and-task.md
-      description: "Architect role: summarize an accepted Feature Issue and produce Code Graph grounded Plan, parallel Tasks, self-tests, and one readiness check."
+      description: "Architect role: turn an accepted Feature Record or legacy Feature Issue into a CodeGraph-grounded L2 Plan, parallel Tasks, self-tests, and readiness check."
       resources:
         - source: docs/code-graph-contract.md
           target: references/code-graph-contract.md
@@ -56,6 +94,10 @@ provides:
           target: scripts/check_evidence_steps.py
         - source: scripts/check_permission_envelope.py
           target: scripts/check_permission_envelope.py
+        - source: scripts/feature_records.py
+          target: scripts/feature_records.py
+        - source: scripts/check_feature_record.py
+          target: scripts/check_feature_record.py
         - source: scripts/work_item_paths.py
           target: scripts/work_item_paths.py
         - source: scripts/memory_adapter.py
@@ -106,6 +148,10 @@ provides:
           target: scripts/check_permission_envelope.py
         - source: scripts/check_evidence_steps.py
           target: scripts/check_evidence_steps.py
+        - source: scripts/feature_records.py
+          target: scripts/feature_records.py
+        - source: scripts/check_feature_record.py
+          target: scripts/check_feature_record.py
         - source: scripts/work_item_paths.py
           target: scripts/work_item_paths.py
         - source: docs/memory-runtime.md
@@ -126,6 +172,12 @@ provides:
           target: scripts/memory_adapter.py
         - source: scripts/check_evidence_steps.py
           target: scripts/check_evidence_steps.py
+        - source: scripts/feature_records.py
+          target: scripts/feature_records.py
+        - source: scripts/check_feature_record.py
+          target: scripts/check_feature_record.py
+        - source: scripts/work_item_paths.py
+          target: scripts/work_item_paths.py
     - name: speckit.team.memory-consolidate
       file: commands/speckit.team.memory-consolidate.md
       description: "Advanced extension entry: capture advisory lessons and promote human-approved requirements into task-scoped project Knowledge."
@@ -145,6 +197,9 @@ tags:
   - ai-team
   - enterprise
   - sdd
+  - requirement
+  - feature-split
+  - feature-tracking
   - roles
   - collaboration
   - evidence

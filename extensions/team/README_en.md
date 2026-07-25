@@ -2,13 +2,15 @@
 
 [中文主文档](README.md)
 
-The `team` extension provides six primary delivery Skills without modifying
+The `team` extension provides an end-to-end project/Feature lifecycle without modifying
 native Spec Kit commands. End users should start with the
 [Six-Skill Quick Start](../../docs/quickstart_en.md).
 
 | Skill | Role | Durable result |
 |---|---|---|
-| `speckit.team.specify` | Business / Product | published or paste-ready Feature Issue |
+| `speckit.team.requirement` | Business / Product | one accepted Project/Requirement Issue |
+| `speckit.team.feature-split` | Architecture / Product | reviewed Feature Catalog and repository Feature Records |
+| `speckit.team.specify` | Business / Product | one accepted Feature's local specification |
 | `speckit.team.plan-and-task` | Architect | local Spec, Issue-level HLD, module Tasks, self-tests, and check |
 | `speckit.team.assess` | Bug Assessor | assessment and risk routing |
 | `speckit.team.fix` | Bug Fixer | minimal fix, test evidence, and Review handoff |
@@ -32,8 +34,12 @@ extension source is not copied into the product repository. Stable Team
 configuration and bootstrap live under `.specify/team/`; managed agent rules
 are merged without replacing project-owned instructions.
 
-Feature work packages under `.specify/feature/<work_id>/` and Bugfix packages
-under `.specify/bugfix/<bug_slug>/`, the `.codegraph/` index, and generated
+Before the first Feature split, the Skill asks where repository Feature
+Records belong; `docs/features/` is a recommendation, not an automatic
+default. The confirmed location is persisted and locked. Local Feature work
+packages default to `.specify/<feature_id>/`, while existing
+`.specify/feature/<work_id>/` packages remain supported. These packages,
+Bugfix packages under `.specify/bugfix/<bug_slug>/`, the `.codegraph/` index, and generated
 `speckit-team-*` Skill directories are local and Git-ignored. Do not
 blanket-ignore `.agents/` or `.specify/`, which may contain project-owned
 Skills and shared configuration. Cross-person facts move through Issues, PRs,

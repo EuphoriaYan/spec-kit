@@ -1,0 +1,324 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+import sys
+from pathlib import Path
+
+import pytest
+import yaml
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SCRIPTS = REPO_ROOT / "extensions" / "team" / "scripts"
+
+
+def _load_module(filename: str, name: str):
+    sys.path.insert(0, str(SCRIPTS))
+    try:
+        spec = importlib.util.spec_from_file_location(name, SCRIPTS / filename)
+        assert spec and spec.loader
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        sys.path.remove(str(SCRIPTS))
+
+
+def _record(
+    feature_id: str = "FEAT-001",
+    *,
+    phase: str = "backlog",
+    accepted: bool = True,
+) -> dict:
+    return {
+        "schema": "speckit-feature-record/v1",
+        "feature_id": feature_id,
+        "title": "Feature lifecycle",
+        "parent_requirement": "https://example.test/issues/25",
+        "acceptance": {
+            "status": "accepted" if accepted else "proposed",
+            "decided_by": "architecture-group" if accepted else "",
+            "decided_at": "2026-07-25T00:00:00Z" if accepted else "",
+        },
+        "delivery": {
+            "phase": phase,
+            "pull_request": "",
+            "merged_commit": "",
+        },
+        "architecture_impact": {
+            "level": "none",
+            "update_required": False,
+            "reason": "No architecture boundary changes.",
+            "affected_files": [],
+        },
+        "definition_of_done": {
+            "code_complete": False,
+            "tests_complete": False,
+            "evidence_complete": False,
+            "architecture_synchronized": False,
+            "review_passed": False,
+        },
+    }
+
+
+def _write_tracking_config(project_root: Path, **overrides):
+    config = {
+        "root": "docs/features",
+        "recommended_root": "docs/features",
+        "location": {
+            "status": "confirmed",
+            "locked": True,
+            "decided_by": "repository-owner",
+            "decided_at": "2026-07-25T00:00:00Z",
+        },
+        "catalog_file": "feature-catalog.yml",
+        "record_path_template": "{feature_id}.md",
+        "format": "markdown-frontmatter",
+        "id_pattern": "^FEAT-[0-9]{3,}$",
+    }
+    config.update(overrides)
+    path = project_root / ".specify/team/ai-team-config.yml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        yaml.safe_dump({"feature_tracking": config}, sort_keys=False),
+        encoding="utf-8",
+    )
+
+
+def _write_catalog(root: Path, record_path: str, feature_id: str = "FEAT-001"):
+    feature_root = root / "docs" / "features"
+    feature_root.mkdir(parents=True, exist_ok=True)
+    (feature_root / "feature-catalog.yml").write_text(
+        yaml.safe_dump(
+            {
+                "schema": "speckit-feature-catalog/v1",
+                "parent_requirement": "https://example.test/issues/25",
+                "features": [
+                    {
+                        "id": feature_id,
+                        "title": "Feature lifecycle",
+                        "record": record_path,
+                    }
+                ],
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+
+
+def _write_markdown_record(root: Path, data: dict):
+    path = root / "docs" / "features" / f"{data['feature_id']}.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        f"---\n{yaml.safe_dump(data, sort_keys=False)}---\n\n# Feature\n",
+        encoding="utf-8",
+    )
+    _write_catalog(
+        root, path.relative_to(root).as_posix(), feature_id=data["feature_id"]
+    )
+    return path
+
+
+def test_default_markdown_record_and_direct_work_root(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_records_default")
+    _write_tracking_config(tmp_path)
+    _write_markdown_record(tmp_path, _record())
+
+    path, record, errors = module.validate_feature_record(
+        tmp_path, "FEAT-001", require_accepted=True
+    )
+
+    assert path == tmp_path / "docs/features/FEAT-001.md"
+    assert record["feature_id"] == "FEAT-001"
+    assert errors == []
+    assert module.resolve_feature_work_root(
+        tmp_path, "FEAT-001"
+    ) == tmp_path / ".specify/FEAT-001"
+
+
+@pytest.mark.parametrize(
+    ("format_name", "record_name"),
+    [("yaml", "FEAT-001.yml"), ("json", "FEAT-001.json")],
+)
+def test_configurable_yaml_and_json_records(
+    tmp_path: Path, format_name: str, record_name: str
+):
+    module = _load_module(
+        "feature_records.py", f"team_feature_records_{format_name}"
+    )
+    _write_tracking_config(
+        tmp_path,
+        root="product/features",
+        catalog_file="catalog.yml",
+        record_path_template=(
+            "{feature_id}.yml"
+            if format_name == "yaml"
+            else "{feature_id}.json"
+        ),
+        format=format_name,
+        id_pattern="^FEAT-[0-9]{3}$",
+    )
+    feature_root = tmp_path / "product/features"
+    feature_root.mkdir(parents=True)
+    data = _record()
+    record_path = feature_root / record_name
+    if format_name == "yaml":
+        record_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+    else:
+        record_path.write_text(json.dumps(data), encoding="utf-8")
+    (feature_root / "catalog.yml").write_text(
+        yaml.safe_dump(
+            {
+                "features": [
+                    {
+                        "id": "FEAT-001",
+                        "record": record_path.relative_to(tmp_path).as_posix(),
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    path, _, errors = module.validate_feature_record(
+        tmp_path, "FEAT-001", require_accepted=True
+    )
+
+    assert path == record_path
+    assert errors == []
+
+
+def test_missing_l0_l1_does_not_block_feature_record(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_records_no_arch")
+    _write_tracking_config(tmp_path)
+    _write_markdown_record(tmp_path, _record())
+
+    _, _, errors = module.validate_feature_record(
+        tmp_path, "FEAT-001", require_accepted=True
+    )
+
+    assert not (tmp_path / "docs/architecture").exists()
+    assert errors == []
+
+
+def test_unaccepted_feature_is_blocked_from_sdd(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_records_acceptance")
+    _write_tracking_config(tmp_path)
+    _write_markdown_record(tmp_path, _record(accepted=False))
+
+    _, _, errors = module.validate_feature_record(
+        tmp_path, "FEAT-001", require_accepted=True
+    )
+
+    assert "Feature must be accepted before entering SDD" in errors
+
+
+def test_ready_to_merge_requires_complete_dod(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_records_dod")
+    _write_tracking_config(tmp_path)
+    _write_markdown_record(tmp_path, _record(phase="ready-to-merge"))
+
+    _, _, errors = module.validate_feature_record(tmp_path, "FEAT-001")
+
+    assert "Definition of Done is incomplete: code_complete" in errors
+    assert "ready-to-merge Feature is missing delivery.pull_request" in errors
+
+
+def test_implementation_requires_resolved_safe_architecture_impact(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_records_architecture")
+    _write_tracking_config(tmp_path)
+    data = _record(phase="tasks-ready")
+    data["architecture_impact"] = {
+        "level": "pending",
+        "update_required": True,
+        "reason": "",
+        "affected_files": ["../outside.md"],
+    }
+    _write_markdown_record(tmp_path, data)
+
+    _, _, errors = module.validate_feature_record(tmp_path, "FEAT-001")
+
+    assert "architecture_impact.affected_files must stay repository-relative" in errors
+    assert "architecture impact must be resolved before implementation" in errors
+
+
+def test_legal_and_illegal_delivery_transitions():
+    module = _load_module("feature_records.py", "team_feature_records_transition")
+
+    assert module.validate_transition("planning", "tasks-ready") == []
+    assert module.validate_transition("planning", "done") == [
+        "illegal delivery transition: planning -> done"
+    ]
+
+
+def test_feature_record_rejects_path_traversal(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_records_traversal")
+    _write_tracking_config(
+        tmp_path, record_path_template="../../{feature_id}.md"
+    )
+
+    with pytest.raises(ValueError, match="must stay under"):
+        module.resolve_feature_record(tmp_path, "FEAT-001")
+
+
+def test_legacy_feature_work_root_is_reused(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_records_legacy")
+    _write_tracking_config(tmp_path)
+    legacy = tmp_path / ".specify/feature/FEAT-001"
+    legacy.mkdir(parents=True)
+
+    assert module.resolve_feature_work_root(tmp_path, "FEAT-001") == legacy
+
+
+def test_feature_location_must_be_confirmed_once(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_records_location")
+    config = tmp_path / ".specify/team/ai-team-config.yml"
+    config.parent.mkdir(parents=True)
+    config.write_text(
+        yaml.safe_dump(
+            {
+                "feature_tracking": {
+                    "root": "",
+                    "recommended_root": "docs/features",
+                    "location": {
+                        "status": "pending-confirmation",
+                        "locked": False,
+                    },
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="ask the user once"):
+        module.load_tracking(tmp_path)
+
+
+def test_confirmed_feature_location_is_persisted_and_locked(tmp_path: Path):
+    module = _load_module(
+        "configure_feature_tracking.py", "team_configure_feature_tracking"
+    )
+
+    path = module.configure(
+        tmp_path,
+        "product/features",
+        "repository-owner",
+        decided_at="2026-07-25T00:00:00Z",
+    )
+    config = yaml.safe_load(path.read_text(encoding="utf-8"))
+
+    assert config["feature_tracking"]["root"] == "product/features"
+    assert config["feature_tracking"]["location"] == {
+        "status": "confirmed",
+        "locked": True,
+        "decided_by": "repository-owner",
+        "decided_at": "2026-07-25T00:00:00Z",
+    }
+    module.configure(tmp_path, "product/features", "another-user")
+    unchanged = yaml.safe_load(path.read_text(encoding="utf-8"))
+    assert unchanged["feature_tracking"]["location"]["decided_by"] == "repository-owner"
+    with pytest.raises(ValueError, match="already locked"):
+        module.configure(tmp_path, "docs/features", "repository-owner")

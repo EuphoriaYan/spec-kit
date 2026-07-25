@@ -26,6 +26,7 @@ HTTP_URL = re.compile(r"^https?://\S+$", re.IGNORECASE)
 EMPTY_REFERENCES = {"", "-", "none", "n/a", "not-applicable"}
 RESPONSIBILITIES = {"business-software", "framework", "external-prerequisite"}
 PR_STRATEGIES = {"business-only", "framework-only", "single-pr", "linked-prs"}
+ARCHITECTURE_LEVELS = {"none", "l0", "l1", "l2"}
 
 
 @dataclass(frozen=True)
@@ -341,6 +342,40 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             "declared paths and affected modules are non-empty and project-relative",
         )
 
+        architecture = plan_meta.get("architecture_impact")
+        architecture = architecture if isinstance(architecture, dict) else {}
+        architecture_level = str(architecture.get("level", "")).strip().lower()
+        architecture_update = architecture.get("update_required")
+        architecture_files = _list(architecture.get("affected_files"))
+        safe_architecture_files = all(
+            not Path(path).is_absolute() and ".." not in Path(path).parts
+            for path in architecture_files
+        )
+        architecture_shape_ok = (
+            architecture_level in ARCHITECTURE_LEVELS
+            and isinstance(architecture_update, bool)
+            and safe_architecture_files
+        )
+        if architecture_shape_ok and architecture_update:
+            architecture_shape_ok = (
+                architecture_level != "none"
+                and bool(architecture_files)
+                and set(architecture_files).issubset(declared_paths)
+            )
+        elif architecture_shape_ok:
+            architecture_shape_ok = (
+                not architecture_files
+                and _meaningful_value(architecture.get("reason"))
+            )
+        record(
+            "ARCHITECTURE_DOD",
+            architecture_shape_ok,
+            "architecture impact has an explicit level and synchronized-file plan"
+            if architecture_shape_ok
+            else "architecture_impact requires none/L0/L1/L2, a boolean update_required, safe declared affected_files when updating, or a meaningful no-update reason",
+            blocked=True,
+        )
+
         impact = plan_meta.get("impact_analysis")
         impact = impact if isinstance(impact, dict) else {}
         graph = impact.get("code_graph")
@@ -645,6 +680,25 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
                 "Tasks map to Verification IDs, declared paths, and defined self-tests"
                 if mappings_ok
                 else "Task/test IDs, Verification mapping, declared paths, or required values are inconsistent",
+            )
+
+            planned_task_paths = {
+                path for row in tasks for path in _references(row["Planned paths"])
+            }
+            architecture_task_ok = (
+                architecture_shape_ok
+                and (
+                    not architecture_update
+                    or set(architecture_files).issubset(planned_task_paths)
+                )
+            )
+            record(
+                "ARCHITECTURE_TASKS",
+                architecture_task_ok,
+                "every architecture-description update is assigned to a verified Task"
+                if architecture_task_ok
+                else "every architecture_impact.affected_files path must be declared and assigned to a Task",
+                blocked=True,
             )
 
             dependency_refs_ok = all(

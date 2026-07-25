@@ -27,7 +27,7 @@ Trae 可以只使用 IDE Skills；只有进行无界面调度时才额外需要 
 
 ## 2. 安装 Specify CLI
 
-当前六技能版本固定为 `v0.12.5+teamwork.3`：
+当前稳定版本固定为 `v0.12.5+teamwork.3`：
 
 ```bash
 uv tool install specify-cli --force \
@@ -73,7 +73,7 @@ specify init . --integration codex --skill-profile full
 
 初始化会自动完成以下操作：
 
-1. 安装六个主 Team Skills 和高级扩展入口到所选 AI 工具的 Skills 目录；
+1. 安装 Team 生命周期 Skills 和高级扩展入口到所选 AI 工具的 Skills 目录；
 2. 每个 Skill 只携带自己需要的 references 和 scripts；
 3. 写入 `.specify/team/context-bootstrap.md` 和可编辑配置；
 4. 在 `AGENTS.md` 以及当前工具规则入口写入一段受管理的自然语言路由；
@@ -95,7 +95,7 @@ specify init . --integration codex --skill-profile full
 
 ## 5. 验证安装
 
-检查六个主 Skill 和高级扩展入口是否存在：
+检查 Team 生命周期 Skill 和高级扩展入口是否存在：
 
 ```text
 speckit-team-specify
@@ -138,4 +138,4 @@ AI Skill 会在分析前检查索引是否可用和新鲜。索引缺失时会�
 | GitCode 等平台无法自动发 Issue/PR | Skill 会输出完整可粘贴文本；人工发布只是平台传输步骤 |
 | 业务仓出现 Team 扩展源码 | 安装方式不正确；业务仓只应留下生成的 Skills、规则入口和 `.specify/team/` 状态 |
 
-下一步阅读[六技能快速上手](quickstart.md)。
+下一步阅读[Team 生命周期快速上手](quickstart.md)。

@@ -15,21 +15,22 @@ facts and approved artifacts override remembered chat.
 4. Stop when repository boundary, Issue identity, governance decision, or
    public-contract authority is missing or contradictory.
 
-Specify may begin without an Issue and creates no formal work directory.
-Plan-and-Task requires a readable Feature Issue at `status/accept` or
-`status/working`, derives its work ID, and then creates or resumes
-`.specify/feature/<work_id>/`.
+Requirement creates one remote Requirement Issue. Feature Split asks once for
+the repository Feature Record location (recommending `docs/features/`), locks
+the answer in config, and creates reviewed Feature Records rather than remote
+Issues per Feature. Specify and Plan-and-Task prefer an accepted Feature
+Record, then create or resume `.specify/<feature_id>/`; an existing legacy
+`.specify/feature/<work_id>/` remains readable.
 
 ## Level 1: Active Role Only
 
-### Business / Product: Specify
+### Business / Product: Requirement And Specify
 
-Load the user's Feature or new-project demand and only the Issue lifecycle and
-repository-boundary references. Start with a natural conversation. After the
-demand is substantially understood, run one completeness pass across the whole
-Issue and then each User Story. Publish the reviewed Issue or print it in the
-current response. Do not save a checklist, Issue draft, `spec.md`, Plan, or
-Task locally.
+Use Requirement for a project-level or existing-project requirement and
+publish one reviewed Requirement Issue. After Feature Split and per-Feature
+acceptance, Specify loads the accepted repository Feature Record and writes
+that Feature's User Stories and verification behavior locally. It does not
+create another remote Issue.
 
 Defect reports belong to the separate Assess -> Fix -> Review flow.
 

@@ -23,7 +23,8 @@ work_artifacts:
   root: .specify
   git_policy: local-only
   ignored_roots:
-    - .specify/feature/
+    - .specify/FEAT-*/
+    - .specify/feature/  # legacy work roots remain local-only
     - .specify/bugfix/
     - .codegraph/
   ignored_generated_skill_patterns:
@@ -34,7 +35,7 @@ work_artifacts:
   preserve_project_owned_roots:
     - .agents/
     - .specify/team/
-  feature_path_template: .specify/feature/{work_id}
+  feature_path_template: .specify/{work_id}
   bugfix_path_template: .specify/bugfix/{bug_slug}
   categories:
     - feature
@@ -48,6 +49,30 @@ work_artifacts:
   allow_reconstruct_from_handoff_requirement_url: true
   allow_reconstruct_from_work_id: true
   allow_reconstruct_from_bug_slug: true
+
+feature_tracking:
+  # Feature Records are repository-versioned delivery facts. Teams may move
+  # them or choose another built-in serialization format without changing the
+  # local SDD work-root convention. The first Requirement/Feature Split flow
+  # MUST ask where these committed records belong. `docs/features` is only the
+  # recommended answer until a human confirms and locks the location.
+  enabled: true
+  root: ""
+  recommended_root: docs/features
+  location:
+    status: pending-confirmation
+    locked: false
+    decided_by: ""
+    decided_at: ""
+  catalog_file: feature-catalog.yml
+  record_path_template: "{feature_id}.md"
+  format: markdown-frontmatter
+  supported_formats:
+    - markdown-frontmatter
+    - yaml
+    - json
+  id_pattern: "^FEAT-[0-9]{3,}$"
+  require_committed_records: true
 
 memory:
   # Three-tier memory keeps contributor scratch, department learning, and

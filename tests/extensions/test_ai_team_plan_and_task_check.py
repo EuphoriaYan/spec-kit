@@ -86,6 +86,11 @@ approval:
   decided_by: technical-committee@example.com
   evidence_url: https://example.com/org/repo/issues/{work_id}#accepted
 planning_stage: {stage}
+architecture_impact:
+  level: none
+  update_required: false
+  reason: existing architecture and dependency direction are unchanged
+  affected_files: []
 plan_review:
   decision: {plan_decision}
   decided_by: {plan_decider}
@@ -528,3 +533,32 @@ def test_task_without_a_self_test_requires_revision(tmp_path: Path) -> None:
 
     assert result == "revise"
     assert "| TRACEABILITY | FAIL |" in rendered
+
+
+def test_required_architecture_update_must_have_a_task(tmp_path: Path) -> None:
+    module = _module()
+    root = _write_package(tmp_path, "119", "feature")
+    plan_path = root / "plan-and-task.md"
+    plan = plan_path.read_text(encoding="utf-8").replace(
+        "architecture_impact:\n"
+        "  level: none\n"
+        "  update_required: false\n"
+        "  reason: existing architecture and dependency direction are unchanged\n"
+        "  affected_files: []",
+        "architecture_impact:\n"
+        "  level: L1\n"
+        "  update_required: true\n"
+        "  reason: synchronize the export component boundary\n"
+        "  affected_files:\n"
+        "    - docs/architecture/export.md",
+    ).replace(
+        "  - tests/test_export.py\n",
+        "  - tests/test_export.py\n  - docs/architecture/export.md\n",
+    )
+    plan_path.write_text(plan, encoding="utf-8")
+
+    result, rendered = module.evaluate(tmp_path, "feature", "119")
+
+    assert result == "blocked"
+    assert "| ARCHITECTURE_DOD | PASS |" in rendered
+    assert "| ARCHITECTURE_TASKS | BLOCK |" in rendered

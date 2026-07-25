@@ -6,7 +6,7 @@ The AI Team distribution does not automatically follow upstream Spec Kit.
 Treat the CLI version, Team Skills, and generated project files as separate
 upgrade surfaces.
 
-The upstream code baseline remains Spec Kit `v0.12.5`. The current six-skill
+The upstream code baseline remains Spec Kit `v0.12.5`. The current Team lifecycle
 distribution is pinned to `v0.12.5+teamwork.3`; the historical
 `v0.12.5+teamwork.1` and `v0.12.5+teamwork.2` tags remain available only for
 traceability.
@@ -24,7 +24,7 @@ specify init . --integration <codex|claude|cursor-agent|trae>
 git diff
 ```
 
-Review the six installed Skills, managed AI rule block, project-owned Team
+Review the installed lifecycle Skills, managed AI rule block, project-owned Team
 configuration, `.gitignore`, and selected skill profile. Each future reviewed
 tag must publish migration, validation, and rollback evidence before replacing
 the shared Team version.

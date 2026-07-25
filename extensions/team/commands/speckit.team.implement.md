@@ -16,23 +16,36 @@ $ARGUMENTS
 
 Accept:
 
-- `work_id=<id>` identifying `.specify/feature/<work_id>/`, or the accepted
-  Feature Issue URL from which the work ID can be derived;
+- preferred `feature_id=<FEAT-NNN>` identifying an accepted repository Feature
+  Record and its configured local work root;
+- legacy `work_id=<id>` identifying `.specify/feature/<work_id>/`, or the
+  accepted Feature Issue URL from which the work ID can be derived;
 - optional `only=T001-T010` (also accept a comma-separated list of task IDs).
 
-Reject an unsafe work ID containing path separators, `..`, or anything other than
-letters, numbers, dots, underscores, and hyphens. Set:
+Reject an unsafe identifier containing path separators, `..`, or anything
+other than letters, numbers, dots, underscores, and hyphens.
 
-```text
-FEATURE_ROOT={repository root}/.specify/feature/{work_id}
-```
+For `feature_id`, load `.specify/team/ai-team-config.yml`, require the Feature
+Record location to have been confirmed and locked, and run
+`scripts/check_feature_record.py --feature-id <feature_id>
+--require-accepted`. Resolve both the Feature Record and work root with the
+installed `feature_records.py`; do not guess either path. The recommended work
+root is `.specify/<feature_id>/`. Reuse an existing legacy
+`.specify/feature/<feature_id>/` root when the resolver selects it.
+
+For legacy `work_id`, use the installed `work_item_paths.py` resolver. Never
+create a remote Feature Issue when a Feature Record is the selected work item.
 
 All feature artifact reads and writes MUST stay under `FEATURE_ROOT`. Do not
 modify workflow files.
 
 ## Phase 1: Context
 
-1. Resolve the repository root and `FEATURE_ROOT` as absolute paths.
+1. Resolve the repository root, Feature Record when applicable, and
+   `FEATURE_ROOT` as absolute paths. In Feature Record mode require
+   `acceptance.status: accepted`; record the parent Requirement Issue as the
+   remote source of demand. Transition `delivery.phase` to `implementing`
+   only from a legal prior phase, preserving decision history.
 2. Require regular files `spec.md` (or `spec.override.md`),
    `plan-and-task.md`, and `plan-and-task-check.md`. Prefer `spec.override.md`
    over `spec.md` when both exist, but do not copy override content into
@@ -51,8 +64,9 @@ modify workflow files.
    `implement`, work type `feature`, and the selected Tasks' modules. Apply
    binding Knowledge before editing. Advisory Memory may inform reuse and risk
    checks but cannot expand the Plan or Permission Envelope.
-4. Create or minimally update `work-context.yml` with `work_id`, the
-   relative `feature_root`, artifact names, `phase: implementing`, and an ISO
+4. Create or minimally update `work-context.yml` with `work_id`/`feature_id`,
+   `feature_record`, the relative `feature_root`, artifact names,
+   `phase: implementing`, and an ISO
    8601 UTC `updated_at`. Preserve unrelated and unknown fields.
 5. Output `## Context Summary`, including the resolved work ID and selected
    task range.
@@ -131,6 +145,9 @@ Read the complete task list, then implement only the selected incomplete tasks:
 1. Respect task order, dependencies, test-first instructions, and repository
    conventions.
 2. Make the smallest coherent code and test changes allowed by the envelope.
+   Complete every architecture-description update named by
+   `architecture_impact.affected_files`. When the impact is `none`, preserve
+   the reviewed no-impact rationale.
 3. Never edit `spec.md`, `spec.override.md`, or the Plan section of
    `plan-and-task.md`.
 4. In the Task Index of `plan-and-task.md`, change only the selected task
@@ -152,12 +169,17 @@ and changed files.
    failing required check as success.
 4. Write `evidence/implementation-report.md` with scope, completed task IDs,
    changed files, commands and exit results, skipped checks, failures, and
-   residual risks.
+   residual risks. Include an explicit architecture-synchronization result and
+   exact architecture files changed, or the reviewed no-impact rationale.
 5. For tutorial-like deliverables, run the installed
    `scripts/check_evidence_steps.py` against the completed evidence file. Keep
    missing prerequisites as `BLOCKED` or `NOT_RUN`; never rewrite them as
    success to make the report green.
 6. Update the Verification section of `context-pack.md`.
+7. In Feature Record mode update the record's DoD facts from actual evidence:
+   `code_complete`, `tests_complete`, `evidence_complete`, and
+   `architecture_synchronized`. Do not set `review_passed`, `done`, merge
+   commit, or delivered release here. Run `check_feature_record.py` again.
 
 Output `## Verification Report`. Verification passes only when every selected
 task is checked, required checks pass, and the diff stays in scope. On success,
@@ -169,7 +191,8 @@ report the repair needed and stop without entering the PR phase.
 ## Phase 6: Automatic Quality Loop
 
 After verification passes, invoke `speckit.team.review` in local-diff mode with
-`work_id=<work_id> auto_fix=true`. Do not ask the user to approve this routine
+`feature_id=<feature_id> auto_fix=true` (or legacy `work_id=<work_id>`). Do not
+ask the user to approve this routine
 transition. The Reviewer must reconstruct intent from the Issue, effective
 Feature spec, accepted Plan, and User Story mappings rather than from hidden
 implementation chat.

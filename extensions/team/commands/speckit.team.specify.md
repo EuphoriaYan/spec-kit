@@ -1,13 +1,14 @@
 ---
-description: "Business/Product role for turning a plain-language Feature or new-project demand into a complete, reviewable Issue."
+description: "Specify an accepted repository Feature Record, with a legacy path for publishing a single Feature Issue."
 ---
 
 # Spec Kit Team Specify
 
-Own the Business/Product role for Feature and new-project demand. Start from a
-natural conversation, clarify complete User Stories, and publish or print one
-primary Issue. Do not create local requirement drafts, `spec.md`, architecture
-plans, Tasks, or Bugfix artifacts.
+Own the Business/Product specification boundary for one Feature. The preferred
+record-backed mode consumes `feature_id=<id>` and writes its formal `spec.md`.
+The legacy mode still accepts a plain Feature/new-project demand and publishes
+or prints one primary remote Issue. Never create architecture Plans, Tasks, or
+Bugfix artifacts.
 
 Do not load architecture or implementation chat history.
 
@@ -17,9 +18,68 @@ Do not load architecture or implementation chat history.
 $ARGUMENTS
 ```
 
-The user may provide one sentence, an existing Feature Issue URL, or additional
-context. If the request is a defect, explain that it belongs to the Bugfix
-intake skill and stop without inventing a Feature Issue.
+The user may provide:
+
+- `feature_id=<id>` for the repository Feature Record workflow;
+- one sentence or an existing Feature Issue URL for the legacy Issue workflow;
+- additional requirement context.
+
+If the request is a defect, explain that it belongs to the Bugfix intake skill
+and stop without inventing Feature artifacts.
+
+## Preferred Record-Backed Mode
+
+When `feature_id=<id>` is present:
+
+1. Read `references/feature-lifecycle.md`.
+2. Resolve the configured Feature Record and `.specify/<feature_id>/` work root
+   with the installed `scripts/feature_records.py`; never hard-code the
+   repository Feature directory.
+3. Run:
+
+   ```text
+   scripts/check_feature_record.py --feature-id <id> --require-accepted
+   ```
+
+   Stop on a missing/unaccepted Feature, an unlocked Feature Record location,
+   Catalog mismatch, or invalid identity.
+4. Read the parent Requirement Issue and the accepted Feature Record. Do not
+   require L0/L1 files. When present, use them only as project constraints;
+   when absent, continue without creating placeholders.
+5. Transition the Feature Record from `backlog` to `specifying` before
+   specification work, validating the previous phase. Read
+   `references/feature-spec.md` immediately before writing
+   `.specify/<feature_id>/spec.md`. Specify complete User Stories, observable
+   `VER-###` behavior, scope, non-goals, boundaries, compatibility constraints,
+   parent Requirement traceability, and Feature Catalog traceability.
+6. Create or update minimal `work-context.yml` and `context-pack.md`; after the
+   Spec is complete, transition `specifying` to `planning` and set the next Skill to
+   `speckit.team.plan-and-task feature_id=<id>`.
+7. Rerun the Feature Record validator for each transition. Never
+   accept the Feature or approve an architecture decision on behalf of a human.
+
+In this mode do not create another remote Feature Issue. The Feature Record is
+the repository delivery identity and the parent Requirement Issue is the remote
+requirement authority.
+
+Output:
+
+```text
+Team Specify Result:
+- mode: feature-record
+- Feature ID and Record:
+- parent Requirement Issue:
+- Feature acceptance:
+- Spec: .specify/<feature_id>/spec.md
+- optional architecture context:
+- delivery transition:
+- next Skill: speckit.team.plan-and-task feature_id=<id>
+- result: specified / revise / blocked
+```
+
+The remaining sections apply only to legacy Issue mode.
+
+## Legacy Issue Mode
 
 ## Conversation First
 

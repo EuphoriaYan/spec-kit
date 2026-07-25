@@ -1,8 +1,10 @@
 ---
 schema: ai-team-plan-and-task/v5
 work_id: ""
+feature_id: ""
 work_type: feature
 primary_issue: ""
+feature_record: ""
 issue_status: status/accept
 issue_source:
   repository: ""
@@ -13,6 +15,11 @@ approval:
   decided_by: ""
   evidence_url: ""
 planning_stage: plan-review
+architecture_impact:
+  level: pending
+  update_required: false
+  reason: ""
+  affected_files: []
 plan_review:
   decision: pending
   decided_by: ""
@@ -80,6 +87,13 @@ when the repository declares one, but it is not required for Task decomposition.
 Describe the before/after architecture. Explicitly cover API, SPI, config,
 schema, event, database ownership, dependency direction, and compatibility.
 
+Declare `none`, `L0`, `L1`, or `L2` in `architecture_impact.level`. When
+documentation changes are required, list exact repository paths in
+`affected_files` and add matching Tasks with verification criteria. When no
+update is required, provide a reviewable reason. Architecture synchronization
+is completed with code, tests, and evidence in the implementation PR, not as a
+post-delivery documentation pass.
+
 ### Declared Change Scope
 
 Explain why every `declared_paths` entry is needed. Paths used by Tasks must be
@@ -131,6 +145,10 @@ same parallel group are intended to be assigned concurrently.
 | Task ID | Status | Module | Requirement IDs | Planned paths | Depends on | Parallel group | Self-test IDs | LLD summary |
 |---|---|---|---|---|---|---|---|---|
 | T001 | [ ] | module-name | VER-001 | path/to/file | none | P1 | TEST-001 |  |
+
+The Task Index must cover code, test cases, verification evidence, and every
+required architecture-description update. A no-impact architecture decision
+must still be verified during Review.
 
 ### Task Details
 

@@ -8,7 +8,8 @@ different local keys instead of pretending one field covers both lifecycles.
 | Field | Values | Meaning |
 |---|---|---|
 | `work_type` | `feature`, `new-project`, `template` | routes to Feature planning |
-| `work_id` | stable safe identifier | names `.specify/feature/<work_id>/` |
+| `feature_id` | stable accepted Feature Record identifier | names `.specify/<feature_id>/` |
+| `work_id` | legacy stable safe identifier | names `.specify/feature/<work_id>/` |
 
 Use the numeric Issue ID for coding-repository work and
 `enhancement-<issue-id>` for enhancement-repository work. The value must match

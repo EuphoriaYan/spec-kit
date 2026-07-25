@@ -10,7 +10,7 @@ state how its restrictions are enforced.
 ## Storage And Shape
 
 ```text
-.specify/feature/<work_id>/permission-envelope.yml
+.specify/<feature_id>/permission-envelope.yml
 ```
 
 This file is the Feature implementation envelope. Bugfix records its proposed
@@ -18,7 +18,7 @@ and actual write boundary in `assessment.md` and `fix.md`.
 
 ```yaml
 schema_version: "1.0"
-work_id: 003-search-export
+work_id: FEAT-003
 mode: analysis
 status: ready
 enforcement_mode: policy-only
@@ -26,7 +26,7 @@ integration: codex
 allow:
   read_paths:
     - AGENTS.md
-    - .specify/feature/003-search-export
+    - .specify/FEAT-003
     - src/upload
     - tests/upload
   write_paths: []

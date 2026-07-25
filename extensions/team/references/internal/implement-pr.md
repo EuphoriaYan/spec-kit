@@ -14,9 +14,15 @@ failure below, leave `work-context.yml` at `phase: verified`, do not write a
    without changing branches. Stop if the current branch is the default branch.
 2. Inspect staged, unstaged, and untracked changes. Include only intended
    source, tests, and explicitly promoted durable HLD or knowledge. Exclude
-   `.specify/feature/`, `.specify/bugfix/`, `.ai-local/`, scratch files,
-   private drafts, and `spec.override.md`.
-3. Read `FEATURE_ROOT/work-context.yml`. Require at least one work-item link in
+   local SDD work roots under `.specify/` (including direct
+   `.specify/<feature_id>/` and legacy `.specify/feature/`),
+   `.specify/bugfix/`, `.ai-local/`, scratch files, private drafts, and
+   `spec.override.md`. Do include the configured repository Feature Record and
+   catalog changes when they are part of the reviewed delivery.
+3. In Feature Record mode, resolve and validate the record using the installed
+   scripts. Require it to be accepted and its DoD to show code, tests,
+   evidence, and architecture synchronization. Then read
+   `FEATURE_ROOT/work-context.yml`. Require at least one work-item link in
    `coding_issue_url` or `handoff_requirement_url`. Never expose a private URL or
    private requirement detail in a public repository; use only an approved
    public-safe summary where applicable.
@@ -42,8 +48,9 @@ Prepare a concise title and a body containing:
 - ...
 
 ## Feature
-- Work ID: ...
-- Work item: ...
+- Feature ID: ...
+- Requirement Issue: ...
+- Feature Record: ...
 
 ## Tasks completed
 - T001 ...
@@ -51,6 +58,7 @@ Prepare a concise title and a body containing:
 ## Verification
 - `command` — pass/fail
 - Skipped checks and reason: ...
+- Architecture synchronization: changed files / reviewed no-impact rationale
 
 ## Permissions and risk
 - Enforcement mode: ...
@@ -58,7 +66,7 @@ Prepare a concise title and a body containing:
 - Residual risks: ...
 ```
 
-Do not include local Feature/Bugfix root paths, private requirement text, secrets, or claims
+Do not include local Feature/Bugfix work-root paths, private requirement text, secrets, or claims
 not supported by the diff and implementation report.
 
 ## Submit
@@ -72,7 +80,8 @@ not supported by the diff and implementation report.
 4. Push the feature branch, then use `gh pr create` with the prepared title and
    body. Never force-push.
 5. Read the created PR URL from `gh`; do not infer it.
-6. Only after successful creation, minimally update the local `work-context.yml` with
+6. Only after successful creation, minimally update the local
+   `work-context.yml` with
    `pr_url`, `phase: pr-open`,
    `last_completed_skill: speckit.team.implement`,
    `next_skill: speckit.team.review`, and an ISO 8601 UTC `updated_at`.
@@ -83,7 +92,7 @@ Output `## Pull Request` with the URL, title, linked work item, submitted files,
 verification summary, and this next step:
 
 ```text
-/speckit.team.review {pr_url} work_id={work_id}
+/speckit.team.review {pr_url} feature_id={feature_id}
 ```
 
 Stop before submission when the branch, repository route, work-item link,

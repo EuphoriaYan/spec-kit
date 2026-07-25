@@ -4,21 +4,29 @@ description: "Architect role for turning an accepted Issue into a source-grounde
 
 # Spec Kit Team Plan And Task
 
-Own the Architect role. Consume the accepted Issue and its discussion, not
-hidden Business/Product chat. Produce technical planning artifacts without
-editing product source.
+Own the Architect role. Prefer an accepted repository Feature Record and its
+formal Spec; retain the accepted remote Feature Issue path for compatibility.
+Consume durable artifacts, not hidden Business/Product chat. Produce technical
+planning artifacts without editing product source.
 
 ## Input Contract
 
-The required user input is one primary Issue URL. Optional input may name User
-Stories, suspected modules, architecture documents, Code Graph evidence,
-constraints, or a request to pause after the Plan.
+Preferred input is `feature_id=<id>`. Legacy input is one primary accepted
+Feature Issue URL. Optional input may name User Stories, suspected modules,
+architecture documents, Code Graph evidence, constraints, or a request to
+pause after the Plan.
 
 ```text
 $ARGUMENTS
 ```
 
-Use an authenticated repository integration or CLI to read the Issue. GitHub
+In record-backed mode, run
+`scripts/check_feature_record.py --feature-id <id> --require-accepted`, resolve
+the configured Feature Record and `.specify/<feature_id>/` work root, and read
+its parent Requirement Issue plus `spec.md`. Do not require L0/L1 documents:
+apply them when present and record `not-present` when absent.
+
+In legacy mode, use an authenticated repository integration or CLI to read the Issue. GitHub
 may use a GitHub integration or `gh`; other hosts may use their API, CLI, or an
 authenticated browser. For GitCode, read
 `references/gitcode-host-contract.md` and run its capability probe. If the
@@ -27,9 +35,11 @@ available read-only method for that host. Stop when the Issue body, comments,
 labels, and stable URL cannot be verified. Do not plan from a title or copied
 excerpt alone.
 
-The Issue must have type label `type/feature` and exactly one status label.
-Planning may start only at `status/accept` or resume at `status/working`.
-If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
+The legacy Issue must have type label `type/feature` and exactly one status
+label. Planning may start only at `status/accept` or resume at
+`status/working`. In record-backed mode, the parent Requirement Issue must be
+readable and the Feature Record must be accepted. If the input is
+`type/bugfix`, stop and direct the user to the Bugfix path.
 
 ## Issue Identity And Summary
 
@@ -48,14 +58,17 @@ If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
 
 ## Flow
 
-1. Resolve the work ID, then create or resume
-   `.specify/feature/<work_id>/`. When resuming an existing work root,
+1. Resolve the Feature ID/work ID, then create or resume the configuration-
+   aware work root (default `.specify/<feature_id>/`, with legacy
+   `.specify/feature/<work_id>/` fallback). When resuming an existing work root,
    read `references/context.md`; do not load it for a new work root. For new
    work, create `work-context.yml` and `context-pack.md` as small resume indexes
    after resolving the Issue identity and source revision. Do not copy the full
    Issue, Spec, Plan, or chat history into either file.
-2. Summarize the accepted Issue and accepted discussion into
-   `spec.md`. Read `references/feature-spec.md` immediately before writing it.
+2. In record-backed mode, validate and consume the existing `spec.md`; do not
+   silently rewrite accepted behavior while planning. In legacy mode, summarize
+   the accepted Issue and accepted discussion into `spec.md`. Read
+   `references/feature-spec.md` immediately before writing it.
 3. When an authorized confidential handoff is in scope, read and execute
    `references/handoff-spec-sync.md`. Otherwise do not load it. Never copy
    private source text into committed public artifacts.
@@ -123,6 +136,11 @@ If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
    concrete self-verification scenario. Design Tasks for parallel assignment by
    default. When serialization is necessary, describe the dependency, handoff
    artifact, reason, and unblock evidence in the Plan. Reject cycles.
+   The Task set must include concrete code, test-case, verification-evidence,
+   and architecture-description work. When architecture impact is `none`,
+   include a checked no-impact rationale; when an update is required, name the
+   exact architecture files and completion criteria. Architecture synchronization
+   is part of implementation Definition of Done, not a later documentation pass.
    In the localized gate, this means “continue to Tasks”; it is an explanation,
    not another value the user must type.
 11. Map every Task to User Stories and their Verification behavior.
@@ -155,6 +173,10 @@ If the Issue is `type/bugfix`, stop and direct the user to the Bugfix path.
     `context-pack.md`. On failure, set `phase: planning-blocked`, keep
     `next_skill` as `speckit.team.plan-and-task`, and record the unresolved
     check findings.
+    In record-backed mode also run
+    `scripts/check_feature_record.py --feature-id <id> --require-accepted`
+    and update the Feature delivery phase to `tasks-ready` only after both
+    checks pass.
 15. On `ready`, publish a public-safe Plan/Task handoff to the primary Issue.
     Include the Issue-wide HLD summary, affected modules, public-contract and
     compatibility impact, Task IDs and module/path scope, dependency/parallel
@@ -181,11 +203,12 @@ Team Plan And Task:
 - current step: Plan review
 - next options: localized label + stable value + natural-language alias
 - recommended next step: one option plus a short reason; never choose it for the user
-- plan and task: .specify/feature/<work_id>/plan-and-task.md
-- feature spec: .specify/feature/<work_id>/spec.md
-- check: .specify/feature/<work_id>/plan-and-task-check.md
-- resume index: .specify/feature/<work_id>/work-context.yml
-- handoff summary: .specify/feature/<work_id>/context-pack.md
+- Feature Record and parent Requirement Issue:
+- plan and task: <resolved-work-root>/plan-and-task.md
+- feature spec: <resolved-work-root>/spec.md
+- check: <resolved-work-root>/plan-and-task-check.md
+- resume index: <resolved-work-root>/work-context.yml
+- handoff summary: <resolved-work-root>/context-pack.md
 - minimum self-test mapping:
 - parallel groups and development chain:
 - compatibility and rollback:

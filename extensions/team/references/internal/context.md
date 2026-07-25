@@ -1,15 +1,18 @@
 # Internal Context Resume
 
-Use exactly one canonical work root:
+Resolve exactly one canonical work root:
 
 ```text
-Feature: .specify/feature/<work_id>/
+Feature Record: configured repository path (ask once, then lock)
+Feature SDD:    .specify/<feature_id>/
+Legacy Feature: .specify/feature/<work_id>/
 Bugfix:  .specify/bugfix/<bug_slug>/
 ```
 
 ## Open Feature
 
-1. Require `category: feature` and validate `work_id`.
+1. Prefer `feature_id`, validate the accepted Feature Record, and use the
+   configured resolver. Accept legacy `work_id` only for compatibility.
 2. Open `work-context.yml` when present.
 3. Read `spec.override.md` before `spec.md` only with current permission.
 4. Load Plan, check, permissions, Code Graph, or evidence only for the active

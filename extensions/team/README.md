@@ -2,14 +2,16 @@
 
 [English backup](README_en.md)
 
-`team` 扩展提供六个面向交付阶段的 Skills，不修改原生 Spec Kit commands。
-本页面向扩展维护者；普通使用者请阅读[六技能快速上手](../../docs/quickstart.md)。
+`team` 扩展提供项目需求、Feature 拆分与单 Feature 交付 Skills，不修改原生 Spec Kit commands。
+本页面向扩展维护者；普通使用者请阅读[Team 生命周期快速上手](../../docs/quickstart.md)。
 
 ## 职责边界
 
 | Skill | 角色 | 读取 | 产出 |
 |---|---|---|---|
-| `speckit.team.specify` | 业务 / 产品 | 一句话 Feature 或新项目需求 | Feature Issue；不落本地 Spec 草稿 |
+| `speckit.team.requirement` | 业务 / 产品 | 项目级或已有项目需求 | 单一 Requirement Issue |
+| `speckit.team.feature-split` | 架构 / 产品 | 已接受 Requirement、可选/必需架构上下文 | Feature Catalog 和仓库 Feature Records |
+| `speckit.team.specify` | 业务 / 产品 | 已接受 Feature Record | 单 Feature `spec.md` |
 | `speckit.team.plan-and-task` | 架构 / 模块负责人 | 已接受 Issue、源码、CodeGraph | `spec.md`、Issue 级 HLD、模块 Tasks、自测和检查 |
 | `speckit.team.assess` | 缺陷分析 | 现象、Issue 或 Review finding | `assessment.md` 和风险路由 |
 | `speckit.team.fix` | 缺陷修复 | ready/approved Assessment | 最小修复、`fix.md`、`test.md` 和 Review handoff |
@@ -28,13 +30,14 @@
 Git ignore；只有带负责人、批准、证据和作用域的内容，才能晋升到
 `docs/ai-team/knowledge/rules/` 并约束后续角色。
 
-角色之间不依赖隐藏聊天。Feature 由 Issue 承担需求事实，Plan/Task handoff 承担架构与
+角色之间不依赖隐藏聊天。Requirement Issue 承担需求事实，仓库 Feature Record 承担
+拆分、接受和交付追踪，Plan/Task handoff 承担架构与
 实现边界，PR 和测试承担交付事实。Bugfix 保留原始现象和 Assessment，避免在自动修复
 循环中错误归因。
 
 ## 安装模型
 
-默认 `team` profile 直接从已安装的 Specify CLI 包注册六个主 Skill 和按需使用的高级入口：
+默认 `team` profile 直接从已安装的 Specify CLI 包注册 Team 生命周期 Skills 和按需使用的高级入口：
 
 ```text
 speckit-team-<role>/
@@ -57,8 +60,11 @@ AGENTS.md 和工具规则中的受管理入口
 
 ## 本地工作包
 
+Feature Split 首次运行时必须询问 Feature Record 的仓库目录；`docs/features/` 只是推荐，
+确认后写入配置并锁定，后续流程不得静默移动。
+
 ```text
-.specify/feature/<work_id>/
+.specify/<feature_id>/
 |-- spec.md
 |-- plan-and-task.md
 |-- plan-and-task-check.md
@@ -67,6 +73,8 @@ AGENTS.md 和工具规则中的受管理入口
 |-- permission-envelope.yml
 |-- codegraph/
 `-- evidence/
+
+.specify/feature/<work_id>/   # 兼容旧工作包
 
 .specify/bugfix/<bug_slug>/
 |-- assessment.md

@@ -20,6 +20,7 @@ LOCAL_WORK_PATTERNS = (
     "/.claude/skills/speckit-team-*/",
     "/.cursor/skills/speckit-team-*/",
     "/.trae/skills/speckit-team-*/",
+    "/.specify/FEAT-*/",
     "/.specify/feature/",
     "/.specify/bugfix/",
 )
@@ -32,9 +33,19 @@ AGENT_FILES = {
 }
 ROUTES = (
     (
+        "speckit.team.requirement",
+        "A project-level or existing-project requirement needs clarification",
+        "clarify it and publish one Requirement Issue",
+    ),
+    (
+        "speckit.team.feature-split",
+        "An accepted Requirement needs architecture-aware Feature decomposition",
+        "confirm the Feature Record location once, then create the catalog and records",
+    ),
+    (
         "speckit.team.specify",
-        "A new Feature or new-project idea needs clarification",
-        "publish or print complete Feature User Stories as the primary Issue",
+        "An accepted repository Feature Record needs User Stories",
+        "write its local Feature specification without creating another Issue",
     ),
     (
         "speckit.team.plan-and-task",
@@ -150,8 +161,11 @@ def _managed_section(target: str, root: Path | None = None) -> str:
         "only for an explicit maintenance request:\n"
         f"{advanced}\n"
         "If a required artifact or human decision is missing, stop and return "
-        "to the preceding role. Canonical work artifacts live under "
-        "`.specify/feature/<work_id>/` for Features and "
+        "to the preceding role. Repository Feature Records live at the "
+        "user-confirmed and locked path in AI Team config; recommend "
+        "`docs/features/` only until that decision is made. Local Feature SDD "
+        "artifacts default to `.specify/<feature_id>/` (with legacy "
+        "`.specify/feature/<work_id>/` compatibility) and "
         "`.specify/bugfix/<bug_slug>/` for Bugfixes. These work roots are "
         "Git-ignored local runtime context; share accepted facts through "
         "Issues, PRs, source, tests, and explicitly promoted HLD. "

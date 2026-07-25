@@ -184,10 +184,12 @@ def test_init_registers_packaged_team_and_managed_rules(
     assert skills == {
         "speckit-team-assess",
         "speckit-team-fix",
+        "speckit-team-feature-split",
         "speckit-team-implement",
         "speckit-team-memory-consolidate",
         "speckit-team-plan-and-task",
         "speckit-team-review",
+        "speckit-team-requirement",
         "speckit-team-specify",
     }
 
@@ -280,10 +282,12 @@ def test_team_profile_hides_native_skills_and_full_profile_keeps_them(
     assert team_skills == {
         "speckit-team-assess",
         "speckit-team-fix",
+        "speckit-team-feature-split",
         "speckit-team-implement",
         "speckit-team-memory-consolidate",
         "speckit-team-plan-and-task",
         "speckit-team-review",
+        "speckit-team-requirement",
         "speckit-team-specify",
     }
     assert team_skills < full_skills
