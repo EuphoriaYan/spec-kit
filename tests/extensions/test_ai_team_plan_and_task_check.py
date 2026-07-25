@@ -86,6 +86,11 @@ approval:
   decided_by: technical-committee@example.com
   evidence_url: https://example.com/org/repo/issues/{work_id}#accepted
 planning_stage: {stage}
+architecture_impact:
+  level: none
+  update_required: false
+  reason: existing architecture and dependency direction are unchanged
+  affected_files: []
 plan_review:
   decision: {plan_decision}
   decided_by: {plan_decider}
@@ -242,6 +247,112 @@ def test_feature_package_can_be_ready_and_bugfix_is_rejected(tmp_path: Path) -> 
 
     with pytest.raises(ValueError, match="Feature work only"):
         module.evaluate(tmp_path, "bugfix", "102")
+
+
+def test_implementation_scope_uses_git_diff_and_blocks_undeclared_paths(
+    tmp_path: Path,
+) -> None:
+    module = _module()
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=tmp_path,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test User"],
+        cwd=tmp_path,
+        check=True,
+    )
+    (tmp_path / ".gitignore").write_text(".specify/\n", encoding="utf-8")
+    (tmp_path / "src").mkdir()
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "src/export.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (tmp_path / "tests/test_export.py").write_text(
+        "def test_export():\n    assert True\n", encoding="utf-8"
+    )
+    (tmp_path / "legacy.txt").write_text("legacy\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", "baseline"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    revision = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    root = _write_package(tmp_path, "120", "feature")
+    plan = (root / "plan-and-task.md").read_text(encoding="utf-8")
+    (root / "plan-and-task.md").write_text(
+        plan.replace("abc123", revision), encoding="utf-8"
+    )
+    (root / "permission-envelope.yml").write_text(
+        """schema_version: "1.0"
+work_id: "120"
+mode: implementation
+status: ready
+enforcement_mode: policy-only
+integration: codex
+allow:
+  read_paths:
+    - src/export.py
+  write_paths:
+    - src/export.py
+  commands:
+    - git diff
+  network:
+    - none
+deny:
+  read_paths:
+    - .env
+  write_paths:
+    - .git
+  commands:
+    - destructive-history-rewrite
+  network:
+    - upload-source
+approval_required: []
+runtime:
+  adapter: ""
+  verified: false
+  gaps:
+    - policy is not a runtime sandbox
+approved_by: ""
+approved_at: ""
+updated_at: "2026-07-25T00:00:00Z"
+""",
+        encoding="utf-8",
+    )
+    (tmp_path / "src/export.py").write_text("VALUE = 2\n", encoding="utf-8")
+
+    result, rendered = module.evaluate(
+        tmp_path, "feature", "120", implementation_scope=True
+    )
+
+    assert result == "ready"
+    assert "| IMPLEMENTATION_DIFF_SCOPE | PASS |" in rendered
+
+    (tmp_path / "notes.md").write_text("undeclared\n", encoding="utf-8")
+    result, rendered = module.evaluate(
+        tmp_path, "feature", "120", implementation_scope=True
+    )
+
+    assert result == "blocked"
+    assert "changed paths outside declared scope: notes.md" in rendered
+
+    (tmp_path / "notes.md").unlink()
+    (tmp_path / "legacy.txt").unlink()
+    result, rendered = module.evaluate(
+        tmp_path, "feature", "120", implementation_scope=True
+    )
+
+    assert result == "blocked"
+    assert "changed paths outside declared scope: legacy.txt" in rendered
 
 
 def test_independent_module_tasks_can_share_a_parallel_group(tmp_path: Path) -> None:
@@ -528,3 +639,32 @@ def test_task_without_a_self_test_requires_revision(tmp_path: Path) -> None:
 
     assert result == "revise"
     assert "| TRACEABILITY | FAIL |" in rendered
+
+
+def test_required_architecture_update_must_have_a_task(tmp_path: Path) -> None:
+    module = _module()
+    root = _write_package(tmp_path, "119", "feature")
+    plan_path = root / "plan-and-task.md"
+    plan = plan_path.read_text(encoding="utf-8").replace(
+        "architecture_impact:\n"
+        "  level: none\n"
+        "  update_required: false\n"
+        "  reason: existing architecture and dependency direction are unchanged\n"
+        "  affected_files: []",
+        "architecture_impact:\n"
+        "  level: L1\n"
+        "  update_required: true\n"
+        "  reason: synchronize the export component boundary\n"
+        "  affected_files:\n"
+        "    - docs/architecture/export.md",
+    ).replace(
+        "  - tests/test_export.py\n",
+        "  - tests/test_export.py\n  - docs/architecture/export.md\n",
+    )
+    plan_path.write_text(plan, encoding="utf-8")
+
+    result, rendered = module.evaluate(tmp_path, "feature", "119")
+
+    assert result == "blocked"
+    assert "| ARCHITECTURE_DOD | PASS |" in rendered
+    assert "| ARCHITECTURE_TASKS | BLOCK |" in rendered

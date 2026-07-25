@@ -15,8 +15,13 @@ approves or merges a pull request.
 $ARGUMENTS
 ```
 
-Accept a PR URL, `pr=<number>`, or `local=true`. Accept optional `work_id=<id>` for Feature
-or `bug_slug=<slug>` for Bugfix, but never both. Reject unsafe identifiers
+Accept a PR URL, `pr=<number>`, or `local=true`. Prefer an online PR because it
+provides shared review state, remote checks, and durable discussion. Local
+review is an explicit degraded path, not a substitute to select silently.
+Accept optional
+`feature_id=<FEAT-NNN>` for a repository-tracked Feature, legacy
+`work_id=<id>` for Feature, or `bug_slug=<slug>` for Bugfix, but never more
+than one. Reject unsafe identifiers
 containing path separators, `..`, or anything other than letters, numbers,
 dots, underscores, and hyphens.
 
@@ -31,7 +36,10 @@ permission boundary and trigger none of the permanent human decisions.
    view`, `gh pr checks`, and `gh pr diff` operations.
 2. For `local=true`, inspect the current branch, merge base, committed and
    uncommitted diff, changed files, and local verification evidence. Do not
-   require a PR or remote CLI.
+   require a PR or remote CLI. Compute an immutable review revision: use the
+   reviewed Git commit when the tree is clean, otherwise hash the complete
+   reviewed patch as `sha256:<64-hex>`. Never store `local=true` in a URL
+   field.
 3. For a non-GitHub PR such as GitCode, use an authenticated host integration
    when available. For GitCode, first read
    `references/gitcode-host-contract.md` and run its capability probe.
@@ -41,15 +49,18 @@ permission boundary and trigger none of the permanent human decisions.
 4. Confirm the PR belongs to the current repository. Do not check out the PR or
    modify the working tree merely to review it.
 5. Resolve at most one work association in this order:
-   - explicit `work_id` or `bug_slug`;
-   - `Work ID:`, `Bug Slug:`, or `Bug Root:` in the PR
+   - explicit `feature_id`, legacy `work_id`, or `bug_slug`;
+   - `Feature ID:`, `Work ID:`, `Bug Slug:`, or `Bug Root:` in the PR
      body;
    - a Feature `work-context.yml` whose `pr_url` matches the PR;
    - an unambiguous Feature work ID or Bugfix slug in the PR branch name.
-6. Set `WORK_TYPE` and `WORK_ROOT` to either
-   `.specify/feature/{work_id}` or `.specify/bugfix/{bug-slug}`. Reject an
-   ambiguous match. All artifact reads and optional evidence writes MUST stay
-   under `WORK_ROOT`.
+6. For `feature_id`, require the Feature Record location to be confirmed and
+   locked, then use the installed `feature_records.py` resolver for both the
+   record and work root. Run `check_feature_record.py --feature-id
+   <feature_id> --require-accepted`. Never infer `docs/features/` merely
+   because it is recommended. For legacy Feature and Bugfix, use
+   `work_item_paths.py`. Reject an ambiguous match. All local SDD artifact
+   reads and optional evidence writes MUST stay under `WORK_ROOT`.
 
 When `WORK_ROOT` is resolved, read `references/context.md` and reconcile its
 identity and phase with the PR before lifecycle review.
@@ -88,7 +99,8 @@ is deterministic or evaluable, and that `PASS`, `FAIL`, `BLOCKED`, and
 
 ## Phase 3: Lifecycle Alignment
 
-For Feature, read the authoritative Issue and effective spec
+For a repository-tracked Feature, read the parent Requirement Issue, Feature
+Record, and effective spec
 (`spec.override.md` before `spec.md`),
 `plan-and-task.md`, `plan-and-task-check.md`, `permission-envelope.yml`,
 `work-context.yml`, `evidence/implementation-report.md`, and relevant handoff
@@ -116,6 +128,10 @@ Check that:
 - changed files and operations fit the Feature Permission Envelope or Bugfix
   Permission Boundary;
 - implementation or Bugfix test evidence supports the PR's claims;
+- code, tests, verification evidence, and every required architecture
+  description update are complete in the same implementation delivery;
+- the Feature Record's DoD values agree with the diff and evidence; a declared
+  no-impact case retains a specific reviewable rationale;
 - Feature Task state or Bugfix reports, PR body, diff, and any linked primary
   Issue agree;
 - coding changes are in the coding repository and private demand or internal
@@ -131,6 +147,14 @@ Check that:
 
 Treat missing required artifacts, unapproved deviations, stale evidence, or
 permission mismatches as findings rather than silently guessing.
+
+For repository-tracked Feature implementation, rerun
+`scripts/check_plan_and_task.py --work-type feature --work-id <id>
+--implementation-scope --check`. A failed or stale
+`IMPLEMENTATION_DIFF_SCOPE` is a scope finding; do not replace it with model
+judgment. On Windows PowerShell, use explicit UTF-8 when reading text. Run
+Python verification with bytecode and pytest cache writes disabled and keep
+`--basetemp` under the ignored Feature evidence root.
 
 ## Phase 4: Verdict And Correction Routing
 
@@ -215,6 +239,21 @@ either work type, minimally update `work-context.yml` to `phase: review`,
 `last_completed_skill: speckit.team.review`, and an ISO 8601 UTC `updated_at`.
 Preserve unknown fields. Do not write evidence when doing so would modify an
 unrelated or dirty working tree without the user's permission.
+
+For a repository-tracked Feature, after a `GO` or `GO-WITH-RISK` review,
+first transition `implementing` to `reviewing` when Review begins. Then update
+`review_passed` and transition `reviewing` to `ready-to-merge`, rerunning
+`check_feature_record.py` for each transition. Do not transition to
+`done`: only recorded merge and release evidence may do that. On `NO-GO`,
+leave `review_passed: false` and transition back only through a legal delivery
+phase. This command never accepts a Feature, approves a PR, or merges it.
+
+For an online review, set `delivery.pull_request` to the verified HTTP(S) URL
+and `delivery.review_target` to `type: pull-request` with the same URL. For an
+explicit local review, keep `delivery.pull_request` empty and set
+`delivery.review_target.type: local-diff` plus the immutable reviewed revision.
+Recommend creating an online PR before team merge whenever the host is
+available.
 
 ## Host Output
 

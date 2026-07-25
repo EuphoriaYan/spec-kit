@@ -6,13 +6,16 @@ assessments, logs, or reports.
 
 ## Feature
 
-Plan-and-Task creates or resumes:
+Specify creates and Plan-and-Task resumes:
 
 ```text
-.specify/feature/<work_id>/
+.specify/<feature_id>/
 |-- work-context.yml
 `-- context-pack.md
 ```
+
+Use the configured resolver and reuse `.specify/feature/<work_id>/` when a
+legacy package already exists.
 
 Read in this order:
 
@@ -24,17 +27,19 @@ Read in this order:
    phase.
 
 ```yaml
-work_id: "123"
+feature_id: FEAT-123
+work_id: FEAT-123
 category: feature
-primary_issue: https://example.com/org/repo/issues/123
+feature_record: docs/features/FEAT-123.md
+primary_issue: https://example.com/org/repo/issues/25
 phase: plan-review
 source_revision: <git-revision>
 last_completed_skill: speckit.team.plan-and-task
 next_skill: speckit.team.plan-and-task
 artifacts:
-  spec: .specify/feature/123/spec.md
-  plan_and_task: .specify/feature/123/plan-and-task.md
-  plan_and_task_check: .specify/feature/123/plan-and-task-check.md
+  spec: .specify/FEAT-123/spec.md
+  plan_and_task: .specify/FEAT-123/plan-and-task.md
+  plan_and_task_check: .specify/FEAT-123/plan-and-task-check.md
 unresolved: []
 ```
 
@@ -80,7 +85,8 @@ Feature Spec, Plan, or Task fields.
 ## Git Policy
 
 Feature and Bugfix work packages are runtime context owned by the installed
-Team extension. The installer adds `/.specify/feature/` and
+Team extension. The installer adds `/.specify/FEAT-*/`, legacy
+`/.specify/feature/`, and
 `/.specify/bugfix/` to the target coding repository's `.gitignore`; do not
 commit them. It also ignores the local `/.codegraph/` index and only the
 generated `speckit-team-*` Skill directories for supported integrations.

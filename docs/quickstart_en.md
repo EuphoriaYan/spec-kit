@@ -1,8 +1,8 @@
-# Six-Skill Quick Start
+# AI Team Lifecycle Quick Start
 
 [中文主文档](quickstart.md)
 
-After installation, daily work starts from chat. The six primary Skills are
+After installation, daily work starts from chat. Team Skills are
 routed by delivery phase. Users may name a Skill, but they can also describe
 the current situation naturally.
 
@@ -10,11 +10,13 @@ the current situation naturally.
 
 | Skill | Minimum input | Output |
 |---|---|---|
-| Specify | plain Feature or new-project demand | clarified User Stories and a published or paste-ready Feature Issue |
-| Plan-and-Task | accepted Feature Issue URL | Issue-level HLD, module Tasks, minimum self-tests, deterministic check |
+| Requirement | project-level or existing-project requirement | one reviewed Requirement Issue |
+| Feature Split | accepted Requirement Issue | reviewed architecture context, Feature Catalog, and repository Feature Records |
+| Specify | accepted `feature_id` | clarified User Stories and local Feature Spec |
+| Plan-and-Task | accepted `feature_id` | L2 design, module Tasks, minimum self-tests, deterministic check |
 | Assess | symptom, Issue, Review finding, or `bug_slug` | assessment, impact, fix boundary, and test strategy |
 | Fix | ready or approved assessment | minimal fix, regression evidence, progress update, and Review handoff |
-| Implement | `work_id` or Feature Issue URL | implementation, evidence, and automatic quality loop |
+| Implement | `feature_id` | code, tests, architecture synchronization, evidence, and automatic quality loop |
 | Review | PR URL or local diff | findings, correction routing, and merge recommendation |
 
 ## Advanced Extension Entry
@@ -26,11 +28,14 @@ promote approved guidance into project Knowledge.
 ## Feature Journey
 
 ```text
-plain-language demand
--> Specify clarifies User Stories
--> publish type/feature + status/new-issue
--> Technical Committee accepts the demand
--> Plan-and-Task reads the Issue, source, and CodeGraph
+project-level or existing-project requirement
+-> Requirement clarifies and publishes one Requirement Issue
+-> governance accepts the requirement
+-> Feature Split loads or creates the required architecture context
+-> ask once where committed Feature Records belong, then lock the location
+-> review the Feature Catalog and accept each Feature
+-> Specify writes one accepted Feature's User Stories
+-> Plan-and-Task reads the Feature Record, source, and CodeGraph
 -> human reviews the HLD, then Tasks are decomposed
 -> Implement verifies and enters Review automatically
 -> repairable blocker/major findings use Assess -> Fix -> Re-review
@@ -60,8 +65,10 @@ checks `type/bugfix` and `status/working`.
 
 ## Resume
 
-Resume with a Feature Issue URL, `work_id`, `bug_slug`, or PR URL. Local work
-packages under `.specify/feature/` and `.specify/bugfix/` are ignored by Git;
+Resume with a Requirement Issue URL, `feature_id`, legacy `work_id`,
+`bug_slug`, or PR URL. Repository Feature Records remain committed at the
+user-confirmed location. Local work packages under `.specify/<feature_id>/`,
+legacy `.specify/feature/`, and `.specify/bugfix/` are ignored by Git;
 another machine reconstructs context from the Issue/PR handoff, current source,
 tests, and approved artifacts rather than remembered chat.
 

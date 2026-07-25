@@ -32,6 +32,8 @@ def test_all_team_commands_are_registered() -> None:
     manifest = yaml.safe_load((AI_TEAM / "extension.yml").read_text(encoding="utf-8"))
     provided = {item["name"]: item for item in manifest["provides"]["commands"]}
     assert set(provided) == {
+        "speckit.team.requirement",
+        "speckit.team.feature-split",
         "speckit.team.specify",
         "speckit.team.plan-and-task",
         "speckit.team.assess",
@@ -334,7 +336,7 @@ def test_team_setup_refreshes_old_bundled_skills_and_preserves_project_state(
     old_manifest = old_team / "extension.yml"
     old_manifest.write_text(
         old_manifest.read_text(encoding="utf-8").replace(
-            'version: "0.7.0"', 'version: "0.6.0"'
+            'version: "0.9.0"', 'version: "0.8.0"'
         ),
         encoding="utf-8",
     )
@@ -366,7 +368,7 @@ def test_team_setup_refreshes_old_bundled_skills_and_preserves_project_state(
     assert "OLD ADAPTER PLAN" not in installed_plan
     assert "required CodeGraph" in installed_plan
     assert metadata is not None
-    assert metadata["version"] == "0.7.0"
+    assert metadata["version"] == "0.9.0"
     assert config.read_text(encoding="utf-8") == "project_owned: true\n"
 
     second = team_setup.install_bundled_team(project)
@@ -410,6 +412,7 @@ def test_team_skills_install_with_local_references_and_scripts(
     assert (specify / "team" / "context-bootstrap.md").is_file()
     assert (specify / "team" / "ai-team-config.yml").is_file()
     root = tmp_path / skills_dir
+    requirement_skill = root / "speckit-team-requirement"
     specify_skill = root / "speckit-team-specify"
     plan_skill = root / "speckit-team-plan-and-task"
     assess_skill = root / "speckit-team-assess"
@@ -417,11 +420,29 @@ def test_team_skills_install_with_local_references_and_scripts(
     implement_skill = root / "speckit-team-implement"
     review_skill = root / "speckit-team-review"
     memory_skill = root / "speckit-team-memory-consolidate"
+    assert (requirement_skill / "SKILL.md").is_file()
+    assert (
+        requirement_skill / "references/requirement-record-template.md"
+    ).is_file()
+    assert (requirement_skill / "scripts/feature_records.py").is_file()
+    assert (requirement_skill / "scripts/check_feature_record.py").is_file()
     assert (specify_skill / "SKILL.md").is_file()
     assert {
         path.name for path in (specify_skill / "references").glob("*.md")
-    } == {"repository-boundary.md", "gitcode-host-contract.md"}
+    } == {
+        "feature-lifecycle.md",
+        "feature-spec.md",
+        "repository-boundary.md",
+        "gitcode-host-contract.md",
+    }
+    assert (specify_skill / "scripts/feature_records.py").is_file()
+    assert (specify_skill / "scripts/check_feature_record.py").is_file()
     assert not (specify_skill / "scripts/init_role_context.py").exists()
+    specify_content = (specify_skill / "SKILL.md").read_text(encoding="utf-8")
+    assert "scripts/feature_records.py" in specify_content
+    assert "scripts/check_feature_record.py" in specify_content
+    assert ".specify/scripts/feature_records.py" not in specify_content
+    assert ".specify/scripts/check_feature_record.py" not in specify_content
     assert {
         path.name for path in (plan_skill / "references").glob("*.md")
     } == {
@@ -458,6 +479,8 @@ def test_team_skills_install_with_local_references_and_scripts(
         assert (skill / "SKILL.md").is_file()
         assert (skill / "scripts/memory_adapter.py").is_file()
     assert (review_skill / "scripts/check_evidence_steps.py").is_file()
+    assert (review_skill / "scripts/check_plan_and_task.py").is_file()
+    assert (review_skill / "scripts/check_permission_envelope.py").is_file()
     assert {
         path.name for path in (implement_skill / "references").glob("*.md")
     } == {
@@ -468,6 +491,7 @@ def test_team_skills_install_with_local_references_and_scripts(
     }
     assert (implement_skill / "scripts/check_evidence_steps.py").is_file()
     assert (implement_skill / "scripts/check_permission_envelope.py").is_file()
+    assert (implement_skill / "scripts/check_plan_and_task.py").is_file()
     assert (implement_skill / "scripts/work_item_paths.py").is_file()
     assert (implement_skill / "scripts/memory_adapter.py").is_file()
     assert (memory_skill / "SKILL.md").is_file()
@@ -555,17 +579,20 @@ def test_context_initializer_restores_all_rule_files_on_failure(tmp_path: Path) 
     )
 
 
-def test_specify_role_contract_keeps_issue_and_user_story_model() -> None:
+def test_specify_role_contract_supports_record_and_legacy_issue_modes() -> None:
     text = (AI_TEAM / "commands/speckit.team.specify.md").read_text(
         encoding="utf-8"
     )
 
-    assert "Publish or print one" in text or "publish or print one" in text
+    assert "Preferred Record-Backed Mode" in text
+    assert "do not create another remote Feature Issue" in text
+    assert "Legacy Issue Mode" in text
     assert "one Story at a time" in text
     assert "type/feature" in text
     assert "status/new-issue" in text
     assert "Do\nnot persist the checklist or an Issue draft" in text
-    assert "Do not create local requirement drafts, `spec.md`" in text
+    assert "do not create another remote Feature Issue" in text
+    assert "Do\nnot persist the checklist or an Issue draft" in text
 
 
 def test_specify_converses_before_one_non_persistent_readiness_pass() -> None:
@@ -597,6 +624,34 @@ def test_publication_approval_is_not_feature_acceptance() -> None:
     assert "the human Feature acceptance gate" not in internal_text
 
 
+def test_requirement_and_review_prefer_online_with_explicit_local_fallback() -> None:
+    requirement = (AI_TEAM / "commands/speckit.team.requirement.md").read_text(
+        encoding="utf-8"
+    )
+    split = (AI_TEAM / "commands/speckit.team.feature-split.md").read_text(
+        encoding="utf-8"
+    )
+    review = (AI_TEAM / "commands/speckit.team.review.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Prefer one durable\nonline Project/Requirement Issue" in requirement
+    assert "Do not silently select the local fallback" in requirement
+    assert "speckit-requirement-record/v1" in split
+    assert "Do not load the full Team config" in split
+    assert "Prefer an online PR" in review
+    assert "Never store `local=true` in a URL" in review
+
+
+def test_bootstrap_declares_compact_context_and_windows_hygiene() -> None:
+    bootstrap = (AI_TEAM / "docs/context-bootstrap.md").read_text(encoding="utf-8")
+
+    assert "small JSON\noutput from installed resolvers" in bootstrap
+    assert "Get-Content -Encoding UTF8" in bootstrap
+    assert "PYTHONDONTWRITEBYTECODE=1" in bootstrap
+    assert "-p no:cacheprovider" in bootstrap
+
+
 def test_plan_and_task_role_uses_core_artifact_scripts_without_prompt_chain() -> None:
     text = (AI_TEAM / "commands/speckit.team.plan-and-task.md").read_text(
         encoding="utf-8"
@@ -612,10 +667,10 @@ def test_plan_and_task_role_uses_core_artifact_scripts_without_prompt_chain() ->
     assert "LLD-level" in text
     assert "self-verification scenario" in text
     assert "plan-and-task-check.md" in text
-    assert ".specify/feature/<work_id>/plan-and-task.md" in text
+    assert ".specify/<feature_id>/" in text
     assert "type/feature" in text
     assert "direct the user to the Bugfix path" in text
-    assert "Produce technical planning artifacts without" in text
+    assert "without editing product source" in text
 
 
 def test_plan_and_task_has_structured_input_contract() -> None:
@@ -623,7 +678,8 @@ def test_plan_and_task_has_structured_input_contract() -> None:
         encoding="utf-8"
     )
 
-    assert "required user input is one primary Issue URL" in text
+    assert "Preferred input is `feature_id=<id>`" in text
+    assert "Legacy input is one primary accepted" in text
     assert "status/accept" in text
     assert "Issue Identity And Summary" in text
     assert "Read the current Issue body and all relevant discussion" in text
@@ -641,7 +697,13 @@ def test_team_work_item_layout_and_templates_are_unified() -> None:
     assert "bugfix/" in layout
     assert "<work_id>/" in layout
 
-    expected = {"plan-and-task-template.md", "evidence-steps-template.yml"}
+    expected = {
+        "plan-and-task-template.md",
+        "evidence-steps-template.yml",
+        "feature-catalog-template.yml",
+        "feature-record-template.md",
+        "requirement-record-template.md",
+    }
     assert {path.name for path in (AI_TEAM / "templates").iterdir() if path.is_file()} == expected
     assert "plan-and-task.md" in layout
     assert "plan-and-task-check.md" in layout
@@ -708,9 +770,21 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         for item in manifest["provides"]["commands"]
     }
 
-    assert commands["speckit.team.specify"] == {
+    assert commands["speckit.team.requirement"] == {
+        "references/feature-lifecycle.md",
         "references/gitcode-host-contract.md",
         "references/repository-boundary.md",
+        "references/requirement-record-template.md",
+        "scripts/check_feature_record.py",
+        "scripts/feature_records.py",
+    }
+    assert commands["speckit.team.specify"] == {
+        "references/feature-lifecycle.md",
+        "references/feature-spec.md",
+        "references/gitcode-host-contract.md",
+        "references/repository-boundary.md",
+        "scripts/check_feature_record.py",
+        "scripts/feature_records.py",
     }
     assert commands["speckit.team.assess"] == {
         "references/code-graph-contract.md",
@@ -729,7 +803,12 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "references/gitcode-host-contract.md",
         "references/memory-runtime.md",
         "scripts/check_evidence_steps.py",
+        "scripts/check_plan_and_task.py",
+        "scripts/check_permission_envelope.py",
+        "scripts/check_feature_record.py",
+        "scripts/feature_records.py",
         "scripts/memory_adapter.py",
+        "scripts/work_item_paths.py",
     }
     assert commands["speckit.team.implement"] == {
         "references/context.md",
@@ -737,7 +816,10 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "references/implement-pr.md",
         "references/memory-runtime.md",
         "scripts/check_evidence_steps.py",
+        "scripts/check_feature_record.py",
         "scripts/check_permission_envelope.py",
+        "scripts/check_plan_and_task.py",
+        "scripts/feature_records.py",
         "scripts/memory_adapter.py",
         "scripts/work_item_paths.py",
     }

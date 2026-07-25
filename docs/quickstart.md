@@ -1,8 +1,8 @@
-# 六技能快速上手
+# AI Team 生命周期快速上手
 
 [English backup](quickstart_en.md)
 
-安装完成后，日常使用只需要聊天框。系统会根据“现在处于哪个阶段”选择六个主 Team
+安装完成后，日常使用只需要聊天框。系统会根据“现在处于哪个阶段”选择 Team
 Skills；Skill 名称是可观察入口，不是用户必须背诵的口令。
 
 ## 先认识三个协作原则
@@ -15,11 +15,13 @@ Skills；Skill 名称是可观察入口，不是用户必须背诵的口令。
 
 | Skill | 最小输入 | 输出或停止条件 |
 |---|---|---|
-| Specify (`speckit.team.specify`) | 一句话 Feature / 新项目需求 | 澄清 User Stories；用户选择发布 Issue 或输出可复制文本 |
-| Plan-and-Task (`speckit.team.plan-and-task`) | 已接受的 Feature Issue URL | 先产生 Issue 级 HLD 并等待确认，再拆单模块 Tasks 和最小自测 |
+| Requirement (`speckit.team.requirement`) | 项目级或已有项目需求 | 澄清并发布一个 Requirement Issue |
+| Feature Split (`speckit.team.feature-split`) | 已接受 Requirement Issue | 架构上下文、Feature Catalog、仓库 Feature Records 及逐 Feature 接受 |
+| Specify (`speckit.team.specify`) | 已接受 `feature_id` | 单 Feature User Stories 和本地 Spec |
+| Plan-and-Task (`speckit.team.plan-and-task`) | 已接受 `feature_id` | L2 设计、模块 Tasks 和最小自测 |
 | Assess (`speckit.team.assess`) | 缺陷现象、Issue、Review finding 或 `bug_slug` | Assessment；清晰单仓单模块问题自动 `ready`，高风险才找人 |
 | Fix (`speckit.team.fix`) | ready/approved Assessment | 最小修复、`fix.md`、`test.md`、进度文本并进入 Review |
-| Implement (`speckit.team.implement`) | `work_id` 或 Feature Issue URL，可选 Task 范围 | 实现、证据、自动质量循环；准备 PR 前才询问 |
+| Implement (`speckit.team.implement`) | `feature_id`，可选 Task 范围 | 代码、测试、架构描述同步、证据和自动质量循环 |
 | Review (`speckit.team.review`) | PR URL 或本地 diff，可选工作标识 | findings、自动 Assess/Fix 重试和最终结论 |
 
 ## 高级扩展入口
@@ -28,43 +30,56 @@ Skills；Skill 名称是可观察入口，不是用户必须背诵的口令。
 要求沉淀经验、保存决定或把已批准规范晋升为项目 Knowledge 时才调用。普通研发请求不会
 自动进入该入口。
 
-## 旅程一：从一句话开始新 Feature
+## 旅程一：已有项目的新需求
 
 用户输入：
 
 ```text
-请给当前系统增加 CSV 导出。导出字段和列表保持一致，先帮我把需求梳理清楚。
+请给当前系统增加 CSV 导出。先澄清为一个已有项目 Requirement。
 ```
 
 系统执行：
 
 ```text
-Specify
--> 自然对话澄清用户、场景、User Stories 和可验证结果
--> 用户选择“创建 Issue”或“只输出 Issue 文本”
--> Issue 使用 type/feature + status/new-issue
--> 技术委员会在 Issue 中决定是否接受
+Requirement -> Requirement Issue -> 人工接受
+-> 可选加载现有 L0/L1；没有时继续
+-> 按需做架构影响/增量设计
+-> Feature Split
+-> 首次询问 Feature Record 目录（推荐 docs/features/）
+-> 确认后写入配置并锁定
+-> Feature Catalog Review -> 逐 Feature 接受
+-> 单 Feature Specify -> Plan-and-Task -> Implement -> Review
 ```
 
-需求被接受后，用户只需继续说：
+Requirement 被接受后，用户只需继续说：
 
 ```text
-这个 Feature Issue 已经接受，请基于它做架构 Plan：<Issue URL>
+这个 Requirement Issue 已经接受，请拆分 Feature：<Issue URL>
 ```
 
-Plan-and-Task 会读取 Issue 正文、已接受讨论、源码和 CodeGraph，先形成 HLD。此时用户
-决定继续拆 Tasks、暂停讨论或修改 Plan。Tasks 默认单模块、可并行，并带最小自验证。
+Feature Split 第一次会先询问 Feature Record 放在哪里。用户确认一次后，所有后续 Skill
+复用锁定位置，不会静默迁移。已有项目缺少 L0/L1 不构成阻塞。
 
 之后输入：
 
 ```text
-Plan 和 Tasks 已确认，请实现这个 work：<work_id>
+请继续 feature_id=FEAT-001 的 Specify、Plan-and-Task 和实现。
 ```
 
 Implement 完成自测后会自动进入 Review；可修复的 blocker/major 问题自动走
 Assess -> Fix -> Re-review，最多三轮。最终只有提交 PR 和合入决定需要用户处理。
 
-## 旅程二：从一个现象开始 Bugfix
+## 旅程二：0→1 项目
+
+```text
+整体项目需求 -> 项目需求澄清 -> L0 设计与 Review
+-> Project Requirement Issue -> 项目需求接受
+-> L1 设计与 Review -> Feature Catalog -> Feature Split Review
+-> 仓库 Feature Records -> 分别接受 Feature
+-> 单 Feature SDD 循环 -> 项目级集成与发布验收
+```
+
+## 旅程三：从一个现象开始 Bugfix
 
 用户输入：
 
@@ -87,28 +102,13 @@ Assess
 `type/bugfix + status/new-issue` 的 Issue；如果提供了 Issue，Fix 会检查它是否进入
 `status/working`。
 
-## 旅程三：从零开始新项目
-
-新项目仍从 Specify 开始，但 Plan 必须额外明确：
-
-- 技术选型和依赖最小集；
-- 模块、公共接口和状态所有权；
-- 第一条可运行主链路；
-- 部署、回滚和首个端到端验证；
-- 哪些内容属于核心代码，哪些只是 examples。
-
-一句话示例：
-
-```text
-我要新建一个内部知识问答服务，先从使用者和最小可用场景开始梳理，不要直接生成代码。
-```
-
 ## 旅程四：从中间继续
 
 | 已知信息 | 可以怎么说 |
 |---|---|
-| Feature Issue URL | “这个 Issue 已接受，请继续 Plan-and-Task：<URL>” |
-| `work_id` | “继续实现 work_id=123，只做 T003-T005” |
+| Requirement Issue URL | “这个需求 Issue 已接受，请继续拆分 Feature：<URL>” |
+| `feature_id` | “继续实现 feature_id=FEAT-003，只做 T003-T005” |
+| 旧 `work_id` | “继续旧 Feature work_id=123” |
 | `bug_slug` | “继续修复 bug_slug=session-expiry” |
 | PR URL | “评审这个 PR，并按允许范围自动修复 blocker/major：<URL>” |
 
@@ -118,7 +118,8 @@ Assess
 ## 本地文件和 Git
 
 ```text
-.specify/feature/<work_id>/   # Feature 本地工作包，默认忽略
+.specify/<feature_id>/        # Feature 本地工作包，默认忽略
+.specify/feature/<work_id>/   # 旧 Feature 工作包，继续兼容
 .specify/bugfix/<bug_slug>/   # Bugfix 本地工作包，默认忽略
 .specify/team/                # 稳定安装配置和上下文入口
 AGENTS.md / 工具规则文件       # 受管理的自然语言路由

@@ -162,6 +162,11 @@ def test_init_registers_packaged_team_and_managed_rules(
     )
 
     assert result.exit_code == 0, result.stdout
+    assert "$speckit-team-requirement" in result.stdout
+    assert "$speckit-team-feature-split" in result.stdout
+    assert "$speckit-team-assess" in result.stdout
+    assert "$speckit-constitution" not in result.stdout
+    assert "$speckit-clarify" not in result.stdout
     assert not (tmp_path / ".specify" / "extensions" / "team").exists()
     assert not (tmp_path / ".specify" / "extensions" / "bug").exists()
     assert not (tmp_path / ".specify" / "extensions" / "agent-context").exists()
@@ -184,10 +189,12 @@ def test_init_registers_packaged_team_and_managed_rules(
     assert skills == {
         "speckit-team-assess",
         "speckit-team-fix",
+        "speckit-team-feature-split",
         "speckit-team-implement",
         "speckit-team-memory-consolidate",
         "speckit-team-plan-and-task",
         "speckit-team-review",
+        "speckit-team-requirement",
         "speckit-team-specify",
     }
 
@@ -280,10 +287,12 @@ def test_team_profile_hides_native_skills_and_full_profile_keeps_them(
     assert team_skills == {
         "speckit-team-assess",
         "speckit-team-fix",
+        "speckit-team-feature-split",
         "speckit-team-implement",
         "speckit-team-memory-consolidate",
         "speckit-team-plan-and-task",
         "speckit-team-review",
+        "speckit-team-requirement",
         "speckit-team-specify",
     }
     assert team_skills < full_skills

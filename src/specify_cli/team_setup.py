@@ -43,6 +43,7 @@ def _tracked_local_work_files(project_root: Path) -> tuple[str, ...]:
                 "ls-files",
                 "-z",
                 "--",
+                ".specify/FEAT-*",
                 ".specify/feature",
                 ".specify/bugfix",
             ],

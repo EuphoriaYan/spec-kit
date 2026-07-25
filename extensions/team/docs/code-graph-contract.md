@@ -41,7 +41,7 @@ codegraph affected <changed-files>
 Write one reviewable summary under the active work root:
 
 ```text
-Feature: .specify/feature/<work_id>/codegraph/summary.md
+Feature: .specify/<feature_id>/codegraph/summary.md
 Bugfix:  .specify/bugfix/<bug_slug>/codegraph/summary.md
 ```
 

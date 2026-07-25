@@ -788,28 +788,51 @@ def register(app: typer.Typer) -> None:
                 return f"/speckit-{name}"
             return f"/speckit.{name}"
 
+        def _display_team_cmd(name: str) -> str:
+            if _is_dollar_skills_agent(selected_ai, _ai_skills_enabled):
+                return f"$speckit-team-{name}"
+            if kimi_skill_mode:
+                return f"/skill:speckit-team-{name}"
+            if (
+                _is_slash_skills_agent(selected_ai, _ai_skills_enabled)
+                or cline_skill_mode
+            ):
+                return f"/speckit-team-{name}"
+            return f"/speckit.team.{name}"
+
         steps_lines.append(
             f"{step_num}. Start using {usage_label} with your coding agent:"
         )
 
-        steps_lines.append(
-            f"   {step_num}.1 [cyan]{_display_cmd('constitution')}[/] - Establish project principles"
-        )
-        steps_lines.append(
-            f"   {step_num}.2 [cyan]{_display_cmd('specify')}[/] - Create baseline specification"
-        )
-        steps_lines.append(
-            f"   {step_num}.3 [cyan]{_display_cmd('plan')}[/] - Create implementation plan"
-        )
-        steps_lines.append(
-            f"   {step_num}.4 [cyan]{_display_cmd('tasks')}[/] - Generate actionable tasks"
-        )
-        steps_lines.append(
-            f"   {step_num}.5 [cyan]{_display_cmd('implement')}[/] - Execute implementation"
-        )
-        steps_lines.append(
-            f"   {step_num}.6 [cyan]{_display_cmd('converge')}[/] - Assess the codebase and append remaining work as tasks"
-        )
+        if skill_profile == "team":
+            steps_lines.append(
+                f"   {step_num}.1 [cyan]{_display_team_cmd('requirement')}[/] - Start a new-project or existing-project requirement"
+            )
+            steps_lines.append(
+                f"   {step_num}.2 [cyan]{_display_team_cmd('feature-split')}[/] - Split an accepted Requirement into repository Feature Records"
+            )
+            steps_lines.append(
+                f"   {step_num}.3 [cyan]{_display_team_cmd('assess')}[/] - Start a Bugfix from a symptom or review finding"
+            )
+        else:
+            steps_lines.append(
+                f"   {step_num}.1 [cyan]{_display_cmd('constitution')}[/] - Establish project principles"
+            )
+            steps_lines.append(
+                f"   {step_num}.2 [cyan]{_display_cmd('specify')}[/] - Create baseline specification"
+            )
+            steps_lines.append(
+                f"   {step_num}.3 [cyan]{_display_cmd('plan')}[/] - Create implementation plan"
+            )
+            steps_lines.append(
+                f"   {step_num}.4 [cyan]{_display_cmd('tasks')}[/] - Generate actionable tasks"
+            )
+            steps_lines.append(
+                f"   {step_num}.5 [cyan]{_display_cmd('implement')}[/] - Execute implementation"
+            )
+            steps_lines.append(
+                f"   {step_num}.6 [cyan]{_display_cmd('converge')}[/] - Assess the codebase and append remaining work as tasks"
+            )
 
         steps_panel = Panel(
             "\n".join(steps_lines),
@@ -820,21 +843,29 @@ def register(app: typer.Typer) -> None:
         console.print()
         console.print(steps_panel)
 
-        enhancement_intro = (
-            "Optional skills that you can use for your specs [bright_black](improve quality & confidence)[/bright_black]"
-            if native_skill_mode
-            else "Optional commands that you can use for your specs [bright_black](improve quality & confidence)[/bright_black]"
-        )
-        enhancement_lines = [
-            enhancement_intro,
-            "",
-            f"○ [cyan]{_display_cmd('clarify')}[/] [bright_black](optional)[/bright_black] - Ask structured questions to de-risk ambiguous areas before planning (run before [cyan]{_display_cmd('plan')}[/] if used)",
-            f"○ [cyan]{_display_cmd('analyze')}[/] [bright_black](optional)[/bright_black] - Cross-artifact consistency & alignment report (after [cyan]{_display_cmd('tasks')}[/], before [cyan]{_display_cmd('implement')}[/])",
-            f"○ [cyan]{_display_cmd('checklist')}[/] [bright_black](optional)[/bright_black] - Generate quality checklists to validate requirements completeness, clarity, and consistency (after [cyan]{_display_cmd('plan')}[/])",
-        ]
-        enhancements_title = (
-            "Enhancement Skills" if native_skill_mode else "Enhancement Commands"
-        )
+        if skill_profile == "team":
+            enhancement_lines = [
+                "Optional Team maintenance entry",
+                "",
+                f"○ [cyan]{_display_team_cmd('memory-consolidate')}[/] [bright_black](optional)[/bright_black] - Preserve reviewed lessons or promote approved project Knowledge after delivery",
+            ]
+            enhancements_title = "Team Maintenance"
+        else:
+            enhancement_intro = (
+                "Optional skills that you can use for your specs [bright_black](improve quality & confidence)[/bright_black]"
+                if native_skill_mode
+                else "Optional commands that you can use for your specs [bright_black](improve quality & confidence)[/bright_black]"
+            )
+            enhancement_lines = [
+                enhancement_intro,
+                "",
+                f"○ [cyan]{_display_cmd('clarify')}[/] [bright_black](optional)[/bright_black] - Ask structured questions to de-risk ambiguous areas before planning (run before [cyan]{_display_cmd('plan')}[/] if used)",
+                f"○ [cyan]{_display_cmd('analyze')}[/] [bright_black](optional)[/bright_black] - Cross-artifact consistency & alignment report (after [cyan]{_display_cmd('tasks')}[/], before [cyan]{_display_cmd('implement')}[/])",
+                f"○ [cyan]{_display_cmd('checklist')}[/] [bright_black](optional)[/bright_black] - Generate quality checklists to validate requirements completeness, clarity, and consistency (after [cyan]{_display_cmd('plan')}[/])",
+            ]
+            enhancements_title = (
+                "Enhancement Skills" if native_skill_mode else "Enhancement Commands"
+            )
         enhancements_panel = Panel(
             "\n".join(enhancement_lines),
             title=enhancements_title,

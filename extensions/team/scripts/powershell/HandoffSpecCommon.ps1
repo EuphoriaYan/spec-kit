@@ -16,7 +16,7 @@ function Find-HandoffSpecProjectRoot {
 function Get-HandoffOverrideFileName {
     param([string]$RepoRoot)
     $name = 'spec.override.md'
-    $config = Join-Path $RepoRoot '.specify/extensions/team/ai-team-config.yml'
+    $config = Join-Path $RepoRoot '.specify/team/ai-team-config.yml'
     if (Test-Path $config) {
         $line = Get-Content -LiteralPath $config | Where-Object { $_ -match 'private_handoff_override_file:' } | Select-Object -First 1
         if ($line -match 'private_handoff_override_file:\s*(\S+)') {
@@ -61,12 +61,20 @@ function Get-HandoffRequirementUrl {
 
     $workId = $null
     $category = $null
-    if ($ArgsText -match 'work_id=([^\s`"'>]+)') { $workId = $Matches[1] }
+    if ($ArgsText -match 'feature_id=([^\s`"'>]+)') {
+        $workId = $Matches[1]
+        $category = 'feature'
+    } elseif ($ArgsText -match 'work_id=([^\s`"'>]+)') { $workId = $Matches[1] }
     if ($ArgsText -match 'work_type=([^\s`"'>]+)') { $category = $Matches[1] }
     if ($category -eq 'bug') { $category = 'bugfix' }
     if ($category -in @('new-project', 'template')) { $category = 'feature' }
     if ($workId -and $category -in @('feature', 'bugfix')) {
-        $ctx = Join-Path $RepoRoot ".specify/$category/$workId/work-context.yml"
+        $direct = Join-Path $RepoRoot ".specify/$workId"
+        $ctx = if ($category -eq 'feature' -and (Test-Path $direct -PathType Container)) {
+            Join-Path $direct 'work-context.yml'
+        } else {
+            Join-Path $RepoRoot ".specify/$category/$workId/work-context.yml"
+        }
         if (Test-Path $ctx) {
             $url = Get-HandoffUrlFromText -Text (Get-Content -LiteralPath $ctx -Raw)
             if ($url) { return $url }
@@ -77,14 +85,27 @@ function Get-HandoffRequirementUrl {
 
 function Resolve-TeamWorkDir {
     param([string]$RepoRoot, [string]$ArgsText)
-    if ($ArgsText -notmatch 'work_id=([^\s`"'>]+)') { return $null }
-    $workId = $Matches[1]
-    if ($ArgsText -notmatch 'work_type=([^\s`"'>]+)') { return $null }
-    $category = $Matches[1]
+    if ($ArgsText -match 'feature_id=([^\s`"'>]+)') {
+        $workId = $Matches[1]
+        $category = 'feature'
+    } else {
+        if ($ArgsText -notmatch 'work_id=([^\s`"'>]+)') { return $null }
+        $workId = $Matches[1]
+        if ($ArgsText -notmatch 'work_type=([^\s`"'>]+)') { return $null }
+        $category = $Matches[1]
+    }
     if ($category -eq 'bug') { $category = 'bugfix' }
     if ($category -in @('new-project', 'template')) { $category = 'feature' }
     if ($category -notin @('feature', 'bugfix')) { return $null }
     if ($workId -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$') { return $null }
+    if ($category -eq 'feature') {
+        $direct = Join-Path $RepoRoot ".specify/$workId"
+        $legacy = Join-Path $RepoRoot ".specify/feature/$workId"
+        if ((Test-Path $direct -PathType Container) -or -not (Test-Path $legacy -PathType Container)) {
+            return $direct
+        }
+        return $legacy
+    }
     return Join-Path $RepoRoot ".specify/$category/$workId"
 }
 

@@ -1,13 +1,14 @@
 # Team Work Item Layout
 
-Plan-and-Task creates a Feature work directory after a primary Issue is visible
-at `status/accept` or `status/working`. Assess creates a separate Bugfix work
-directory; Bugfix does not use planning artifacts.
+Feature Split first asks the user where committed Feature Records belong and
+locks that repository-relative location. An accepted Feature then enters SDD
+in a local direct work root. Existing legacy roots remain readable. Assess
+creates a separate Bugfix work directory; Bugfix does not use planning
+artifacts.
 
 ```text
 .specify/
-|-- feature/
-|   `-- <work_id>/
+|-- <feature_id>/
 |       |-- spec.md
 |       |-- plan-and-task.md
 |       |-- plan-and-task-check.md
@@ -16,6 +17,8 @@ directory; Bugfix does not use planning artifacts.
 |       |-- permission-envelope.yml
 |       |-- codegraph/
 |       `-- evidence/
+|-- feature/                 # legacy compatibility only
+|   `-- <work_id>/
 `-- bugfix/
     `-- <bug_slug>/
         |-- assessment.md
@@ -33,9 +36,10 @@ review evidence. Bugfix does not use `spec.md`, `plan-and-task.md`, or
 
 ## Identity
 
-- Feature in a coding repository: `<work_id>` is its numeric Issue ID;
-- Feature in an enhancement repository: `<work_id>` is
-  `enhancement-<issue-id>`;
+- Feature Record workflow: `<feature_id>` is the stable repository Feature ID
+  and the parent Requirement Issue remains the remote demand authority;
+- legacy Feature Issue workflow: `<work_id>` retains its previous Issue-based
+  identity;
 - Bugfix: `<bug_slug>` is the stable local artifact key created by Assess
   before or after Issue publication;
 - when a Bugfix Issue is linked, its absolute URL is the repository-tracking
@@ -65,7 +69,8 @@ used to copy private demand into committed files.
 
 ## Persistence Boundary
 
-Everything under `.specify/feature/<work_id>/` and
+Everything under `.specify/<feature_id>/`, legacy
+`.specify/feature/<work_id>/`, and
 `.specify/bugfix/<bug_slug>/` is local runtime context and is ignored by Git.
 It may be deleted after its useful resume window. Durable collaboration lives
 in the Issue, PR, source, tests, and explicitly promoted HLD or long-term

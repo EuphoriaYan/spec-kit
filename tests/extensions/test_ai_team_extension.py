@@ -52,16 +52,15 @@ def _staged_card(tmp_path: Path, name: str, content: str) -> Path:
     return source
 
 
-def test_feature_and_bugfix_share_one_directory_contract(tmp_path: Path):
+def test_feature_and_bugfix_resolve_configured_directory_contract(tmp_path: Path):
     module = _load_script(WORK_ITEM_PATHS, "ai_team_work_item_paths")
 
     feature = module.resolve_work_root(tmp_path, "feature", "123")
     bugfix = module.resolve_work_root(tmp_path, "bugfix", "456")
 
-    assert feature.relative_to(tmp_path).as_posix() == ".specify/feature/123"
+    assert feature.relative_to(tmp_path).as_posix() == ".specify/123"
     assert bugfix.relative_to(tmp_path).as_posix() == ".specify/bugfix/456"
-    assert len(feature.relative_to(tmp_path).parts) == len(bugfix.relative_to(tmp_path).parts)
-    assert module.resolve_work_root(tmp_path, "new-project", "REQ-7") == tmp_path / ".specify/feature/REQ-7"
+    assert module.resolve_work_root(tmp_path, "new-project", "REQ-7") == tmp_path / ".specify/REQ-7"
     with pytest.raises(ValueError, match="safe stable identifier"):
         module.resolve_work_root(tmp_path, "feature", "../escape")
 
@@ -93,6 +92,8 @@ def test_ai_team_extension_command_files_exist():
 
     command_names = {command["name"] for command in manifest["provides"]["commands"]}
     assert command_names == {
+        "speckit.team.requirement",
+        "speckit.team.feature-split",
         "speckit.team.specify",
         "speckit.team.plan-and-task",
         "speckit.team.assess",
@@ -126,8 +127,12 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["work_artifacts"]["root"] == ".specify"
     assert config["work_artifacts"]["categories"] == ["feature", "bugfix"]
     assert config["work_artifacts"]["feature_path_template"] == (
-        ".specify/feature/{work_id}"
+        ".specify/{work_id}"
     )
+    assert config["feature_tracking"]["root"] == ""
+    assert config["feature_tracking"]["recommended_root"] == "docs/features"
+    assert config["feature_tracking"]["location"]["status"] == "pending-confirmation"
+    assert config["feature_tracking"]["location"]["locked"] is False
     assert config["work_artifacts"]["bugfix_path_template"] == (
         ".specify/bugfix/{bug_slug}"
     )
@@ -186,6 +191,7 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["permissions"]["allow_ready_without_human_approval"] is True
     assert config["work_artifacts"]["git_policy"] == "local-only"
     assert config["work_artifacts"]["ignored_roots"] == [
+        ".specify/FEAT-*/",
         ".specify/feature/",
         ".specify/bugfix/",
         ".codegraph/",
@@ -613,7 +619,9 @@ def test_ai_team_reuses_native_sdd_artifacts_without_change_manifest():
 def test_ai_team_readme_matches_current_role_contracts():
     readme = (EXTENSION_ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert "六个面向交付阶段的 Skills" in readme
+    assert "speckit.team.requirement" in readme
+    assert "speckit.team.feature-split" in readme
+    assert "Feature Record" in readme
     assert "高级扩展入口" in readme
     assert "speckit.team.memory-consolidate" in readme
     assert "不参与 Feature 或 Bugfix 自动路由" in readme

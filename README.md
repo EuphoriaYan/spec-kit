@@ -24,14 +24,16 @@ AI Coding 降低了实现功能的成本，也带来了新的团队风险：模�
 - 只有需求接受、HLD/公共接口、敏感依赖与安全决策、超范围变更和最终合入长期保留人工责任；
 - 本地过程文件默认不进入 Git，Issue、PR、源码、测试和经批准的架构文档承担跨人协作。
 
-## 六个 Team Skills
+## Team 生命周期 Skills
 
 用户可以直接在聊天框描述当前要做的事，不必记住 Skill 名称。
 
 | Skill | 什么时候使用 | 主要输出 |
 |---|---|---|
-| `speckit.team.specify` | 有一个新 Feature 或新项目想法 | 完整 User Stories，以及可发布或可复制的 Feature Issue |
-| `speckit.team.plan-and-task` | Feature Issue 已被接受 | CodeGraph 支撑的 HLD、模块 Tasks、最小自测和确定性检查 |
+| `speckit.team.requirement` | 有项目级或已有项目的新需求 | 澄清后的单一 Requirement Issue |
+| `speckit.team.feature-split` | Requirement 已接受 | 经评审的 Feature Catalog 和仓库 Feature Records |
+| `speckit.team.specify` | 一个 Feature Record 已接受 | 单 Feature User Stories 和本地 Spec |
+| `speckit.team.plan-and-task` | 单 Feature Spec 已完成 | CodeGraph 支撑的 L2 设计、模块 Tasks、最小自测和确定性检查 |
 | `speckit.team.assess` | 发现缺陷、异常现象或 Review 问题 | 根因假设、影响范围、修复边界和测试策略 |
 | `speckit.team.fix` | Assessment 已 ready 或风险已批准 | 最小修复、回归测试、进度说明并自动回到 Review |
 | `speckit.team.implement` | Feature Tasks 已通过检查 | 代码、自测证据和自动质量循环后的 PR 准备结果 |
@@ -46,8 +48,10 @@ AI Coding 降低了实现功能的成本，也带来了新的团队风险：模�
 | `speckit.team.memory-consolidate` | 交付后需要沉淀经验或复用已批准的决定 | 建议性 Memory，或经人工批准的项目 Knowledge |
 
 ```text
-Feature: 一句话需求 -> Specify -> Issue 接受 -> Plan-and-Task
-         -> Implement -> Review/Assess/Fix -> PR -> 人工决定合入
+Feature: 项目/已有项目需求 -> Requirement Issue 接受 -> Feature Split
+         -> 首次确认并锁定 Feature Record 目录 -> 单 Feature 接受
+         -> Specify -> Plan-and-Task -> Implement
+         -> Review/Assess/Fix -> PR -> 人工决定合入
 
 Bugfix: 现象或问题 -> Assess -> Fix -> Review/Assess/Fix
         -> 可选 PR -> 人工决定合入
@@ -71,14 +75,14 @@ specify init . --integration codex
 ```
 
 可选 integration：`codex`、`claude`、`cursor-agent`、`trae`。默认
-`team` profile 安装六个主 Team Skills、可选高级扩展入口及其必要资源，并把主流程的
+`team` profile 安装 Team 生命周期 Skills、可选高级扩展入口及其必要资源，并把主流程的
 自然语言路由写入当前工具的规则入口。需要原生 Spec Kit 全部能力时才使用：
 
 ```bash
 specify init . --integration codex --skill-profile full
 ```
 
-> 当前六技能版本固定为 `v0.12.5+teamwork.3`。请勿用变化中的 `main`
+> 当前稳定版本固定为 `v0.12.5+teamwork.3`。请勿用变化中的 `main`
 > 替代团队统一安装版本。
 
 ## 从聊天开始
@@ -95,13 +99,13 @@ Bugfix 可以直接说：
 登录会话过期后接口返回 500。请先分析根因和影响范围，再决定如何修复。
 ```
 
-中断后可以用 Issue URL、`work_id`、`bug_slug` 或 PR URL 继续当前阶段。详细示例见
+中断后可以用 Requirement Issue URL、`feature_id`、旧 `work_id`、`bug_slug` 或 PR URL 继续当前阶段。详细示例见
 [快速上手](docs/quickstart.md)。
 
 ## 文档
 
 - [安装与环境诊断](docs/installation.md)
-- [六技能快速上手与用户旅程](docs/quickstart.md)
+- [Team 生命周期快速上手与用户旅程](docs/quickstart.md)
 - [版本升级与项目刷新](docs/upgrade.md)
 - [本仓开发与测试](docs/local-development.md)
 - [Team 扩展维护说明](extensions/team/README.md)

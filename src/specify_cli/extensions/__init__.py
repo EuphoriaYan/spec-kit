@@ -1125,7 +1125,16 @@ class ExtensionManager:
             frontmatter, body = registrar.parse_frontmatter(content)
             frontmatter = registrar._adjust_script_paths(frontmatter)
             body = registrar.resolve_skill_placeholders(
-                selected_ai, frontmatter, body, self.project_root
+                selected_ai,
+                frontmatter,
+                body,
+                self.project_root,
+                skill_resource_targets=[
+                    str(resource["target"])
+                    for resource in cmd_info.get("resources", [])
+                    if isinstance(resource, dict)
+                    and isinstance(resource.get("target"), str)
+                ],
             )
 
             original_desc = frontmatter.get("description", "")

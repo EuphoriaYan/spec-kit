@@ -21,6 +21,8 @@ def test_team_manifest_is_valid_and_declares_execution_commands():
     assert manifest.requires_speckit_version == ">=0.12.4"
     commands = {command["name"]: command["file"] for command in manifest.commands}
     assert commands == {
+        "speckit.team.requirement": "commands/speckit.team.requirement.md",
+        "speckit.team.feature-split": "commands/speckit.team.feature-split.md",
         "speckit.team.specify": "commands/speckit.team.specify.md",
         "speckit.team.plan-and-task": "commands/speckit.team.plan-and-task.md",
         "speckit.team.assess": "commands/speckit.team.assess.md",
@@ -41,6 +43,35 @@ def test_team_manifest_is_valid_and_declares_execution_commands():
     ]
     for command_file in commands.values():
         assert (EXTENSION_ROOT / command_file).is_file()
+
+
+def test_requirement_and_feature_split_define_both_lifecycle_entries():
+    requirement = _normalized_markdown(
+        EXTENSION_ROOT / "commands" / "speckit.team.requirement.md"
+    )
+    split = _normalized_markdown(
+        EXTENSION_ROOT / "commands" / "speckit.team.feature-split.md"
+    )
+
+    assert "mode=new-project" in requirement
+    assert "mode=existing-project" in requirement
+    assert requirement.index("## New-Project L0 Stage") < requirement.index(
+        "## Requirement Issue"
+    )
+    assert "do not require L0 or L1 documents" in requirement
+    assert "never create one remote Issue per Feature" in requirement
+
+    assert "Confirm Feature Record Location Once" in split
+    assert split.index("Confirm Feature Record Location Once") < split.index(
+        "Feature Classification And Split"
+    )
+    assert "recommended `docs/features/`" in split
+    assert "configure_feature_tracking.py" in split
+    assert "Do not call this helper before the user answers" in split
+    assert "L0/L1 documents are optional" in split
+    assert "Produce L1" in split
+    assert "separate `accepted`, `deferred`, or `rejected` decision" in split
+    assert "not one remote" in split
 
 
 def test_assess_contract_uses_bugfix_root_and_merges_analysis():
@@ -149,6 +180,10 @@ def test_feature_and_bugfix_delivery_chains_are_distinct_with_review_bridge():
     specify = _normalized_markdown(commands / "speckit.team.specify.md")
     plan = _normalized_markdown(commands / "speckit.team.plan-and-task.md")
     implement = _normalized_markdown(commands / "speckit.team.implement.md")
+    assert "exact resolved repository-relative Feature Record path" in plan
+    assert ".specify/<feature_id>/evidence/implementation-report.md" in plan
+    assert "single resolved Feature Record" in implement
+    assert "Do not modify the Catalog, another Feature Record" in implement
     assess = _normalized_markdown(commands / "speckit.team.assess.md")
     fix = _normalized_markdown(commands / "speckit.team.fix.md")
     review = _normalized_markdown(commands / "speckit.team.review.md")
@@ -165,10 +200,10 @@ def test_feature_and_bugfix_delivery_chains_are_distinct_with_review_bridge():
     assert "Automated Quality Loop" in implement
     assert "Assess -> Fix -> Re-review" in review
 
-    assert "never both" in review
-    assert ".specify/feature/{work_id}" in review
-    assert ".specify/bugfix/{bug-slug}" in review
-    assert "For Feature" in review
+    assert "never more than one" in review
+    assert "feature_records.py" in review
+    assert "`bug_slug=<slug>`" in review
+    assert "repository-tracked Feature" in review
     assert "For Bugfix" in review
 
 
@@ -177,7 +212,8 @@ def test_implement_contract_uses_unified_root_and_automatic_pr_transport():
         encoding="utf-8"
     )
 
-    assert ".specify/feature/{work_id}" in command
+    assert ".specify/<feature_id>/" in command
+    assert "`feature_id=<FEAT-NNN>`" in command
     assert "`work_id=<id>`" in command
     assert "accepted Plan/Task handoff" in command
     assert "feature_slug" not in command
@@ -214,7 +250,6 @@ def test_commands_do_not_describe_unrelated_spec_kit_storage():
     forbidden = (
         "repository-root `specs/`",
         ".specify/ai-team",
-        ".specify/team",
         ".specify/extensions/team",
     )
     for path in (EXTENSION_ROOT / "commands").glob("speckit.team.*.md"):

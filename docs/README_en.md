@@ -9,7 +9,7 @@ Human-facing AI Team docs use Chinese primary files and `_en` English backups:
 
 - repository and documentation home;
 - installation;
-- six-skill quick start and user journeys;
+- Team lifecycle quick start and user journeys;
 - upgrade;
 - local development;
 - Team extension maintainer guide.
@@ -27,4 +27,3 @@ AI runtime contracts remain English with stable paths and no `_en` duplicate:
 
 Upstream `concepts/`, `reference/`, `guides/`, `community/`, and `install/`
 content remains advanced reference rather than the AI Team onboarding path.
-
