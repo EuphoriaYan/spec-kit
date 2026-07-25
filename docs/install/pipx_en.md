@@ -5,7 +5,7 @@
 uv is the default. In a pipx-standardized environment:
 
 ```bash
-pipx install --force git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.3
+pipx install --force git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.4
 specify --version
 ```
 
