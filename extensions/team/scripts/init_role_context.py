@@ -23,6 +23,7 @@ LOCAL_WORK_PATTERNS = (
     "/.specify/FEAT-*/",
     "/.specify/feature/",
     "/.specify/bugfix/",
+    "/.specify/team/tmp/",
 )
 AGENT_FILES = {
     "codex": "AGENTS.md",

@@ -4,6 +4,12 @@ Run this bootstrap at the start of every Team role, after resume or context
 compression, and before producing a phase artifact or check result. Repository
 facts and approved artifacts override remembered chat.
 
+Keep the loaded context proportional to the active role. Prefer the small JSON
+output from installed resolvers and validators over reading the complete
+`.specify/team/ai-team-config.yml`; load a specific configuration subsection
+only when no installed helper exposes the required value. Do not preload
+another role's references.
+
 ## Level 0: Always Load
 
 1. Confirm repository root, repository role, active AI integration, and branch.
@@ -15,7 +21,9 @@ facts and approved artifacts override remembered chat.
 4. Stop when repository boundary, Issue identity, governance decision, or
    public-contract authority is missing or contradictory.
 
-Requirement creates one remote Requirement Issue. Feature Split asks once for
+Requirement prefers one verified remote Requirement Issue and uses a local
+Requirement Record only after publication failure and explicit human choice.
+Feature Split asks once for
 the repository Feature Record location (recommending `docs/features/`), locks
 the answer in config, and creates reviewed Feature Records rather than remote
 Issues per Feature. Specify and Plan-and-Task prefer an accepted Feature
@@ -105,6 +113,16 @@ Review, or in-scope fixes.
 Load release, security, dependency, operations, memory, or adjacent-module
 material only when the Issue or impact evidence touches that concern. Record
 why the context radius expanded.
+
+## Cross-Platform Command Hygiene
+
+Repository text is UTF-8. In Windows PowerShell use explicit UTF-8 reads such
+as `Get-Content -Encoding UTF8`; do not interpret console mojibake as file
+corruption. For Python verification set `PYTHONUTF8=1` and
+`PYTHONDONTWRITEBYTECODE=1`, run pytest with `-p no:cacheprovider`, and put
+`--basetemp` below the active ignored work root's `evidence/.pytest-tmp`.
+These defaults keep Review and verification from creating repository cache
+artifacts.
 
 For Plan-and-Task, Assess, Fix, Implement, and Review, read
 `references/memory-runtime.md` and run its task-scoped retrieval after the

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,10 +14,11 @@ from typing import Any
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from check_permission_envelope import validate_envelope
 from work_item_paths import normalize_category, resolve_work_root
 
 
-VALIDATOR = "ai-team-plan-and-task-check/v5"
+VALIDATOR = "ai-team-plan-and-task-check/v6"
 SPEC_SCHEMA = "ai-team-feature-spec/v1"
 PLAN_SCHEMA = "ai-team-plan-and-task/v5"
 ACCEPTED_STATUSES = {"accept", "working"}
@@ -161,7 +163,58 @@ def _named_decider(value: object) -> bool:
     }
 
 
-def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str]:
+def _git_changed_paths(
+    project_root: Path, source_revision: str
+) -> tuple[list[str], str | None]:
+    if not source_revision:
+        return [], "implementation scope requires plan source_revision"
+    commands = (
+        ["git", "diff", "--name-only", "--no-renames", source_revision, "--"],
+        ["git", "ls-files", "--others", "--exclude-standard"],
+    )
+    paths: set[str] = set()
+    for command in commands:
+        completed = subprocess.run(
+            command,
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        if completed.returncode != 0:
+            detail = completed.stderr.strip() or completed.stdout.strip()
+            return [], f"{' '.join(command[:2])} failed: {detail}"
+        paths.update(
+            line.strip().replace("\\", "/")
+            for line in completed.stdout.splitlines()
+            if line.strip()
+        )
+    return sorted(paths), None
+
+
+def _path_is_declared(project_root: Path, changed: str, declared: str) -> bool:
+    changed_path = changed.strip().replace("\\", "/").strip("/")
+    declared_path = declared.strip().replace("\\", "/").strip("/")
+    if not changed_path or not declared_path:
+        return False
+    if changed_path == declared_path:
+        return True
+    candidate = project_root / declared_path
+    return (
+        (declared.endswith(("/", "\\")) or candidate.is_dir())
+        and changed_path.startswith(declared_path + "/")
+    )
+
+
+def evaluate(
+    project_root: Path,
+    work_type: str,
+    work_id: str,
+    *,
+    implementation_scope: bool = False,
+) -> tuple[str, str]:
     category = normalize_category(work_type)
     if category != "feature":
         raise ValueError(
@@ -188,6 +241,7 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
 
     spec_meta: dict[str, Any] = {}
     plan_meta: dict[str, Any] = {}
+    declared_paths: list[str] = []
     spec_body = ""
     plan_body = ""
     parse_errors: list[str] = []
@@ -776,6 +830,58 @@ def evaluate(project_root: Path, work_type: str, work_id: str) -> tuple[str, str
             else "compatibility and rollback section is missing or contains placeholders",
         )
 
+    if implementation_scope:
+        source_revision = str(plan_meta.get("source_revision", "")).strip()
+        changed_paths, diff_error = _git_changed_paths(project_root, source_revision)
+        undeclared = [
+            path
+            for path in changed_paths
+            if not any(
+                _path_is_declared(project_root, path, declared)
+                for declared in declared_paths
+            )
+        ]
+        permission_errors = (
+            validate_envelope(
+                work_root / "permission-envelope.yml",
+                work_id=work_id,
+                mode="implementation",
+                require_authorized=True,
+                required_write_paths=changed_paths,
+            )
+            if not diff_error
+            else []
+        )
+        scope_ok = (
+            bool(changed_paths)
+            and not diff_error
+            and not undeclared
+            and not permission_errors
+        )
+        if diff_error:
+            scope_detail = diff_error
+        elif not changed_paths:
+            scope_detail = "no implementation changes found from plan source_revision"
+        elif undeclared:
+            scope_detail = "changed paths outside declared scope: " + ", ".join(
+                undeclared
+            )
+        elif permission_errors:
+            scope_detail = "Permission Envelope rejects changed paths: " + "; ".join(
+                permission_errors
+            )
+        else:
+            scope_detail = (
+                f"{len(changed_paths)} changed path(s) fit plan declared_paths "
+                "and the implementation Permission Envelope"
+            )
+        record(
+            "IMPLEMENTATION_DIFF_SCOPE",
+            scope_ok,
+            scope_detail,
+            blocked=True,
+        )
+
     result = (
         "blocked"
         if any(item.result == "BLOCK" for item in checks)
@@ -818,11 +924,25 @@ def main() -> int:
         action="store_true",
         help="fail when the generated check file is stale",
     )
+    parser.add_argument(
+        "--implementation-scope",
+        action="store_true",
+        help=(
+            "compare tracked, staged, unstaged, and untracked implementation "
+            "paths with plan declared_paths and the implementation Permission "
+            "Envelope from source_revision"
+        ),
+    )
     args = parser.parse_args()
 
     try:
         root = args.project_root.resolve()
-        result, rendered = evaluate(root, args.work_type, args.work_id)
+        result, rendered = evaluate(
+            root,
+            args.work_type,
+            args.work_id,
+            implementation_scope=args.implementation_scope,
+        )
         output = (
             resolve_work_root(root, args.work_type, args.work_id)
             / "plan-and-task-check.md"

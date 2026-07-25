@@ -45,6 +45,11 @@ def _record(
         "delivery": {
             "phase": phase,
             "pull_request": "",
+            "review_target": {
+                "type": "",
+                "url": "",
+                "revision": "",
+            },
             "merged_commit": "",
         },
         "architecture_impact": {
@@ -118,6 +123,16 @@ def _write_markdown_record(root: Path, data: dict):
     )
     _write_catalog(
         root, path.relative_to(root).as_posix(), feature_id=data["feature_id"]
+    )
+    return path
+
+
+def _write_requirement_record(root: Path, data: dict) -> Path:
+    path = root / "docs/requirements" / f"{data['requirement_id']}.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        f"---\n{yaml.safe_dump(data, sort_keys=False)}---\n\n# Requirement\n",
+        encoding="utf-8",
     )
     return path
 
@@ -204,6 +219,96 @@ def test_missing_l0_l1_does_not_block_feature_record(tmp_path: Path):
     assert errors == []
 
 
+def test_local_requirement_fallback_requires_named_acceptance(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_requirement_record")
+    _write_tracking_config(tmp_path)
+    record = {
+        "schema": "speckit-requirement-record/v1",
+        "requirement_id": "REQ-001",
+        "title": "Offline collaboration fallback",
+        "mode": "existing-project",
+        "source": {
+            "type": "local-record",
+            "issue_url": "",
+            "publication_attempted": True,
+            "fallback_reason": "Git host was unavailable.",
+            "fallback_selected_by": "repository-owner",
+            "fallback_selected_at": "2026-07-25T00:00:00Z",
+        },
+        "acceptance": {
+            "status": "proposed",
+            "decided_by": "",
+            "decided_at": "",
+        },
+        "architecture": {
+            "l0_status": "not-present",
+            "l0_path": "",
+            "l1_status": "not-present",
+            "l1_path": "",
+        },
+    }
+    path = _write_requirement_record(tmp_path, record)
+
+    _, _, errors = module.validate_local_requirement_record(
+        tmp_path,
+        path.relative_to(tmp_path).as_posix(),
+        require_accepted=True,
+    )
+    assert "local Requirement must be accepted before Feature Split" in errors
+
+    record["acceptance"] = {
+        "status": "accepted",
+        "decided_by": "repository-owner",
+        "decided_at": "2026-07-25T00:00:00Z",
+    }
+    _write_requirement_record(tmp_path, record)
+    _, _, errors = module.validate_local_requirement_record(
+        tmp_path,
+        "docs/requirements/REQ-001.md",
+        require_accepted=True,
+    )
+    assert errors == []
+
+
+def test_new_project_local_requirement_requires_accepted_l0(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_requirement_record_l0")
+    _write_tracking_config(tmp_path)
+    path = _write_requirement_record(
+        tmp_path,
+        {
+            "schema": "speckit-requirement-record/v1",
+            "requirement_id": "REQ-002",
+            "title": "New project",
+            "mode": "new-project",
+            "source": {
+                "type": "local-record",
+                "issue_url": "",
+                "publication_attempted": True,
+                "fallback_reason": "Git host was unavailable.",
+                "fallback_selected_by": "repository-owner",
+                "fallback_selected_at": "2026-07-25T00:00:00Z",
+            },
+            "acceptance": {
+                "status": "accepted",
+                "decided_by": "repository-owner",
+                "decided_at": "2026-07-25T00:00:00Z",
+            },
+            "architecture": {
+                "l0_status": "not-present",
+                "l0_path": "",
+                "l1_status": "not-present",
+                "l1_path": "",
+            },
+        },
+    )
+
+    _, _, errors = module.validate_local_requirement_record(
+        tmp_path, path.relative_to(tmp_path).as_posix(), require_accepted=True
+    )
+
+    assert "new-project local Requirement requires accepted L0" in errors
+
+
 def test_unaccepted_feature_is_blocked_from_sdd(tmp_path: Path):
     module = _load_module("feature_records.py", "team_feature_records_acceptance")
     _write_tracking_config(tmp_path)
@@ -224,7 +329,54 @@ def test_ready_to_merge_requires_complete_dod(tmp_path: Path):
     _, _, errors = module.validate_feature_record(tmp_path, "FEAT-001")
 
     assert "Definition of Done is incomplete: code_complete" in errors
-    assert "ready-to-merge Feature is missing delivery.pull_request" in errors
+    assert (
+        "ready-to-merge Feature without an online pull request requires "
+        "delivery.review_target.type local-diff"
+    ) in errors
+
+
+def test_ready_to_merge_prefers_url_but_accepts_immutable_local_diff(
+    tmp_path: Path,
+):
+    module = _load_module("feature_records.py", "team_feature_records_review_target")
+    _write_tracking_config(tmp_path)
+    data = _record(phase="ready-to-merge")
+    data["definition_of_done"] = {
+        "code_complete": True,
+        "tests_complete": True,
+        "evidence_complete": True,
+        "architecture_synchronized": True,
+        "review_passed": True,
+    }
+    data["delivery"]["review_target"] = {
+        "type": "local-diff",
+        "url": "",
+        "revision": "sha256:" + ("a" * 64),
+    }
+    _write_markdown_record(tmp_path, data)
+
+    _, _, errors = module.validate_feature_record(tmp_path, "FEAT-001")
+
+    assert errors == []
+
+
+def test_ready_to_merge_rejects_local_sentinel_as_pull_request(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_records_fake_pr")
+    _write_tracking_config(tmp_path)
+    data = _record(phase="ready-to-merge")
+    data["definition_of_done"] = {
+        "code_complete": True,
+        "tests_complete": True,
+        "evidence_complete": True,
+        "architecture_synchronized": True,
+        "review_passed": True,
+    }
+    data["delivery"]["pull_request"] = "local=true"
+    _write_markdown_record(tmp_path, data)
+
+    _, _, errors = module.validate_feature_record(tmp_path, "FEAT-001")
+
+    assert "delivery.pull_request must be a verified HTTP(S) URL" in errors
 
 
 def test_implementation_requires_resolved_safe_architecture_impact(tmp_path: Path):
@@ -322,3 +474,8 @@ def test_confirmed_feature_location_is_persisted_and_locked(tmp_path: Path):
     assert unchanged["feature_tracking"]["location"]["decided_by"] == "repository-owner"
     with pytest.raises(ValueError, match="already locked"):
         module.configure(tmp_path, "docs/features", "repository-owner")
+
+    compact = module.snapshot(tmp_path)
+    assert compact["root"] == "product/features"
+    assert compact["location"]["locked"] is True
+    assert "issue_publishing" not in compact

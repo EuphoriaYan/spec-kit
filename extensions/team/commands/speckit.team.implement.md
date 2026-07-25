@@ -25,12 +25,12 @@ Accept:
 Reject an unsafe identifier containing path separators, `..`, or anything
 other than letters, numbers, dots, underscores, and hyphens.
 
-For `feature_id`, load `.specify/team/ai-team-config.yml`, require the Feature
-Record location to have been confirmed and locked, and run
+For `feature_id`, run
 `scripts/check_feature_record.py --feature-id <feature_id>
---require-accepted`. Resolve both the Feature Record and work root with the
-installed `feature_records.py`; do not guess either path. The recommended work
-root is `.specify/<feature_id>/`. Reuse an existing legacy
+--require-accepted` and consume its small JSON result. Resolve both the Feature
+Record and work root with the installed `feature_records.py`; do not guess
+either path or load the full Team config merely to find them. The recommended
+work root is `.specify/<feature_id>/`. Reuse an existing legacy
 `.specify/feature/<feature_id>/` root when the resolver selects it.
 
 For legacy `work_id`, use the installed `work_item_paths.py` resolver. Never
@@ -47,8 +47,9 @@ Do not modify the Catalog, another Feature Record, or workflow files.
 
 1. Resolve the repository root, Feature Record when applicable, and
    `FEATURE_ROOT` as absolute paths. In Feature Record mode require
-   `acceptance.status: accepted`; record the parent Requirement Issue as the
-   remote source of demand. Transition `delivery.phase` to `implementing`
+   `acceptance.status: accepted`; record the parent Requirement authority,
+   preferring its verified online Issue URL and preserving an explicitly
+   accepted local fallback path when necessary. Transition `delivery.phase` to `implementing`
    only from a legal prior phase, preserving decision history.
 2. Require regular files `spec.md` (or `spec.override.md`),
    `plan-and-task.md`, and `plan-and-task-check.md`. Prefer `spec.override.md`
@@ -167,10 +168,19 @@ and changed files.
 
 1. Inspect the repository diff and confirm it matches the selected Tasks, Plan
    scope, and permission envelope.
+   Run `scripts/check_plan_and_task.py --work-type feature --work-id <id>
+   --implementation-scope`. It derives tracked, staged, unstaged, and
+   non-ignored untracked paths from the Plan's `source_revision` and blocks
+   paths outside `declared_paths` or the implementation Permission Envelope.
 2. Run the most relevant targeted tests, then the build, lint, type, integration,
    or broader test commands required by the plan and repository guidance.
 3. Treat skipped checks as explicit residual risk. Do not report a skipped or
    failing required check as success.
+   On Windows PowerShell, read repository text with explicit UTF-8, for example
+   `Get-Content -Encoding UTF8`. For Python tests set `PYTHONUTF8=1` and
+   `PYTHONDONTWRITEBYTECODE=1`, disable the pytest cache provider, and place
+   `--basetemp` under `<FEATURE_ROOT>/evidence/.pytest-tmp` so verification
+   does not dirty the repository.
 4. Write `evidence/implementation-report.md` with scope, completed task IDs,
    changed files, commands and exit results, skipped checks, failures, and
    residual risks. Include an explicit architecture-synchronization result and

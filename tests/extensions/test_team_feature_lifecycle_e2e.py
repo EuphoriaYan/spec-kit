@@ -124,3 +124,58 @@ def test_first_confirmation_to_accepted_feature_sdd_entry(tmp_path: Path) -> Non
     )
     assert Path(payload["work_root"]).as_posix().endswith(".specify/FEAT-001")
 
+
+def test_explicit_local_requirement_fallback_can_enter_feature_split(
+    tmp_path: Path,
+) -> None:
+    config = tmp_path / ".specify" / "team" / "ai-team-config.yml"
+    config.parent.mkdir(parents=True)
+    shutil.copyfile(TEAM / "config-template.yml", config)
+    record_path = tmp_path / "docs/requirements/REQ-001.md"
+    record_path.parent.mkdir(parents=True)
+    record_path.write_text(
+        """---
+schema: speckit-requirement-record/v1
+requirement_id: REQ-001
+title: Offline fallback
+mode: existing-project
+source:
+  type: local-record
+  issue_url: ""
+  publication_attempted: true
+  fallback_reason: Git host was unavailable.
+  fallback_selected_by: repository-owner
+  fallback_selected_at: "2026-07-25T00:00:00Z"
+acceptance:
+  status: accepted
+  decided_by: repository-owner
+  decided_at: "2026-07-25T00:00:00Z"
+architecture:
+  l0_status: not-present
+  l0_path: ""
+  l1_status: not-present
+  l1_path: ""
+---
+
+# Requirement
+""",
+        encoding="utf-8",
+    )
+
+    checked = _run(
+        "check_feature_record.py",
+        tmp_path,
+        "--requirement-record",
+        "docs/requirements/REQ-001.md",
+        "--require-accepted",
+    )
+    shown = _run("configure_feature_tracking.py", tmp_path, "--show")
+
+    assert checked.returncode == 0, checked.stderr
+    payload = json.loads(checked.stdout)
+    assert payload["record_type"] == "requirement"
+    assert payload["requirement_id"] == "REQ-001"
+    assert shown.returncode == 0, shown.stderr
+    tracking = json.loads(shown.stdout)
+    assert tracking["recommended_root"] == "docs/features"
+    assert tracking["location"]["locked"] is False

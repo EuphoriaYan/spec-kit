@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -87,16 +88,55 @@ def configure(
     return config_path
 
 
+def snapshot(project_root: Path) -> dict[str, Any]:
+    config_path = project_root / ".specify" / "team" / "ai-team-config.yml"
+    if not config_path.is_file():
+        raise ValueError(f"AI Team config is missing: {config_path}")
+    loaded = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+    config = _mapping(loaded, "AI Team config")
+    tracking = _mapping(config.get("feature_tracking"), "feature_tracking")
+    location = _mapping(tracking.get("location"), "feature_tracking.location")
+    return {
+        "config": str(config_path),
+        "root": str(tracking.get("root", "")),
+        "recommended_root": str(
+            tracking.get("recommended_root", "docs/features")
+        ),
+        "catalog_file": str(
+            tracking.get("catalog_file", "feature-catalog.yml")
+        ),
+        "record_path_template": str(
+            tracking.get("record_path_template", "{feature_id}.md")
+        ),
+        "format": str(tracking.get("format", "markdown-frontmatter")),
+        "location": {
+            "status": str(location.get("status", "pending-confirmation")),
+            "locked": location.get("locked") is True,
+            "decided_by": str(location.get("decided_by", "")),
+            "decided_at": str(location.get("decided_at", "")),
+        },
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--project-root", type=Path, default=Path.cwd())
-    parser.add_argument("--root", required=True)
-    parser.add_argument("--decided-by", required=True)
+    parser.add_argument("--show", action="store_true")
+    parser.add_argument("--root")
+    parser.add_argument("--decided-by")
     parser.add_argument("--decided-at")
     args = parser.parse_args()
     try:
+        project_root = args.project_root.resolve()
+        if args.show:
+            if args.root or args.decided_by or args.decided_at:
+                raise ValueError("--show cannot be combined with write options")
+            print(json.dumps(snapshot(project_root), ensure_ascii=False, indent=2))
+            return 0
+        if not args.root or not args.decided_by:
+            raise ValueError("--root and --decided-by are required unless --show is used")
         path = configure(
-            args.project_root.resolve(),
+            project_root,
             args.root,
             args.decided_by,
             decided_at=args.decided_at,

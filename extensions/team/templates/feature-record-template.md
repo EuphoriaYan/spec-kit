@@ -11,6 +11,10 @@ delivery:
   phase: backlog
   branch: ""
   pull_request: ""
+  review_target:
+    type: ""
+    url: ""
+    revision: ""
   merged_commit: ""
 dependencies: []
 release:

@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: team
   name: "AI Team SDD Skills"
-  version: "0.8.0"
+  version: "0.9.0"
   description: "Project, Feature, Bugfix, review, Knowledge, and Memory skills for enterprise SDD delivery."
   author: AI Team Template
   repository: https://github.com/EuphoriaYan/spec-kit
@@ -30,6 +30,12 @@ provides:
           target: references/gitcode-host-contract.md
         - source: docs/feature-lifecycle.md
           target: references/feature-lifecycle.md
+        - source: templates/requirement-record-template.md
+          target: references/requirement-record-template.md
+        - source: scripts/feature_records.py
+          target: scripts/feature_records.py
+        - source: scripts/check_feature_record.py
+          target: scripts/check_feature_record.py
     - name: speckit.team.feature-split
       file: commands/speckit.team.feature-split.md
       description: "Architecture/Product decomposition: review architecture context and create a validated repository Feature Catalog and Feature Records."
@@ -44,6 +50,8 @@ provides:
           target: references/feature-catalog-template.yml
         - source: templates/feature-record-template.md
           target: references/feature-record-template.md
+        - source: templates/requirement-record-template.md
+          target: references/requirement-record-template.md
         - source: scripts/feature_records.py
           target: scripts/feature_records.py
         - source: scripts/check_feature_record.py
@@ -148,6 +156,8 @@ provides:
           target: scripts/check_permission_envelope.py
         - source: scripts/check_evidence_steps.py
           target: scripts/check_evidence_steps.py
+        - source: scripts/check_plan_and_task.py
+          target: scripts/check_plan_and_task.py
         - source: scripts/feature_records.py
           target: scripts/feature_records.py
         - source: scripts/check_feature_record.py
@@ -172,6 +182,10 @@ provides:
           target: scripts/memory_adapter.py
         - source: scripts/check_evidence_steps.py
           target: scripts/check_evidence_steps.py
+        - source: scripts/check_plan_and_task.py
+          target: scripts/check_plan_and_task.py
+        - source: scripts/check_permission_envelope.py
+          target: scripts/check_permission_envelope.py
         - source: scripts/feature_records.py
           target: scripts/feature_records.py
         - source: scripts/check_feature_record.py

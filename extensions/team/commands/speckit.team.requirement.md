@@ -4,8 +4,10 @@ description: "Clarify a project or existing-project requirement, establish requi
 
 # Spec Kit Team Requirement
 
-Own the entry into repository-backed Feature delivery. Produce one durable
-Project/Requirement Issue; never create one remote Issue per Feature.
+Own the entry into repository-backed Feature delivery. Prefer one durable
+online Project/Requirement Issue for team collaboration and unambiguous
+governance; never create one remote Issue per Feature. A repository-local
+Requirement Record is a degraded fallback, not an equal default.
 
 ## Input
 
@@ -75,23 +77,46 @@ Use `type/feature` and `status/new-issue` until repositories configure
 dedicated project/requirement labels. Publishing never grants acceptance.
 Governance changes the Issue to `status/accept` outside this Skill.
 
-Use an authenticated repository integration or CLI. For GitCode, read
-`references/gitcode-host-contract.md` and perform its capability probe. Fall
-back to complete paste-ready Markdown when publication is unavailable.
+Use an authenticated repository integration or CLI first. For GitCode, read
+`references/gitcode-host-contract.md` and perform its capability probe. Verify
+the created Issue by reading back its stable URL before reporting success.
+
+When online publication is unavailable after the configured adapters were
+attempted, explain that an online URL is preferred because it improves team
+visibility, decision attribution, and resistance to stale or mistaken local
+state. Offer these choices:
+
+- retry or manually publish the complete paste-ready Issue Markdown;
+- explicitly continue with a repository-local Requirement Record;
+- pause.
+
+Do not silently select the local fallback. When the human chooses it, create a
+stable `REQ-NNN` record under the configured
+`issue_publishing.local_requirement_fallback.root` (default
+`docs/requirements/`) from
+`references/requirement-record-template.md`. Record `source.type:
+local-record`, the failed publication reason, mode, architecture references,
+the named human and UTC time that selected the fallback, and
+`acceptance.status: proposed`. The human may later record `accepted` or
+`working` with `decided_by` and `decided_at`. When publication becomes
+available, create and verify the online Issue, link it to the local history,
+and use the URL as the superseding authority. Never treat file creation as Requirement
+acceptance. Run `scripts/check_feature_record.py --requirement-record
+<repository-relative-path>` after creation.
 
 ## Output
 
 ```text
 Team Requirement Result:
 - mode: new-project / existing-project
-- Requirement Issue:
-- status: published-new-issue / output-only / revise / paused / blocked
+- Requirement authority: verified online Issue URL / local Requirement Record
+- status: published-new-issue / local-fallback / output-only / revise / paused / blocked
 - requirement scope:
 - L0: accepted / optional-existing / not-present / not-applicable
 - L0 reviewer:
 - optional L1 reference:
 - target repository:
-- next requirement gate: human status/accept
+- next requirement gate: human status/accept online, or accepted/working with named decision in the local fallback
 - next Skill after acceptance: speckit.team.feature-split
 ```
 

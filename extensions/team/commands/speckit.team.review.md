@@ -15,7 +15,10 @@ approves or merges a pull request.
 $ARGUMENTS
 ```
 
-Accept a PR URL, `pr=<number>`, or `local=true`. Accept optional
+Accept a PR URL, `pr=<number>`, or `local=true`. Prefer an online PR because it
+provides shared review state, remote checks, and durable discussion. Local
+review is an explicit degraded path, not a substitute to select silently.
+Accept optional
 `feature_id=<FEAT-NNN>` for a repository-tracked Feature, legacy
 `work_id=<id>` for Feature, or `bug_slug=<slug>` for Bugfix, but never more
 than one. Reject unsafe identifiers
@@ -33,7 +36,10 @@ permission boundary and trigger none of the permanent human decisions.
    view`, `gh pr checks`, and `gh pr diff` operations.
 2. For `local=true`, inspect the current branch, merge base, committed and
    uncommitted diff, changed files, and local verification evidence. Do not
-   require a PR or remote CLI.
+   require a PR or remote CLI. Compute an immutable review revision: use the
+   reviewed Git commit when the tree is clean, otherwise hash the complete
+   reviewed patch as `sha256:<64-hex>`. Never store `local=true` in a URL
+   field.
 3. For a non-GitHub PR such as GitCode, use an authenticated host integration
    when available. For GitCode, first read
    `references/gitcode-host-contract.md` and run its capability probe.
@@ -142,6 +148,14 @@ Check that:
 Treat missing required artifacts, unapproved deviations, stale evidence, or
 permission mismatches as findings rather than silently guessing.
 
+For repository-tracked Feature implementation, rerun
+`scripts/check_plan_and_task.py --work-type feature --work-id <id>
+--implementation-scope --check`. A failed or stale
+`IMPLEMENTATION_DIFF_SCOPE` is a scope finding; do not replace it with model
+judgment. On Windows PowerShell, use explicit UTF-8 when reading text. Run
+Python verification with bytecode and pytest cache writes disabled and keep
+`--basetemp` under the ignored Feature evidence root.
+
 ## Phase 4: Verdict And Correction Routing
 
 Output:
@@ -233,6 +247,13 @@ first transition `implementing` to `reviewing` when Review begins. Then update
 `done`: only recorded merge and release evidence may do that. On `NO-GO`,
 leave `review_passed: false` and transition back only through a legal delivery
 phase. This command never accepts a Feature, approves a PR, or merges it.
+
+For an online review, set `delivery.pull_request` to the verified HTTP(S) URL
+and `delivery.review_target` to `type: pull-request` with the same URL. For an
+explicit local review, keep `delivery.pull_request` empty and set
+`delivery.review_target.type: local-diff` plus the immutable reviewed revision.
+Recommend creating an online PR before team merge whenever the host is
+available.
 
 ## Host Output
 

@@ -1,7 +1,10 @@
 # Project And Feature Lifecycle
 
-Team separates the remote requirement ledger, repository Feature Records, and
-local SDD work packages.
+Team separates the preferred online requirement ledger, repository Feature
+Records, and local SDD work packages. When online Issue publication is
+unavailable, an explicitly selected repository-local Requirement Record may
+temporarily anchor the flow; it is a degraded collaboration mode and should be
+replaced with a verified Issue URL when practical.
 
 ## Project From 0 To 1
 
@@ -45,7 +48,7 @@ accepted Feature Record
 -> Plan-and-Task (L2)
 -> Plan Review and deterministic readiness checks
 -> Implement code, tests, evidence, and architecture updates
--> PR
+-> online PR (preferred) or explicit local-diff review target
 -> Review
 -> human merge
 -> release update
@@ -59,3 +62,18 @@ packages remain readable.
 
 Feature acceptance and delivery phase are separate. Skills cannot accept
 requirements, approve architecture/Plans, or merge PRs on behalf of humans.
+
+Online pull requests are the preferred review authority. A local review may
+advance a Feature only when explicitly requested and when the Feature Record
+stores an immutable Git commit or sha256 patch revision in
+`delivery.review_target`; sentinel text such as `local=true` is never a PR URL.
+
+## Requirement Authority
+
+The normal authority is a verified online Requirement Issue URL because it
+supports team visibility, durable discussion, and clear governance. If all
+configured publication adapters are unavailable, Requirement may offer a
+local record under `docs/requirements/` after explaining the trade-off and
+receiving an explicit human choice. A local record must use a stable
+`REQ-NNN` ID and contain a named, timestamped `accepted` or `working` decision
+before Feature Split. Creating the file never grants acceptance.
