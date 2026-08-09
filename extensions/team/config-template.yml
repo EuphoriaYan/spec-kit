@@ -67,6 +67,12 @@ project_context:
   # block their matching role and phase.
   manifest: docs/ai-team/context-map.yml
 
+# Optional repository-owned quality gates. Existing projects remain disabled
+# until they deliberately select advisory or required mode.
+quality_gates:
+  mode: disabled
+  manifest: docs/ai-team/quality/rules.yml
+
 feature_tracking:
   # Feature Records are repository-versioned delivery facts. Teams may move
   # them or choose another built-in serialization format without changing the
