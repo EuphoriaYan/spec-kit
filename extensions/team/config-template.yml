@@ -89,6 +89,14 @@ feature_tracking:
   # owns the decision.
   behavior_confirmation:
     mode: required  # required | advisory | disabled
+  # New installations require evidence-backed completion. Existing configs
+  # that omit this block remain legacy-compatible so historical `done` records
+  # do not fail validation. `best-effort` accepts full remote commit hashes and
+  # safe tag names when a shallow/local checkout cannot resolve them; `strict`
+  # requires both facts to exist in the current repository.
+  completion:
+    validation: required  # required | legacy-compatible
+    git_verification: best-effort  # best-effort | strict
 
 memory:
   # Three-tier memory keeps contributor scratch, department learning, and

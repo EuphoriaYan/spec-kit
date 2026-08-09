@@ -100,6 +100,7 @@ def test_ai_team_extension_command_files_exist():
         "speckit.team.fix",
         "speckit.team.implement",
         "speckit.team.review",
+        "speckit.team.complete",
         "speckit.team.memory-consolidate",
     }
 

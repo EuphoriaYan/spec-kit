@@ -198,6 +198,16 @@ provides:
           target: scripts/check_feature_record.py
         - source: scripts/work_item_paths.py
           target: scripts/work_item_paths.py
+    - name: speckit.team.complete
+      file: commands/speckit.team.complete.md
+      description: "Completion role: validate existing merge and release facts, then backfill one Feature Record to done."
+      resources:
+        - source: docs/feature-lifecycle.md
+          target: references/feature-lifecycle.md
+        - source: scripts/feature_records.py
+          target: scripts/feature_records.py
+        - source: scripts/complete_feature.py
+          target: scripts/complete_feature.py
     - name: speckit.team.memory-consolidate
       file: commands/speckit.team.memory-consolidate.md
       description: "Advanced extension entry: capture advisory lessons and promote human-approved requirements into task-scoped project Knowledge."

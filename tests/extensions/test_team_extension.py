@@ -29,6 +29,7 @@ def test_team_manifest_is_valid_and_declares_execution_commands():
         "speckit.team.fix": "commands/speckit.team.fix.md",
         "speckit.team.implement": "commands/speckit.team.implement.md",
         "speckit.team.review": "commands/speckit.team.review.md",
+        "speckit.team.complete": "commands/speckit.team.complete.md",
         "speckit.team.memory-consolidate": "commands/speckit.team.memory-consolidate.md",
     }
 
@@ -291,6 +292,19 @@ def test_review_contract_supports_pr_and_local_quality_loop():
     assert not (
         EXTENSION_ROOT / "references" / "internal" / "review.md"
     ).exists()
+
+
+def test_complete_only_backfills_verified_delivery_facts():
+    command = _normalized_markdown(
+        EXTENSION_ROOT / "commands" / "speckit.team.complete.md"
+    )
+
+    assert "Feature Record backfill only" in command
+    assert "does not approve or merge a PR" in command
+    assert "does not close the parent Requirement" in command
+    assert "scripts/complete_feature.py" in command
+    assert "ready-to-merge -> done" in command
+    assert "Never infer a successful merge or release from a `GO` review" in command
 
 
 def test_every_internal_reference_is_installed_and_read_by_its_skill():

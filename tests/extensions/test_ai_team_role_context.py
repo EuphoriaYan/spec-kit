@@ -40,6 +40,7 @@ def test_all_team_commands_are_registered() -> None:
         "speckit.team.fix",
         "speckit.team.implement",
         "speckit.team.review",
+        "speckit.team.complete",
         "speckit.team.memory-consolidate",
     }
     assert {path.stem for path in (AI_TEAM / "commands").glob("*.md")} == set(provided)
@@ -419,6 +420,7 @@ def test_team_skills_install_with_local_references_and_scripts(
     fix_skill = root / "speckit-team-fix"
     implement_skill = root / "speckit-team-implement"
     review_skill = root / "speckit-team-review"
+    complete_skill = root / "speckit-team-complete"
     memory_skill = root / "speckit-team-memory-consolidate"
     assert (requirement_skill / "SKILL.md").is_file()
     assert (
@@ -481,6 +483,10 @@ def test_team_skills_install_with_local_references_and_scripts(
         assert (skill / "SKILL.md").is_file()
         assert (skill / "scripts/memory_adapter.py").is_file()
     assert (review_skill / "scripts/check_evidence_steps.py").is_file()
+    assert (complete_skill / "SKILL.md").is_file()
+    assert (complete_skill / "references/feature-lifecycle.md").is_file()
+    assert (complete_skill / "scripts/feature_records.py").is_file()
+    assert (complete_skill / "scripts/complete_feature.py").is_file()
     assert (review_skill / "scripts/check_plan_and_task.py").is_file()
     assert (review_skill / "scripts/check_permission_envelope.py").is_file()
     assert {

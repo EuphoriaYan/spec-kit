@@ -52,6 +52,7 @@ accepted Feature Record
 -> Review
 -> human merge
 -> release update
+-> Complete backfills merge/release facts and marks the Feature done
 ```
 
 Repository Feature Records are configurable committed artifacts. The default
@@ -84,6 +85,27 @@ Online pull requests are the preferred review authority. A local review may
 advance a Feature only when explicitly requested and when the Feature Record
 stores an immutable Git commit or sha256 patch revision in
 `delivery.review_target`; sentinel text such as `local=true` is never a PR URL.
+
+Review stops at `ready-to-merge`. `speckit.team.complete` is the only normal
+Feature closure entry: it consumes already-existing merge and release facts,
+validates them, and backfills the Feature Record to `done`. Complete does not
+perform the merge, create the release, deploy, mutate the Catalog, or close the
+parent Requirement.
+
+Completion evidence is versioned as an opt-in repository policy. New Team
+configs set `feature_tracking.completion.validation: required`. Repositories
+whose older config omits the block use `legacy-compatible`: a historical
+`done` record with none of the new release/completion fields remains valid, but
+a partially populated new bundle is rejected. Running Team Complete always
+writes the complete bundle. Teams may migrate old records and then explicitly
+switch to `required`.
+
+Git verification defaults to `best-effort`. Full immutable commit hashes and
+safe `git-tag:<tag>` names may be backfilled when a shallow clone or maintenance
+checkout cannot resolve remote history. When both facts exist locally, the tag
+must contain the merged commit. Teams that guarantee a complete local object
+database may select `git_verification: strict`. The operator's current `HEAD`
+is never treated as release authority.
 
 ## Approval Authority
 

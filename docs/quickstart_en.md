@@ -13,11 +13,12 @@ the current situation naturally.
 | Requirement | project-level or existing-project requirement | one reviewed Requirement Issue |
 | Feature Split | accepted Requirement Issue | reviewed architecture context, Feature Catalog, and repository Feature Records |
 | Specify | accepted `feature_id` | clarified User Stories and local Feature Spec |
-| Plan-and-Task | accepted `feature_id` | L2 design, module Tasks, minimum self-tests, deterministic check |
+| Plan-and-Task | accepted `feature_id` | L2/shared contracts, implementation Plan, Tasks, self-tests, deterministic check |
 | Assess | symptom, Issue, Review finding, or `bug_slug` | assessment, impact, fix boundary, and test strategy |
 | Fix | ready or approved assessment | minimal fix, regression evidence, progress update, and Review handoff |
 | Implement | `feature_id` | code, tests, architecture synchronization, evidence, and automatic quality loop |
 | Review | PR URL or local diff | findings, correction routing, and merge recommendation |
+| Complete | merged and released `feature_id` | verified merge/release backfill and Feature `done` state |
 
 ## Advanced Extension Entry
 
@@ -39,7 +40,8 @@ project-level or existing-project requirement
 -> human reviews the HLD, then Tasks are decomposed
 -> Implement verifies and enters Review automatically
 -> repairable blocker/major findings use Assess -> Fix -> Re-review
--> submit PR -> human merge decision
+-> submit PR -> human merge and release decision
+-> Complete validates those facts and backfills the Feature Record to done
 ```
 
 Start with:

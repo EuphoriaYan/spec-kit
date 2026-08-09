@@ -30,6 +30,11 @@ ownership:
 release:
   target: ""
   delivered_in: ""
+  evidence: ""
+completion:
+  completed_by: ""
+  completed_at: ""
+  evidence_source: ""
 architecture_impact:
   level: pending
   update_required: false
