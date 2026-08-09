@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -499,6 +500,97 @@ def test_shared_contract_path_cannot_escape_repository(tmp_path: Path):
     _, _, errors = module.validate_feature_record(tmp_path, "FEAT-001")
 
     assert "shared contract path must remain repository-relative" in errors
+
+
+def test_complete_backfills_verified_merge_and_release_facts(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_complete")
+    _write_tracking_config(tmp_path)
+    data = _record(phase="ready-to-merge")
+    data["definition_of_done"] = {
+        "code_complete": True,
+        "tests_complete": True,
+        "evidence_complete": True,
+        "architecture_synchronized": True,
+        "review_passed": True,
+    }
+    data["delivery"]["pull_request"] = "https://example.test/pulls/1"
+    data["delivery"]["review_target"] = {
+        "type": "pull-request",
+        "url": "https://example.test/pulls/1",
+        "revision": "",
+    }
+    record_path = _write_markdown_record(tmp_path, data)
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=tmp_path,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test User"], cwd=tmp_path, check=True
+    )
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-m", "merged feature"], cwd=tmp_path, check=True)
+    revision = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        check=True,
+    ).stdout.strip()
+    subprocess.run(["git", "tag", "v1.0.0"], cwd=tmp_path, check=True)
+
+    _, completed = module.complete_feature_record(
+        tmp_path,
+        "FEAT-001",
+        merged_commit=revision,
+        delivered_in="v1.0.0",
+        release_evidence="git-tag:v1.0.0",
+        completed_by="release-owner",
+        completed_at="2026-08-09T10:00:00Z",
+    )
+
+    assert completed["delivery"]["phase"] == "done"
+    assert completed["delivery"]["merged_commit"] == revision
+    assert completed["release"] == {
+        "delivered_in": "v1.0.0",
+        "evidence": "git-tag:v1.0.0",
+    }
+    assert completed["completion"]["completed_by"] == "release-owner"
+    assert "phase: done" in record_path.read_text(encoding="utf-8")
+
+
+def test_complete_rejects_unmerged_revision_without_mutating_record(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_complete_reject")
+    _write_tracking_config(tmp_path)
+    data = _record(phase="ready-to-merge")
+    data["definition_of_done"] = {
+        "code_complete": True,
+        "tests_complete": True,
+        "evidence_complete": True,
+        "architecture_synchronized": True,
+        "review_passed": True,
+    }
+    data["delivery"]["pull_request"] = "https://example.test/pulls/1"
+    data["delivery"]["review_target"] = {
+        "type": "pull-request",
+        "url": "https://example.test/pulls/1",
+        "revision": "",
+    }
+    record_path = _write_markdown_record(tmp_path, data)
+    before = record_path.read_bytes()
+
+    with pytest.raises(ValueError, match="does not resolve"):
+        module.complete_feature_record(
+            tmp_path,
+            "FEAT-001",
+            merged_commit="a" * 40,
+            delivered_in="v1.0.0",
+            release_evidence="https://example.test/releases/v1.0.0",
+            completed_by="release-owner",
+        )
+
+    assert record_path.read_bytes() == before
 
 
 def test_ready_to_merge_requires_complete_dod(tmp_path: Path):

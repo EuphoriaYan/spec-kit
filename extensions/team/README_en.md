@@ -4,18 +4,19 @@
 
 The `team` extension provides an end-to-end project/Feature lifecycle without modifying
 native Spec Kit commands. End users should start with the
-[Six-Skill Quick Start](../../docs/quickstart_en.md).
+[Team Lifecycle Quick Start](../../docs/quickstart_en.md).
 
 | Skill | Role | Durable result |
 |---|---|---|
 | `speckit.team.requirement` | Business / Product | one accepted Project/Requirement Issue |
 | `speckit.team.feature-split` | Architecture / Product | reviewed Feature Catalog and repository Feature Records |
 | `speckit.team.specify` | Business / Product | one accepted Feature's local specification |
-| `speckit.team.plan-and-task` | Architect | local Spec, Issue-level HLD, module Tasks, self-tests, and check |
+| `speckit.team.plan-and-task` | Architect | L2/shared contracts, implementation Plan, executable Tasks, self-tests, and check |
 | `speckit.team.assess` | Bug Assessor | assessment and risk routing |
 | `speckit.team.fix` | Bug Fixer | minimal fix, test evidence, and Review handoff |
 | `speckit.team.implement` | Developer | implementation evidence and automatic quality loop |
 | `speckit.team.review` | Reviewer | findings and merge recommendation |
+| `speckit.team.complete` | Completion owner | verified merge/release backfill and Feature `done` state |
 
 ## Advanced Extension Entries
 
@@ -49,7 +50,9 @@ Plan-and-Task requires CodeGraph and a generated deterministic check. A
 Permission Envelope records risk boundaries but is not a runtime sandbox.
 Implement enters Review automatically, and repairable blocker/major findings
 may use up to three Assess/Fix/Re-review rounds. Review never approves or
-merges a PR.
+merges a PR. Complete starts only after merge and release facts exist; it
+validates and backfills those facts but never performs merge, release,
+deployment, Catalog mutation, or parent Requirement closure.
 
 `extension.yml` is the installation manifest. Every command dependency must be
 declared as that command's resource and resolve relative to its installed

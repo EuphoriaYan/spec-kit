@@ -52,6 +52,7 @@ accepted Feature Record
 -> Review
 -> human merge
 -> release update
+-> Complete backfills merge/release facts and marks the Feature done
 ```
 
 Repository Feature Records are configurable committed artifacts. The default
@@ -84,6 +85,12 @@ Online pull requests are the preferred review authority. A local review may
 advance a Feature only when explicitly requested and when the Feature Record
 stores an immutable Git commit or sha256 patch revision in
 `delivery.review_target`; sentinel text such as `local=true` is never a PR URL.
+
+Review stops at `ready-to-merge`. `speckit.team.complete` is the only normal
+Feature closure entry: it consumes already-existing merge and release facts,
+validates them, and backfills the Feature Record to `done`. Complete does not
+perform the merge, create the release, deploy, mutate the Catalog, or close the
+parent Requirement.
 
 ## Approval Authority
 

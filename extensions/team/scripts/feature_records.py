@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -515,6 +516,142 @@ def accept_feature_behavior(
     return path, record
 
 
+def _verified_repository_commit(project_root: Path, revision: str) -> str:
+    candidate = revision.strip()
+    if not LOCAL_REVIEW_REVISION.fullmatch(candidate) or candidate.startswith("sha256:"):
+        raise ValueError("merged_commit must be a Git commit revision")
+    resolved = subprocess.run(
+        ["git", "rev-parse", "--verify", f"{candidate}^{{commit}}"],
+        cwd=project_root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if resolved.returncode != 0:
+        raise ValueError("merged_commit does not resolve in the current repository")
+    full_revision = resolved.stdout.strip()
+    contained = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", full_revision, "HEAD"],
+        cwd=project_root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if contained.returncode != 0:
+        raise ValueError("merged_commit is not contained in the current HEAD")
+    return full_revision
+
+
+def _verified_repository_ref(project_root: Path, ref_name: str) -> str:
+    ref = ref_name.strip()
+    if (
+        not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]*", ref)
+        or ".." in ref
+        or ref.endswith("/")
+    ):
+        raise ValueError("release tag is not a safe Git ref name")
+    resolved = subprocess.run(
+        ["git", "rev-parse", "--verify", f"{ref}^{{commit}}"],
+        cwd=project_root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if resolved.returncode != 0:
+        raise ValueError("release tag does not resolve in the current repository")
+    full_revision = resolved.stdout.strip()
+    contained = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", full_revision, "HEAD"],
+        cwd=project_root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if contained.returncode != 0:
+        raise ValueError("release tag is not contained in the current HEAD")
+    return full_revision
+
+
+def complete_feature_record(
+    project_root: Path,
+    feature_id: str,
+    *,
+    merged_commit: str,
+    delivered_in: str,
+    release_evidence: str,
+    completed_by: str,
+    completed_at: str | None = None,
+) -> tuple[Path, dict[str, Any]]:
+    """Close a reviewed Feature from already-existing merge/release facts."""
+    actor = completed_by.strip()
+    release_name = delivered_in.strip()
+    evidence = release_evidence.strip()
+    if not actor:
+        raise ValueError("completed_by must name the human closing the Feature")
+    if not release_name:
+        raise ValueError("delivered_in must name the delivered release")
+    if not (HTTP_URL.fullmatch(evidence) or evidence.startswith("git-tag:")):
+        raise ValueError("release_evidence must be an HTTP(S) URL or git-tag:<tag>")
+    full_revision = _verified_repository_commit(project_root, merged_commit)
+    if evidence.startswith("git-tag:"):
+        tag = evidence.removeprefix("git-tag:").strip()
+        if not tag:
+            raise ValueError("git-tag release evidence is missing its tag")
+        tag_commit = _verified_repository_ref(project_root, tag)
+        contains = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", full_revision, tag_commit],
+            cwd=project_root,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if contains.returncode != 0:
+            raise ValueError("release tag does not contain merged_commit")
+
+    path, record, errors = validate_feature_record(
+        project_root, feature_id, require_accepted=True
+    )
+    phase = str((record.get("delivery") or {}).get("phase", ""))
+    if phase != "ready-to-merge":
+        errors.append("Feature must be ready-to-merge before completion")
+    if errors:
+        raise ValueError("; ".join(dict.fromkeys(errors)))
+
+    tracking = load_tracking(project_root)
+    original = path.read_bytes()
+    delivery = _mapping(record.get("delivery") or {}, "delivery")
+    release = _mapping(record.get("release") or {}, "release")
+    record["delivery"] = {
+        **delivery,
+        "phase": "done",
+        "merged_commit": full_revision,
+    }
+    record["release"] = {
+        **release,
+        "delivered_in": release_name,
+        "evidence": evidence,
+    }
+    record["completion"] = {
+        "completed_by": actor,
+        "completed_at": _decision_time(completed_at),
+        "evidence_source": "post-merge-release-backfill",
+    }
+    try:
+        _write_record(path, record, tracking.format)
+        _, checked, completion_errors = validate_feature_record(
+            project_root,
+            feature_id,
+            require_accepted=True,
+            previous_phase="ready-to-merge",
+        )
+        if completion_errors:
+            raise ValueError("; ".join(completion_errors))
+    except Exception:
+        path.write_bytes(original)
+        raise
+    return path, checked
+
+
 def validate_local_requirement_record(
     project_root: Path,
     relative_path: str,
@@ -861,7 +998,17 @@ def validate_feature_record(
             release.get("delivered_in", "")
         ).strip():
             errors.append("done Feature is missing release.delivered_in")
+        if not str(release.get("evidence", "")).strip():
+            errors.append("done Feature is missing release.evidence")
         if not str(delivery.get("merged_commit", "")).strip():
             errors.append("done Feature is missing delivery.merged_commit")
+        completion = record.get("completion") or {}
+        if not isinstance(completion, dict):
+            errors.append("completion must be a mapping")
+            completion = {}
+        if not str(completion.get("completed_by", "")).strip():
+            errors.append("done Feature is missing completion.completed_by")
+        if not _is_utc_timestamp(completion.get("completed_at")):
+            errors.append("done Feature requires a valid UTC completion.completed_at")
 
     return path, record, errors
