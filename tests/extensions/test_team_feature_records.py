@@ -443,6 +443,7 @@ def test_explicit_advisory_mode_does_not_block_planning(tmp_path: Path):
     )
     data = _record(phase="planning")
     data["behavior_acceptance"] = {"status": "proposed"}
+
     _write_markdown_record(tmp_path, data)
 
     _, _, errors = module.validate_feature_record(tmp_path, "FEAT-001")
@@ -469,6 +470,35 @@ def test_invalid_behavior_confirmation_mode_is_rejected(tmp_path: Path):
 
     with pytest.raises(ValueError, match="behavior_confirmation.mode"):
         module.load_tracking(tmp_path)
+
+
+def test_planning_validates_referenced_shared_contract(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_shared_contract")
+    _write_tracking_config(tmp_path)
+    data = _record(phase="planning")
+    data["shared_contracts"] = ["docs/architecture/contracts/query.md"]
+    _write_markdown_record(tmp_path, data)
+
+    _, _, missing_errors = module.validate_feature_record(tmp_path, "FEAT-001")
+    assert "shared contract is missing: docs/architecture/contracts/query.md" in missing_errors
+
+    contract = tmp_path / "docs/architecture/contracts/query.md"
+    contract.parent.mkdir(parents=True)
+    contract.write_text("# Query contract\n", encoding="utf-8")
+    _, _, errors = module.validate_feature_record(tmp_path, "FEAT-001")
+    assert errors == []
+
+
+def test_shared_contract_path_cannot_escape_repository(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_shared_contract_path")
+    _write_tracking_config(tmp_path)
+    data = _record(phase="planning")
+    data["shared_contracts"] = ["../outside.md"]
+    _write_markdown_record(tmp_path, data)
+
+    _, _, errors = module.validate_feature_record(tmp_path, "FEAT-001")
+
+    assert "shared contract path must remain repository-relative" in errors
 
 
 def test_ready_to_merge_requires_complete_dod(tmp_path: Path):

@@ -52,7 +52,13 @@ impact_analysis:
 
 # Plan And Task
 
-## Plan (HLD)
+## Architecture Reference
+
+Reference the reviewed L0/L1 context, the existing or changed L2 assets, and
+every accepted shared-contract path. Summarize the decision; do not duplicate
+logical component or contract definitions here.
+
+## Plan (Implementation And Delivery Strategy)
 
 ### Source And Code Graph Evidence
 
@@ -85,10 +91,12 @@ when the repository declares one, but it is not required for Task decomposition.
 |---|---|---|---|---|---|
 | module-name | path/to/module |  |  | none | none |
 
-### Architecture And Contract Impact
+### Architecture And Contract Delivery Impact
 
-Describe the before/after architecture. Explicitly cover API, SPI, config,
-schema, event, database ownership, dependency direction, and compatibility.
+Describe how the reviewed architecture and contracts affect delivery. Explicitly
+cover API, SPI, config, schema, event, database ownership, dependency direction,
+and compatibility. Put stable logical component definitions in L2 and shared
+semantics in contract assets, then reference them here.
 
 Declare `none`, `L0`, `L1`, or `L2` in `architecture_impact.level`. When
 documentation changes are required, list exact repository paths in
@@ -102,10 +110,10 @@ post-delivery documentation pass.
 Explain why every `declared_paths` entry is needed. Paths used by Tasks must be
 declared in the front matter.
 
-### Implementation Plan
+### Implementation Strategy
 
-Describe the issue-wide solution and how the module changes fit together. This
-is the HLD; do not duplicate per-file implementation detail from Tasks.
+Describe how the issue-wide solution will be implemented and how module changes
+fit together. Do not redraw L2 or duplicate per-file detail from Tasks.
 
 ### Parallel Development Strategy
 
@@ -133,7 +141,7 @@ record one decision in front matter. Present these user-facing meanings:
 Record the named human in `plan_review.decided_by`. Any material Plan change
 returns to this gate. The user never needs to type the internal English value.
 
-## Tasks (LLD)
+## Tasks (Executable Work Packages)
 
 Each Task is one small, independently assignable delivery unit owned by exactly
 one module. Do not combine unrelated modules in one Task. Cross-module
@@ -145,7 +153,7 @@ and explicit dependencies.
 Use `none` in `Depends on` only when the Task has no prerequisite. Tasks in the
 same parallel group are intended to be assigned concurrently.
 
-| Task ID | Status | Module | Requirement IDs | Planned paths | Depends on | Parallel group | Self-test IDs | LLD summary |
+| Task ID | Status | Module | Requirement IDs | Planned paths | Depends on | Parallel group | Self-test IDs | Work summary |
 |---|---|---|---|---|---|---|---|---|
 | T001 | [ ] | module-name | VER-001 | path/to/file | none | P1 | TEST-001 |  |
 
