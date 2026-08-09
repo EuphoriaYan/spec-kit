@@ -246,7 +246,12 @@ def _apply_override(
             f"override for {rule_id} must be a named, timed, reasoned "
             "go-with-risk decision"
         )
-    return decision
+    normalized = dict(decision)
+    # PyYAML resolves an unquoted ISO-8601 value to datetime. Quality gate
+    # results are JSON evidence, so normalize the value at the boundary while
+    # preserving the human-readable timestamp.
+    normalized["decided_at"] = str(decision["decided_at"])
+    return normalized
 
 
 def evaluate(

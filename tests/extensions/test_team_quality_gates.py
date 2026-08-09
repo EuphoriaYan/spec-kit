@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -234,6 +235,45 @@ def test_named_human_can_reduce_model_failure_to_go_with_risk(
         "Maintainer Name"
     )
     assert result["merge_responsibility"] == "human"
+
+
+def test_unquoted_yaml_timestamp_is_json_serializable(tmp_path: Path) -> None:
+    module = _load_module()
+    _configure(tmp_path)
+    _rules(tmp_path, [_model_rule()])
+    judge = _record_file(
+        tmp_path,
+        "judge.yml",
+        "speckit-model-judge-results/v1",
+        "results",
+        [{"rule_id": "ARCH-001", "status": "fail", "rationale": "Risk."}],
+    )
+    overrides = tmp_path / ".specify" / "work" / "overrides.yml"
+    overrides.write_text(
+        """schema: speckit-quality-overrides/v1
+overrides:
+  - rule_id: ARCH-001
+    outcome: go-with-risk
+    decided_by: Maintainer
+    decided_at: 2026-08-09T12:00:00+08:00
+    reason: Approved exception.
+""",
+        encoding="utf-8",
+    )
+
+    result, return_code = module.evaluate(
+        tmp_path,
+        phase="reviewing",
+        role="reviewer",
+        judge_path=judge,
+        override_path=overrides,
+    )
+
+    assert return_code == 0
+    assert result["results"][0]["human_override"]["decided_at"] == (
+        "2026-08-09 12:00:00+08:00"
+    )
+    json.dumps(result)
 
 
 def test_static_failure_cannot_be_human_overridden(tmp_path: Path) -> None:
