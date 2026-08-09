@@ -734,6 +734,34 @@ def validate_feature_record(
                 "detailed behavior must be accepted before leaving specifying"
             )
 
+    ownership = record.get("ownership") or {}
+    if not isinstance(ownership, dict):
+        errors.append("ownership must be a mapping when present")
+    else:
+        collaborators = ownership.get("collaborators") or []
+        if not isinstance(collaborators, list) or not all(
+            isinstance(item, str) and item.strip() for item in collaborators
+        ):
+            errors.append("ownership.collaborators must be a list of names")
+
+    shared_contracts = record.get("shared_contracts") or []
+    if not isinstance(shared_contracts, list) or not all(
+        isinstance(item, str) and item.strip() for item in shared_contracts
+    ):
+        errors.append("shared_contracts must be a list of repository-relative paths")
+        shared_contracts = []
+    for contract_path in shared_contracts:
+        try:
+            resolved_contract = _safe_relative(
+                project_root, contract_path, label="shared contract path"
+            )
+        except ValueError as exc:
+            errors.append(str(exc))
+            continue
+        if phase in DELIVERY_PHASES - {"backlog", "specifying", "blocked", "cancelled"}:
+            if not resolved_contract.is_file():
+                errors.append(f"shared contract is missing: {contract_path}")
+
     architecture = record.get("architecture_impact") or {}
     if not isinstance(architecture, dict):
         errors.append("architecture_impact must be a mapping")

@@ -2,12 +2,17 @@
 description: "Architect role for turning an accepted Issue into a source-grounded Plan, parallel module Tasks, self-tests, and a deterministic readiness check."
 ---
 
-# Spec Kit Team Plan And Task
+# Spec Kit Team Architecture, Plan And Task
 
 Own the Architect role. Prefer an accepted repository Feature Record and its
 formal Spec; retain the accepted remote Feature Issue path for compatibility.
 Consume durable artifacts, not hidden Business/Product chat. Produce technical
 planning artifacts without editing product source.
+
+Read `references/architecture-delivery-flow.md` before planning. L0/L1/L2 are
+architecture zoom levels; Plan and Tasks are delivery artifacts viewed from
+implementation, sequencing, evidence, and assignment. Do not use Plan to
+redraw L2 at a coarser level.
 
 ## Input Contract
 
@@ -116,12 +121,22 @@ decision branch and must not request an Issue label or fabricated URL.
    role `plan-and-task`, work type `feature`, and the affected modules. Apply
    binding Knowledge to the HLD and cite advisory Memory only when current
    source and Issue evidence still support it.
-8. Read `references/plan-and-task-format.md` immediately before creating or
-   updating `plan-and-task.md`. The Plan is Issue-wide HLD: architecture
-   before/after, contract impact, declared scope, per-module change,
-   sequencing, compatibility, risk, and rollback. Set `planning_stage:
-   plan-review` without inventing Tasks.
-9. Present the Plan and ask the user to choose one localized option:
+8. Decide whether the Feature reuses existing L2 or requires an L2 delta.
+   L2 defines stable logical components, responsibilities, data flow,
+   interfaces, and dependency direction; it must not define classes, files,
+   contributor assignments, or code-level algorithms. If multiple Features or
+   modules need the same semantics, compare candidate interfaces and present a
+   shared-contract review. After named human acceptance, instantiate
+   `references/shared-contract-template.md` under the repository's chosen
+   architecture path and add that repository-relative path to every affected
+   Feature Record. A personal candidate interface is not contract authority.
+9. Read `references/plan-and-task-format.md` immediately before creating or
+   updating `plan-and-task.md`. The Plan explains how the reviewed behavior and
+   L2 will be delivered in the current source: reuse, module changes,
+   sequencing, compatibility, testing, PR boundaries, risk, and rollback. It
+   references L2 and shared contracts rather than duplicating their logical
+   design. Set `planning_stage: plan-review` without inventing Tasks.
+10. Present the Plan and ask the user to choose one localized option:
    - **继续拆任务（`continue-to-tasks`）**: accept the HLD and enter Task
      decomposition. At this gate, “下一步”, “继续”, or “继续拆 Task” maps to
      this option;
@@ -141,7 +156,7 @@ decision branch and must not request an Issue label or fabricated URL.
    decision and named human. For pause or revision, set `phase: plan-paused`
    and preserve the next action so another session can resume. A material Plan
    revision invalidates Tasks and returns to this decision.
-10. After `continue-to-tasks`, derive LLD-level Tasks. Every Task belongs to one
+11. After `continue-to-tasks`, derive executable Tasks. Every Task belongs to one
    module, declares exact paths and completion criteria, and has at least one
    concrete self-verification scenario. Design Tasks for parallel assignment by
    default. When serialization is necessary, describe the dependency, handoff
@@ -158,15 +173,15 @@ decision branch and must not request an Issue label or fabricated URL.
    the self-test commands in the exact declared paths and owning Task.
    In the localized gate, this means “continue to Tasks”; it is an explanation,
    not another value the user must type.
-11. Map every Task to User Stories and their Verification behavior.
-12. When the accepted Feature delivers a tutorial, runbook, deployment guide,
+12. Map every Task to User Stories and their Verification behavior.
+13. When the accepted Feature delivers a tutorial, runbook, deployment guide,
     or walkthrough, add a Task that instantiates
     `references/evidence-steps-template.yml` and requires the
     installed `scripts/check_evidence_steps.py` to pass. Every tutorial step
     must be deterministic or evaluable and must record exactly one of `PASS`,
     `FAIL`, `BLOCKED`, or `NOT_RUN`; a missing prerequisite is never `PASS`.
     Ordinary code-only Features do not need this additional artifact.
-13. Revise the same Permission Envelope to `mode: implementation` for the
+14. Revise the same Permission Envelope to `mode: implementation` for the
     complete Task batch. Use `status: ready` when work stays in one repository
     and one module, follows the approved Plan, preserves public contracts and
     compatibility, and adds no dependency, security, or license decision. Put
@@ -180,7 +195,7 @@ decision branch and must not request an Issue label or fabricated URL.
     delivery phase and evidence-backed Definition of Done. Do not authorize
     the whole Feature Record directory, Catalog, or other Feature Records, and
     do not place a parent of the authorized record in `deny.write_paths`.
-14. Set `planning_stage: ready-for-check`, update the Context Package to
+15. Set `planning_stage: ready-for-check`, update the Context Package to
     `phase: planning-check`, and then run the installed
     `scripts/check_plan_and_task.py` by its resolved path with
     `--work-type feature --work-id <work_id>`. The script owns
@@ -197,7 +212,7 @@ decision branch and must not request an Issue label or fabricated URL.
     `scripts/check_feature_record.py --feature-id <id> --require-accepted`
     and update the Feature delivery phase to `tasks-ready` only after both
     checks pass.
-15. On `ready`, publish a public-safe Plan/Task handoff to the primary Issue.
+16. On `ready`, publish a public-safe Plan/Task handoff to the primary Issue.
     Include the Issue-wide HLD summary, affected modules, public-contract and
     compatibility impact, Task IDs and module/path scope, dependency/parallel
     groups, minimum self-tests, permission status, and unresolved risks. For
@@ -220,6 +235,7 @@ Team Plan And Task:
 - requirement responsibilities and PR strategy:
 - optional owners or review routes:
 - architecture and public-contract deltas:
+- L2 assets and accepted shared contracts:
 - current step: Plan review
 - next options: localized label + stable value + natural-language alias
 - recommended next step: one option plus a short reason; never choose it for the user

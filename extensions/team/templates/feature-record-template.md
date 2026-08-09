@@ -23,6 +23,10 @@ delivery:
     revision: ""
   merged_commit: ""
 dependencies: []
+shared_contracts: []
+ownership:
+  owner: ""
+  collaborators: []
 release:
   target: ""
   delivered_in: ""
@@ -52,6 +56,11 @@ definition_of_done:
 ## Verification
 
 ## Dependencies
+
+## Shared Contracts
+
+List only team-reviewed, repository-versioned contract paths. Candidate
+interfaces that exist only in personal Feature work do not belong here.
 
 ## Decisions
 

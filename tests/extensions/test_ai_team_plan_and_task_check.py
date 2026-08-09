@@ -249,6 +249,33 @@ def test_feature_package_can_be_ready_and_bugfix_is_rejected(tmp_path: Path) -> 
         module.evaluate(tmp_path, "bugfix", "102")
 
 
+def test_reframed_architecture_plan_and_task_headings_are_accepted(
+    tmp_path: Path,
+) -> None:
+    module = _module()
+    root = _write_package(tmp_path, "92", "feature")
+    path = root / "plan-and-task.md"
+    text = path.read_text(encoding="utf-8")
+    text = text.replace(
+        "## Plan (HLD)",
+        "## Architecture Reference\n\n"
+        "Reviewed L0/L1 and existing L2 are reused.\n\n"
+        "## Plan (Implementation And Delivery Strategy)",
+    )
+    text = text.replace(
+        "### Architecture And Contract Impact",
+        "### Architecture And Contract Delivery Impact",
+    ).replace("### Implementation Plan", "### Implementation Strategy")
+    text = text.replace(
+        "## Tasks (LLD)", "## Tasks (Executable Work Packages)"
+    ).replace("LLD summary", "Work summary")
+    path.write_text(text, encoding="utf-8")
+
+    result, rendered = module.evaluate(tmp_path, "feature", "92")
+
+    assert result == "ready", rendered
+
+
 def test_implementation_scope_uses_git_diff_and_blocks_undeclared_paths(
     tmp_path: Path,
 ) -> None:

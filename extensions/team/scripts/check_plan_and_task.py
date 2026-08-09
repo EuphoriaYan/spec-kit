@@ -447,26 +447,44 @@ def evaluate(
             else "Feature Spec requires User Stories and VER-### Verification IDs",
         )
 
+        plan_headings = _headings(plan_body)
         plan_common = {
-            "Plan (HLD)",
             "Source And Code Graph Evidence",
             "Requirement Responsibility And PR Strategy",
             "Module Change Plan",
-            "Architecture And Contract Impact",
             "Declared Change Scope",
-            "Implementation Plan",
             "Parallel Development Strategy",
             "Development Chain",
             "Plan Review Decision",
-            "Tasks (LLD)",
             "Task Index",
             "Task Details",
             "Minimum Self-Tests",
             "Compatibility Migration And Rollback",
             "Risks And Deviations",
         }
+        heading_alternatives = {
+            "Architecture Reference": {"Architecture Reference", "Plan (HLD)"},
+            "Plan": {
+                "Plan (Implementation And Delivery Strategy)",
+                "Plan (HLD)",
+            },
+            "Architecture And Contract Delivery Impact": {
+                "Architecture And Contract Delivery Impact",
+                "Architecture And Contract Impact",
+            },
+            "Implementation Strategy": {
+                "Implementation Strategy",
+                "Implementation Plan",
+            },
+            "Tasks": {"Tasks (Executable Work Packages)", "Tasks (LLD)"},
+        }
         plan_specific = {"Feature Delivery Plan", "User Story Delivery Mapping"}
-        missing_plan = sorted((plan_common | plan_specific) - _headings(plan_body))
+        missing_plan = sorted((plan_common | plan_specific) - plan_headings)
+        missing_plan.extend(
+            label
+            for label, alternatives in heading_alternatives.items()
+            if not (alternatives & plan_headings)
+        )
         record(
             "PLAN_STRUCTURE",
             not missing_plan,
@@ -477,19 +495,22 @@ def evaluate(
         plan_leaf_sections = {
             "Source And Code Graph Evidence",
             "Requirement Responsibility And PR Strategy",
-            "Architecture And Contract Impact",
             "Declared Change Scope",
-            "Implementation Plan",
             "Parallel Development Strategy",
             "Development Chain",
             "Plan Review Decision",
             "Compatibility Migration And Rollback",
             "Risks And Deviations",
         } | {"User Story Delivery Mapping"}
+        for alternatives in (
+            heading_alternatives["Architecture And Contract Delivery Impact"],
+            heading_alternatives["Implementation Strategy"],
+        ):
+            plan_leaf_sections.update(alternatives & plan_headings)
         empty_plan = sorted(
             heading
             for heading in plan_leaf_sections
-            if heading in _headings(plan_body)
+            if heading in plan_headings
             and not _meaningful(_section(plan_body, heading))
         )
         record(
@@ -723,7 +744,6 @@ def evaluate(
             "Depends on",
             "Parallel group",
             "Self-test IDs",
-            "LLD summary",
         }
         detail_columns = {
             "Task ID",
@@ -740,7 +760,11 @@ def evaluate(
             "Expected evidence",
         }
         module_shape = bool(module_plan) and module_columns.issubset(module_plan[0])
-        task_shape = bool(tasks) and task_columns.issubset(tasks[0])
+        task_shape = (
+            bool(tasks)
+            and task_columns.issubset(tasks[0])
+            and bool({"LLD summary", "Work summary"} & set(tasks[0]))
+        )
         detail_shape = bool(task_details) and detail_columns.issubset(task_details[0])
         test_shape = bool(tests) and test_columns.issubset(tests[0])
         record(

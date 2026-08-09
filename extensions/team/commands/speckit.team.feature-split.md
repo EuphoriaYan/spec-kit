@@ -87,6 +87,12 @@ mandatory.
 
 ## Architecture Context
 
+Read `references/architecture-delivery-flow.md` before creating architecture
+or Feature assets. Use L0 for the system and top-level modules, and L1 for each
+module's semantics, inputs/outputs, owned data, interactions, and stable
+submodules. Do not move class, file, algorithm, or delivery sequencing detail
+into L0/L1.
+
 ### New project
 
 Require the reviewed L0 linked by the Requirement Issue. Produce L1 covering
@@ -134,6 +140,15 @@ For every proposed Feature record:
   accepted local Requirement Record path);
 - initial architecture impact;
 - target release.
+- optional owner and collaborators when the repository is the chosen source of
+  responsibility; leave them blank when assignment is managed elsewhere;
+- team-reviewed shared-contract paths when such contracts already exist.
+
+Identify likely shared-contract candidates across Features, but do not freeze
+them during Feature Split merely because two proposed implementations use
+similar names. Candidate interfaces may remain in individual Feature work.
+Only a later team architecture review may promote one to a repository-versioned
+shared contract and add its path to affected Feature Records.
 
 An unavailable external prerequisite remains `blocked`; never manufacture a
 scenario-private substitute.
@@ -196,6 +211,7 @@ Team Feature Split:
 - dependencies and delivery order:
 - MVP:
 - blocked prerequisites:
+- shared-contract candidates and accepted contract paths:
 - accepted Feature IDs:
 - next Skill: speckit.team.specify feature_id=<id>
 - result: ready / revise / paused / blocked
