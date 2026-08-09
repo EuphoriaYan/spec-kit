@@ -9,8 +9,10 @@ import sys
 from pathlib import Path
 
 from feature_records import (
+    accept_feature_behavior,
     accept_feature_record,
     accept_local_requirement_record,
+    load_tracking,
     resolve_feature_work_root,
     validate_feature_record,
     validate_local_requirement_record,
@@ -29,6 +31,13 @@ def main() -> int:
         help="Persist an explicit current-conversation human approval before checking",
     )
     parser.add_argument(
+        "--record-behavior-acceptance-by",
+        help=(
+            "Persist human confirmation of the User Stories and Verification "
+            "written back by Specify"
+        ),
+    )
+    parser.add_argument(
         "--decided-at",
         help="Optional ISO-8601 UTC decision time (defaults to now)",
     )
@@ -38,9 +47,16 @@ def main() -> int:
     project_root = args.project_root.resolve()
     try:
         acceptance_recorded = False
-        if args.decided_at and not args.record_verbal_acceptance_by:
+        behavior_confirmation_mode = ""
+        decision_actor = (
+            args.record_verbal_acceptance_by
+            or args.record_behavior_acceptance_by
+        )
+        if args.record_verbal_acceptance_by and args.record_behavior_acceptance_by:
+            raise ValueError("record only one acceptance decision per invocation")
+        if args.decided_at and not decision_actor:
             raise ValueError(
-                "--decided-at requires --record-verbal-acceptance-by"
+                "--decided-at requires an acceptance-recording option"
             )
         if args.record_verbal_acceptance_by and args.previous_phase:
             raise ValueError(
@@ -62,6 +78,22 @@ def main() -> int:
                     decided_at=args.decided_at,
                 )
             acceptance_recorded = True
+        if args.record_behavior_acceptance_by:
+            if args.requirement_record:
+                raise ValueError(
+                    "behavior acceptance applies only to Feature Records"
+                )
+            if args.previous_phase:
+                raise ValueError(
+                    "behavior acceptance cannot be combined with --previous-phase"
+                )
+            accept_feature_behavior(
+                project_root,
+                args.feature_id,
+                args.record_behavior_acceptance_by,
+                decided_at=args.decided_at,
+            )
+            acceptance_recorded = True
         if args.requirement_record:
             if args.previous_phase:
                 raise ValueError(
@@ -74,6 +106,9 @@ def main() -> int:
             )
             work_root = Path()
         else:
+            behavior_confirmation_mode = load_tracking(
+                project_root
+            ).behavior_confirmation_mode
             path, record, errors = validate_feature_record(
                 project_root,
                 args.feature_id,
@@ -87,6 +122,7 @@ def main() -> int:
         work_root = Path()
         record = {}
         acceptance_recorded = False
+        behavior_confirmation_mode = ""
 
     result = {
         "record_type": "requirement" if args.requirement_record else "feature",
@@ -98,6 +134,10 @@ def main() -> int:
         "requirement_record": str(path) if args.requirement_record else "",
         "work_root": str(work_root),
         "acceptance": (record.get("acceptance") or {}).get("status"),
+        "behavior_acceptance": (
+            record.get("behavior_acceptance") or {}
+        ).get("status"),
+        "behavior_confirmation_mode": behavior_confirmation_mode,
         "acceptance_recorded": acceptance_recorded,
         "delivery_phase": (record.get("delivery") or {}).get("phase"),
         "errors": errors,

@@ -133,6 +133,7 @@ def test_ai_team_config_template_defines_repository_and_role_contracts():
     assert config["feature_tracking"]["recommended_root"] == "docs/features"
     assert config["feature_tracking"]["location"]["status"] == "pending-confirmation"
     assert config["feature_tracking"]["location"]["locked"] is False
+    assert config["feature_tracking"]["behavior_confirmation"]["mode"] == "required"
     assert config["work_artifacts"]["bugfix_path_template"] == (
         ".specify/bugfix/{bug_slug}"
     )

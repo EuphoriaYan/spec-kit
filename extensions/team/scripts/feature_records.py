@@ -18,6 +18,8 @@ LOCAL_REVIEW_REVISION = re.compile(
     r"^(?:[0-9a-f]{7,64}|sha256:[0-9a-f]{64})$", re.IGNORECASE
 )
 ACCEPTANCE_STATES = {"proposed", "accepted", "deferred", "rejected"}
+BEHAVIOR_ACCEPTANCE_STATES = {"proposed", "accepted"}
+BEHAVIOR_CONFIRMATION_MODES = {"required", "advisory", "disabled"}
 REQUIREMENT_ACCEPTANCE_STATES = {"proposed", "accepted", "working", "rejected"}
 DELIVERY_PHASES = {
     "backlog",
@@ -79,6 +81,7 @@ class FeatureTracking:
     id_pattern: re.Pattern[str]
     work_root_template: str
     require_committed_records: bool
+    behavior_confirmation_mode: str
 
 
 def _mapping(value: Any, label: str) -> dict[str, Any]:
@@ -131,6 +134,24 @@ def load_tracking(project_root: Path) -> FeatureTracking:
     configured = config.get("feature_tracking") or {}
     configured = _mapping(configured, "feature_tracking")
     values = {**DEFAULTS, **configured}
+    behavior_confirmation = configured.get("behavior_confirmation")
+    if behavior_confirmation is None:
+        # Compatibility default for repositories created before this policy
+        # existed. Newly installed configs explicitly select `required`.
+        behavior_confirmation_mode = "advisory"
+    else:
+        behavior_confirmation = _mapping(
+            behavior_confirmation,
+            "feature_tracking.behavior_confirmation",
+        )
+        behavior_confirmation_mode = str(
+            behavior_confirmation.get("mode", "")
+        ).strip()
+        if behavior_confirmation_mode not in BEHAVIOR_CONFIRMATION_MODES:
+            raise ValueError(
+                "feature_tracking.behavior_confirmation.mode must be one of "
+                f"{sorted(BEHAVIOR_CONFIRMATION_MODES)}"
+            )
     work_artifacts = config.get("work_artifacts") or {}
     work_artifacts = _mapping(work_artifacts, "work_artifacts")
     if values.get("enabled") is False:
@@ -186,6 +207,7 @@ def load_tracking(project_root: Path) -> FeatureTracking:
         id_pattern=id_pattern,
         work_root_template=work_root_template,
         require_committed_records=bool(values["require_committed_records"]),
+        behavior_confirmation_mode=behavior_confirmation_mode,
     )
 
 
@@ -264,6 +286,52 @@ def _load_markdown_frontmatter(path: Path) -> dict[str, Any]:
         raise ValueError("markdown Feature Record has unterminated frontmatter")
     loaded = yaml.safe_load(text[4:end]) or {}
     return _mapping(loaded, "record frontmatter")
+
+
+def _markdown_body(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    if not text.startswith("---\n"):
+        raise ValueError("markdown Feature Record must start with YAML frontmatter")
+    end = text.find("\n---", 4)
+    if end < 0:
+        raise ValueError("markdown Feature Record has unterminated frontmatter")
+    return text[end + 4 :]
+
+
+def _markdown_section_has_content(body: str, heading: str) -> bool:
+    match = re.search(
+        rf"(?ms)^##\s+{re.escape(heading)}\s*$\n(.*?)(?=^##\s+|\Z)",
+        body,
+    )
+    if not match:
+        return False
+    content = match.group(1).strip()
+    return bool(content and content not in {"-", "TBD", "TODO"})
+
+
+def _feature_behavior_errors(
+    path: Path, record: dict[str, Any], format_name: str
+) -> list[str]:
+    if format_name == "markdown-frontmatter":
+        body = _markdown_body(path)
+        errors = []
+        if not _markdown_section_has_content(body, "User Stories"):
+            errors.append("Feature Record User Stories must be written back by Specify")
+        if not _markdown_section_has_content(body, "Verification"):
+            errors.append("Feature Record Verification must be written back by Specify")
+        return errors
+    errors = []
+    user_stories = record.get("user_stories") or []
+    verification = record.get("verification") or []
+    if not isinstance(user_stories, list) or not any(
+        isinstance(item, str) and item.strip() for item in user_stories
+    ):
+        errors.append("Feature Record user_stories must be written back by Specify")
+    if not isinstance(verification, list) or not any(
+        isinstance(item, str) and item.strip() for item in verification
+    ):
+        errors.append("Feature Record verification must be written back by Specify")
+    return errors
 
 
 def _write_markdown_frontmatter(path: Path, record: dict[str, Any]) -> None:
@@ -390,6 +458,61 @@ def accept_feature_record(
         format_name=tracking.format,
     )
     return path, updated
+
+
+def accept_feature_behavior(
+    project_root: Path,
+    feature_id: str,
+    decided_by: str,
+    *,
+    decided_at: str | None = None,
+) -> tuple[Path, dict[str, Any]]:
+    """Persist human confirmation of Specify's detailed Feature behavior."""
+    path, record, errors = validate_feature_record(
+        project_root, feature_id, require_accepted=True
+    )
+    tracking = load_tracking(project_root)
+    if tracking.behavior_confirmation_mode == "disabled":
+        raise ValueError("detailed behavior confirmation is disabled by policy")
+    errors = [
+        error
+        for error in errors
+        if not error.startswith("detailed behavior must be accepted")
+    ]
+    errors.extend(_feature_behavior_errors(path, record, tracking.format))
+    phase = str((record.get("delivery") or {}).get("phase", ""))
+    if phase != "specifying":
+        errors.append(
+            "detailed behavior can only be accepted while delivery.phase is specifying"
+        )
+    if errors:
+        raise ValueError("; ".join(dict.fromkeys(errors)))
+    actor = decided_by.strip()
+    if not actor:
+        raise ValueError("decided_by must name the human who confirmed the behavior")
+    acceptance = record.get("behavior_acceptance") or {"status": "proposed"}
+    acceptance = _mapping(acceptance, "behavior_acceptance")
+    current = str(acceptance.get("status", "")).strip()
+    if current == "accepted":
+        if str(acceptance.get("decided_by", "")).strip() != actor:
+            raise ValueError(
+                "detailed behavior is already accepted by another decision authority"
+            )
+        return path, record
+    if current != "proposed":
+        raise ValueError(
+            "only proposed detailed behavior can be accepted "
+            f"(current: {current or 'missing'})"
+        )
+    record["behavior_acceptance"] = {
+        **acceptance,
+        "status": "accepted",
+        "decided_by": actor,
+        "decided_at": _decision_time(decided_at),
+        "decision_source": "conversation",
+    }
+    _write_record(path, record, tracking.format)
+    return path, record
 
 
 def validate_local_requirement_record(
@@ -579,6 +702,37 @@ def validate_feature_record(
         errors.append("delivery.phase is not recognized")
     if previous_phase is not None:
         errors.extend(validate_transition(previous_phase, phase))
+
+    behavior_acceptance = record.get("behavior_acceptance")
+    if behavior_acceptance is None:
+        # Existing backlog/specifying records migrate as unconfirmed behavior.
+        behavior_acceptance = {"status": "proposed"}
+    elif not isinstance(behavior_acceptance, dict):
+        errors.append("behavior_acceptance must be a mapping")
+        behavior_acceptance = {}
+    behavior_status = str(behavior_acceptance.get("status", ""))
+    if behavior_status not in BEHAVIOR_ACCEPTANCE_STATES:
+        errors.append("behavior_acceptance.status is not recognized")
+    if behavior_status == "accepted":
+        if not str(behavior_acceptance.get("decided_by", "")).strip():
+            errors.append(
+                "accepted detailed behavior is missing behavior_acceptance.decided_by"
+            )
+        if not _is_utc_timestamp(behavior_acceptance.get("decided_at")):
+            errors.append(
+                "accepted detailed behavior requires a valid UTC "
+                "behavior_acceptance.decided_at"
+            )
+        errors.extend(_feature_behavior_errors(path, record, tracking.format))
+    if (
+        tracking.behavior_confirmation_mode == "required"
+        and phase
+        in DELIVERY_PHASES - {"backlog", "specifying", "blocked", "cancelled"}
+    ):
+        if behavior_status != "accepted":
+            errors.append(
+                "detailed behavior must be accepted before leaving specifying"
+            )
 
     architecture = record.get("architecture_impact") or {}
     if not isinstance(architecture, dict):

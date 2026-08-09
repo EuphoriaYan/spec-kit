@@ -83,6 +83,12 @@ feature_tracking:
     - json
   id_pattern: "^FEAT-[0-9]{3,}$"
   require_committed_records: true
+  # New Team installations require an explicit detailed-behavior decision.
+  # Repositories whose older config omits this block remain advisory for
+  # backward compatibility. Use disabled only when another verified workflow
+  # owns the decision.
+  behavior_confirmation:
+    mode: required  # required | advisory | disabled
 
 memory:
   # Three-tier memory keeps contributor scratch, department learning, and
