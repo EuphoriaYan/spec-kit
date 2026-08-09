@@ -47,10 +47,14 @@ Require:
      --completed-by "<human name>"
    ```
 
-   The helper verifies that the commit exists in the repository, that tag
-   evidence contains it when a tag is used, and that the legal transition is
-   `ready-to-merge -> done`. It restores the original Feature Record if final
-   validation fails.
+   The helper validates the immutable commit and safe tag syntax. In the
+   default `best-effort` mode it resolves local facts when available and checks
+   that a locally visible tag contains the locally visible merged commit; full
+   remote hashes and unfetched safe tags remain valid backfill evidence. In
+   configured `strict` mode both must resolve locally. Neither mode requires
+   the merged commit or tag to be an ancestor of the operator's current HEAD.
+   The helper also validates `ready-to-merge -> done` and restores the original
+   Feature Record if final validation fails.
 5. Re-read the Feature Record and report the persisted facts. When the parent
    Requirement authority is online, optionally prepare a public-safe completion
    handoff containing Feature ID, release, evidence, and remaining Features.
@@ -72,6 +76,6 @@ Team Complete Result:
 - result: done / blocked
 ```
 
-Stop if review is not complete, the Feature is not `ready-to-merge`, the merge
-commit is not contained in the current repository, release evidence is absent
-or inconsistent, or the closing human is unnamed.
+Stop if review is incomplete, the Feature is not `ready-to-merge`, release
+evidence is absent or inconsistent with locally available facts, strict Git
+verification cannot resolve its inputs, or the closing human is unnamed.

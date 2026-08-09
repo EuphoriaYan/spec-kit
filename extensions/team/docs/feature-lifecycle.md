@@ -92,6 +92,21 @@ validates them, and backfills the Feature Record to `done`. Complete does not
 perform the merge, create the release, deploy, mutate the Catalog, or close the
 parent Requirement.
 
+Completion evidence is versioned as an opt-in repository policy. New Team
+configs set `feature_tracking.completion.validation: required`. Repositories
+whose older config omits the block use `legacy-compatible`: a historical
+`done` record with none of the new release/completion fields remains valid, but
+a partially populated new bundle is rejected. Running Team Complete always
+writes the complete bundle. Teams may migrate old records and then explicitly
+switch to `required`.
+
+Git verification defaults to `best-effort`. Full immutable commit hashes and
+safe `git-tag:<tag>` names may be backfilled when a shallow clone or maintenance
+checkout cannot resolve remote history. When both facts exist locally, the tag
+must contain the merged commit. Teams that guarantee a complete local object
+database may select `git_verification: strict`. The operator's current `HEAD`
+is never treated as release authority.
+
 ## Approval Authority
 
 State transitions follow the available authority instead of assuming every

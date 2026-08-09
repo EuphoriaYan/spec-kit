@@ -21,6 +21,8 @@ LOCAL_REVIEW_REVISION = re.compile(
 ACCEPTANCE_STATES = {"proposed", "accepted", "deferred", "rejected"}
 BEHAVIOR_ACCEPTANCE_STATES = {"proposed", "accepted"}
 BEHAVIOR_CONFIRMATION_MODES = {"required", "advisory", "disabled"}
+COMPLETION_VALIDATION_MODES = {"required", "legacy-compatible"}
+COMPLETION_GIT_VERIFICATION_MODES = {"best-effort", "strict"}
 REQUIREMENT_ACCEPTANCE_STATES = {"proposed", "accepted", "working", "rejected"}
 DELIVERY_PHASES = {
     "backlog",
@@ -83,6 +85,8 @@ class FeatureTracking:
     work_root_template: str
     require_committed_records: bool
     behavior_confirmation_mode: str
+    completion_validation_mode: str
+    completion_git_verification_mode: str
 
 
 def _mapping(value: Any, label: str) -> dict[str, Any]:
@@ -153,6 +157,33 @@ def load_tracking(project_root: Path) -> FeatureTracking:
                 "feature_tracking.behavior_confirmation.mode must be one of "
                 f"{sorted(BEHAVIOR_CONFIRMATION_MODES)}"
             )
+    completion = configured.get("completion")
+    if completion is None:
+        # Compatibility default for repositories that already contain `done`
+        # records created before release/completion evidence was introduced.
+        completion_validation_mode = "legacy-compatible"
+        completion_git_verification_mode = "best-effort"
+    else:
+        completion = _mapping(completion, "feature_tracking.completion")
+        completion_validation_mode = str(
+            completion.get("validation", "required")
+        ).strip()
+        completion_git_verification_mode = str(
+            completion.get("git_verification", "best-effort")
+        ).strip()
+        if completion_validation_mode not in COMPLETION_VALIDATION_MODES:
+            raise ValueError(
+                "feature_tracking.completion.validation must be one of "
+                f"{sorted(COMPLETION_VALIDATION_MODES)}"
+            )
+        if (
+            completion_git_verification_mode
+            not in COMPLETION_GIT_VERIFICATION_MODES
+        ):
+            raise ValueError(
+                "feature_tracking.completion.git_verification must be one of "
+                f"{sorted(COMPLETION_GIT_VERIFICATION_MODES)}"
+            )
     work_artifacts = config.get("work_artifacts") or {}
     work_artifacts = _mapping(work_artifacts, "work_artifacts")
     if values.get("enabled") is False:
@@ -209,6 +240,8 @@ def load_tracking(project_root: Path) -> FeatureTracking:
         work_root_template=work_root_template,
         require_committed_records=bool(values["require_committed_records"]),
         behavior_confirmation_mode=behavior_confirmation_mode,
+        completion_validation_mode=completion_validation_mode,
+        completion_git_verification_mode=completion_git_verification_mode,
     )
 
 
@@ -516,7 +549,9 @@ def accept_feature_behavior(
     return path, record
 
 
-def _verified_repository_commit(project_root: Path, revision: str) -> str:
+def _verified_repository_commit(
+    project_root: Path, revision: str, *, mode: str
+) -> tuple[str, bool]:
     candidate = revision.strip()
     if not LOCAL_REVIEW_REVISION.fullmatch(candidate) or candidate.startswith("sha256:"):
         raise ValueError("merged_commit must be a Git commit revision")
@@ -528,21 +563,23 @@ def _verified_repository_commit(project_root: Path, revision: str) -> str:
         check=False,
     )
     if resolved.returncode != 0:
-        raise ValueError("merged_commit does not resolve in the current repository")
+        if mode == "strict":
+            raise ValueError("merged_commit does not resolve in the current repository")
+        if len(candidate) not in {40, 64}:
+            raise ValueError(
+                "an unresolved merged_commit must be a full 40- or 64-character hash"
+            )
+        return candidate.lower(), False
     full_revision = resolved.stdout.strip()
-    contained = subprocess.run(
-        ["git", "merge-base", "--is-ancestor", full_revision, "HEAD"],
-        cwd=project_root,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    if contained.returncode != 0:
-        raise ValueError("merged_commit is not contained in the current HEAD")
-    return full_revision
+    # A post-release backfill may run from a maintenance branch or detached
+    # checkout. Resolving the immutable commit is useful evidence; ancestry to
+    # the operator's current HEAD is not a release invariant.
+    return full_revision, True
 
 
-def _verified_repository_ref(project_root: Path, ref_name: str) -> str:
+def _verified_repository_ref(
+    project_root: Path, ref_name: str, *, mode: str
+) -> tuple[str, bool]:
     ref = ref_name.strip()
     if (
         not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._/-]*", ref)
@@ -558,18 +595,11 @@ def _verified_repository_ref(project_root: Path, ref_name: str) -> str:
         check=False,
     )
     if resolved.returncode != 0:
-        raise ValueError("release tag does not resolve in the current repository")
+        if mode == "strict":
+            raise ValueError("release tag does not resolve in the current repository")
+        return ref, False
     full_revision = resolved.stdout.strip()
-    contained = subprocess.run(
-        ["git", "merge-base", "--is-ancestor", full_revision, "HEAD"],
-        cwd=project_root,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    if contained.returncode != 0:
-        raise ValueError("release tag is not contained in the current HEAD")
-    return full_revision
+    return full_revision, True
 
 
 def complete_feature_record(
@@ -592,21 +622,28 @@ def complete_feature_record(
         raise ValueError("delivered_in must name the delivered release")
     if not (HTTP_URL.fullmatch(evidence) or evidence.startswith("git-tag:")):
         raise ValueError("release_evidence must be an HTTP(S) URL or git-tag:<tag>")
-    full_revision = _verified_repository_commit(project_root, merged_commit)
+    tracking = load_tracking(project_root)
+    git_mode = tracking.completion_git_verification_mode
+    full_revision, commit_is_local = _verified_repository_commit(
+        project_root, merged_commit, mode=git_mode
+    )
     if evidence.startswith("git-tag:"):
         tag = evidence.removeprefix("git-tag:").strip()
         if not tag:
             raise ValueError("git-tag release evidence is missing its tag")
-        tag_commit = _verified_repository_ref(project_root, tag)
-        contains = subprocess.run(
-            ["git", "merge-base", "--is-ancestor", full_revision, tag_commit],
-            cwd=project_root,
-            text=True,
-            capture_output=True,
-            check=False,
+        tag_commit, tag_is_local = _verified_repository_ref(
+            project_root, tag, mode=git_mode
         )
-        if contains.returncode != 0:
-            raise ValueError("release tag does not contain merged_commit")
+        if commit_is_local and tag_is_local:
+            contains = subprocess.run(
+                ["git", "merge-base", "--is-ancestor", full_revision, tag_commit],
+                cwd=project_root,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            if contains.returncode != 0:
+                raise ValueError("release tag does not contain merged_commit")
 
     path, record, errors = validate_feature_record(
         project_root, feature_id, require_accepted=True
@@ -617,7 +654,6 @@ def complete_feature_record(
     if errors:
         raise ValueError("; ".join(dict.fromkeys(errors)))
 
-    tracking = load_tracking(project_root)
     original = path.read_bytes()
     delivery = _mapping(record.get("delivery") or {}, "delivery")
     release = _mapping(record.get("release") or {}, "release")
@@ -994,21 +1030,36 @@ def validate_feature_record(
                 )
     if phase == "done":
         release = record.get("release") or {}
-        if not isinstance(release, dict) or not str(
-            release.get("delivered_in", "")
-        ).strip():
-            errors.append("done Feature is missing release.delivered_in")
-        if not str(release.get("evidence", "")).strip():
-            errors.append("done Feature is missing release.evidence")
-        if not str(delivery.get("merged_commit", "")).strip():
-            errors.append("done Feature is missing delivery.merged_commit")
         completion = record.get("completion") or {}
+        if not isinstance(release, dict):
+            errors.append("release must be a mapping")
+            release = {}
         if not isinstance(completion, dict):
             errors.append("completion must be a mapping")
             completion = {}
-        if not str(completion.get("completed_by", "")).strip():
-            errors.append("done Feature is missing completion.completed_by")
-        if not _is_utc_timestamp(completion.get("completed_at")):
-            errors.append("done Feature requires a valid UTC completion.completed_at")
+        delivered_in = str(release.get("delivered_in", "")).strip()
+        merged_commit = str(delivery.get("merged_commit", "")).strip()
+        if not delivered_in:
+            errors.append("done Feature is missing release.delivered_in")
+        if not merged_commit:
+            errors.append("done Feature is missing delivery.merged_commit")
+        new_completion_values = (
+            str(release.get("evidence", "")).strip(),
+            str(completion.get("completed_by", "")).strip(),
+            str(completion.get("completed_at", "")).strip(),
+        )
+        legacy_done = (
+            tracking.completion_validation_mode == "legacy-compatible"
+            and not any(new_completion_values)
+        )
+        if not legacy_done:
+            if not new_completion_values[0]:
+                errors.append("done Feature is missing release.evidence")
+            if not new_completion_values[1]:
+                errors.append("done Feature is missing completion.completed_by")
+            if not _is_utc_timestamp(completion.get("completed_at")):
+                errors.append(
+                    "done Feature requires a valid UTC completion.completed_at"
+                )
 
     return path, record, errors
