@@ -69,6 +69,11 @@ Do not modify the Catalog, another Feature Record, or workflow files.
    `implement`, work type `feature`, and the selected Tasks' modules. Apply
    binding Knowledge before editing. Advisory Memory may inform reuse and risk
    checks but cannot expand the Plan or Permission Envelope.
+   Read `references/project-context-routing.md`, then resolve project context
+   for role `developer`, phase `implementing`, and the selected Tasks' modules.
+   Read the returned paths in order before editing. Stop only when the project
+   itself marked a missing matching document `required`; otherwise record any
+   absent document only as a non-blocking improvement suggestion.
 4. Create or minimally update `work-context.yml` with `work_id`/`feature_id`,
    `feature_record`, the relative `feature_root`, artifact names,
    `phase: implementing`, and an ISO

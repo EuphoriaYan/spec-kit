@@ -1,0 +1,17 @@
+schema: speckit-project-context/v1
+
+# Project owners add only documents that help an AI role perform current work.
+# Missing `suggested` or `conditional` documents never block delivery. Use
+# `required` sparingly for a repository-owned fact without which the named
+# phase would be unsafe or ambiguous.
+documents: []
+
+# Example:
+# - id: system-context
+#   path: docs/architecture/L0-system-context.md
+#   requirement: suggested
+#   roles: [architect, developer, reviewer]
+#   phases: [feature-split, planning, implementing, reviewing]
+#   modules: ["*"]
+#   order: 10
+#   description: System boundary and major modules.

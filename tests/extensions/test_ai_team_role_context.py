@@ -456,6 +456,7 @@ def test_team_skills_install_with_local_references_and_scripts(
         "handoff-spec-sync.md",
         "permission-envelope.md",
         "plan-and-task-format.md",
+        "project-context-routing.md",
         "shared-contract-template.md",
         "memory-runtime.md",
     }
@@ -478,6 +479,7 @@ def test_team_skills_install_with_local_references_and_scripts(
         "context.md",
         "gitcode-host-contract.md",
         "memory-runtime.md",
+        "project-context-routing.md",
     }
     for skill in (fix_skill, review_skill):
         assert (skill / "SKILL.md").is_file()
@@ -496,12 +498,15 @@ def test_team_skills_install_with_local_references_and_scripts(
         "gitcode-host-contract.md",
         "implement-pr.md",
         "memory-runtime.md",
+        "project-context-routing.md",
     }
     assert (implement_skill / "scripts/check_evidence_steps.py").is_file()
     assert (implement_skill / "scripts/check_permission_envelope.py").is_file()
     assert (implement_skill / "scripts/check_plan_and_task.py").is_file()
     assert (implement_skill / "scripts/work_item_paths.py").is_file()
     assert (implement_skill / "scripts/memory_adapter.py").is_file()
+    assert (implement_skill / "scripts/resolve_project_context.py").is_file()
+    assert (review_skill / "scripts/resolve_project_context.py").is_file()
     assert (memory_skill / "SKILL.md").is_file()
     assert {
         path.name for path in (memory_skill / "references").glob("*.md")
@@ -713,6 +718,7 @@ def test_team_work_item_layout_and_templates_are_unified() -> None:
         "feature-catalog-template.yml",
         "feature-record-template.md",
         "requirement-record-template.md",
+        "project-context-template.yml",
         "shared-contract-template.md",
     }
     assert {path.name for path in (AI_TEAM / "templates").iterdir() if path.is_file()} == expected
@@ -813,12 +819,14 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "references/context.md",
         "references/gitcode-host-contract.md",
         "references/memory-runtime.md",
+        "references/project-context-routing.md",
         "scripts/check_evidence_steps.py",
         "scripts/check_plan_and_task.py",
         "scripts/check_permission_envelope.py",
         "scripts/check_feature_record.py",
         "scripts/feature_records.py",
         "scripts/memory_adapter.py",
+        "scripts/resolve_project_context.py",
         "scripts/work_item_paths.py",
     }
     assert commands["speckit.team.implement"] == {
@@ -826,12 +834,14 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "references/gitcode-host-contract.md",
         "references/implement-pr.md",
         "references/memory-runtime.md",
+        "references/project-context-routing.md",
         "scripts/check_evidence_steps.py",
         "scripts/check_feature_record.py",
         "scripts/check_permission_envelope.py",
         "scripts/check_plan_and_task.py",
         "scripts/feature_records.py",
         "scripts/memory_adapter.py",
+        "scripts/resolve_project_context.py",
         "scripts/work_item_paths.py",
     }
     assert commands["speckit.team.memory-consolidate"] == {

@@ -60,6 +60,13 @@ verification:
     pytest_cache_provider: disabled
     pytest_basetemp_template: "{work_root}/evidence/.pytest-tmp"
 
+project_context:
+  # Most repositories do not have a complete documentation system. A missing
+  # manifest or missing suggested documents therefore produces suggestions,
+  # not a gate. Only entries explicitly marked `required` in the manifest can
+  # block their matching role and phase.
+  manifest: docs/ai-team/context-map.yml
+
 feature_tracking:
   # Feature Records are repository-versioned delivery facts. Teams may move
   # them or choose another built-in serialization format without changing the
