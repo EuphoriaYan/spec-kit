@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import subprocess
 import sys
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -21,7 +23,7 @@ from work_item_paths import normalize_category, resolve_work_root
 VALIDATOR = "ai-team-plan-and-task-check/v6"
 SPEC_SCHEMA = "ai-team-feature-spec/v1"
 PLAN_SCHEMA = "ai-team-plan-and-task/v5"
-ACCEPTED_STATUSES = {"accept", "working"}
+ACCEPTED_STATUSES = {"accept", "accepted", "working"}
 PLACEHOLDER = re.compile(r"(?i)\b(?:TBD|TODO|FIXME)\b|<[^>]+>|path/to/file")
 ID_SPLIT = re.compile(r"\s*(?:,|;|<br\s*/?>)\s*", re.IGNORECASE)
 HTTP_URL = re.compile(r"^https?://\S+$", re.IGNORECASE)
@@ -152,6 +154,46 @@ def _decision_evidence(value: object) -> bool:
     return bool(HTTP_URL.fullmatch(str(value or "").strip()))
 
 
+def _utc_timestamp(value: object) -> bool:
+    if not isinstance(value, str) or not value.strip():
+        return False
+    try:
+        parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return parsed.utcoffset() == timedelta(0)
+
+
+def _recorded_acceptance(
+    project_root: Path, value: object
+) -> tuple[bool, str]:
+    raw = str(value or "").strip()
+    if not _evidence_file(project_root, raw):
+        return False, ""
+    path = project_root / raw
+    try:
+        if path.suffix.lower() == ".json":
+            record = json.loads(path.read_text(encoding="utf-8"))
+        elif path.suffix.lower() in {".yml", ".yaml"}:
+            record = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        else:
+            record, _ = _frontmatter(path)
+    except (OSError, UnicodeError, ValueError, json.JSONDecodeError, yaml.YAMLError):
+        return False, ""
+    if not isinstance(record, dict):
+        return False, ""
+    acceptance = record.get("acceptance") or {}
+    if not isinstance(acceptance, dict):
+        return False, ""
+    actor = str(acceptance.get("decided_by", "")).strip()
+    valid = (
+        _status(acceptance.get("status")) in {"accepted", "working"}
+        and _named_decider(actor)
+        and _utc_timestamp(acceptance.get("decided_at"))
+    )
+    return valid, actor
+
+
 def _named_decider(value: object) -> bool:
     return str(value or "").strip().lower() not in {
         "",
@@ -270,17 +312,41 @@ def evaluate(
             spec_category = plan_category = "invalid"
         issue_source = plan_meta.get("issue_source")
         issue_source = issue_source if isinstance(issue_source, dict) else {}
-        source_ok = all(
+        primary_authority = str(plan_meta.get("primary_issue", "")).strip()
+        feature_record = str(plan_meta.get("feature_record", "")).strip()
+        record_backed = bool(feature_record)
+        online_authority = _decision_evidence(primary_authority)
+        local_authority = _evidence_file(project_root, primary_authority)
+        online_source_ok = all(
             str(issue_source.get(key, "")).strip()
             for key in ("repository", "issue_number", "updated_at", "body_hash")
+        )
+        source_ok = (
+            online_source_ok
+            if online_authority
+            else (
+                local_authority
+                and str(issue_source.get("kind", "")).strip().lower()
+                == "local-record"
+            )
+        )
+        record_acceptance_ok, record_decider = _recorded_acceptance(
+            project_root, feature_record
         )
         identity_ok = (
             plan_meta.get("schema") == PLAN_SCHEMA
             and str(plan_meta.get("work_id", "")) == work_id
             and spec_category == category
             and plan_category == category
-            and _decision_evidence(plan_meta.get("primary_issue"))
+            and (online_authority or local_authority)
             and source_ok
+            and (
+                not record_backed
+                or (
+                    _evidence_file(project_root, feature_record)
+                    and spec_meta.get("feature_record") == feature_record
+                )
+            )
             and spec_meta.get("schema") == SPEC_SCHEMA
             and str(spec_meta.get("work_id", "")) == work_id
             and spec_meta.get("primary_issue") == plan_meta.get("primary_issue")
@@ -289,28 +355,78 @@ def evaluate(
             "IDENTITY", identity_ok, "schema, work ID, type, and primary Issue agree"
         )
 
-        accepted = _status(plan_meta.get("issue_status")) in ACCEPTED_STATUSES
+        online_state_ok = (
+            _status(plan_meta.get("issue_status")) in ACCEPTED_STATUSES
+        )
+        accepted = (
+            record_acceptance_ok
+            and (online_state_ok if online_authority else local_authority)
+            if record_backed
+            else online_state_ok
+        )
+        if record_backed and online_authority:
+            state_detail = (
+                "online parent Requirement is accepted and the Feature Record "
+                "contains a named, timestamped human acceptance"
+                if accepted
+                else (
+                    "online parent Requirement must be status/accept or "
+                    "status/working, and the Feature Record must contain human "
+                    "acceptance"
+                )
+            )
+        elif record_backed:
+            state_detail = (
+                "local Requirement and Feature Record contain persisted human acceptance"
+                if accepted
+                else (
+                    "local Requirement and Feature Record must contain "
+                    "persisted human acceptance"
+                )
+            )
+        else:
+            state_detail = (
+                "Plan records status/accept or status/working"
+                if accepted
+                else "Issue must be status/accept or status/working"
+            )
         record(
             "ISSUE_STATE",
             accepted,
-            "Plan records status/accept or status/working"
-            if accepted
-            else "Issue must be status/accept or status/working",
+            state_detail,
             blocked=True,
         )
         approval = plan_meta.get("approval")
         approval = approval if isinstance(approval, dict) else {}
-        approval_ok = (
-            accepted
-            and _named_decider(approval.get("decided_by"))
-            and _decision_evidence(approval.get("evidence_url"))
+        approval_decider = str(approval.get("decided_by", "")).strip()
+        approval_ok = accepted and _named_decider(approval_decider) and (
+            (
+                record_backed
+                and str(approval.get("decision_source", "")).strip().lower()
+                in {"conversation", "local-record"}
+                and str(approval.get("evidence_record", "")).strip()
+                == feature_record
+                and approval_decider == record_decider
+            )
+            or (
+                not record_backed
+                and _decision_evidence(approval.get("evidence_url"))
+            )
         )
         record(
             "ISSUE_APPROVAL_EVIDENCE",
             approval_ok,
-            "human decision reference is structurally recorded; remote authenticity is not asserted"
+            (
+                "named human acceptance is recorded in the local Feature Record"
+                if record_backed
+                else "human decision reference is structurally recorded; remote authenticity is not asserted"
+            )
             if approval_ok
-            else "accepted work requires a named decider and an http(s) decision URL",
+            else (
+                "record-backed work requires a matching named decider, local evidence record, and conversation/local-record source"
+                if record_backed
+                else "accepted online work requires a named decider and an http(s) decision URL"
+            ),
             blocked=True,
         )
 

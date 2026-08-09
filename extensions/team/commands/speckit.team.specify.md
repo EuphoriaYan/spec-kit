@@ -43,9 +43,12 @@ When `feature_id=<id>` is present:
 
    Stop on a missing/unaccepted Feature, an unlocked Feature Record location,
    Catalog mismatch, or invalid identity.
-4. Read the parent Requirement Issue and the accepted Feature Record. Do not
-   require L0/L1 files. When present, use them only as project constraints;
-   when absent, continue without creating placeholders.
+4. Read the parent Requirement authority and the accepted Feature Record. The
+   parent may be a verified online Issue or an accepted local Requirement
+   Record. Only the online form has status labels; never require or simulate a
+   label for the local form. Do not require L0/L1 files. When present, use them
+   only as project constraints; when absent, continue without creating
+   placeholders.
 5. Transition the Feature Record from `backlog` to `specifying` before
    specification work, validating the previous phase. Read
    `references/feature-spec.md` immediately before writing
@@ -68,7 +71,7 @@ Output:
 Team Specify Result:
 - mode: feature-record
 - Feature ID and Record:
-- parent Requirement Issue:
+- parent Requirement authority:
 - Feature acceptance:
 - Spec: .specify/<feature_id>/spec.md
 - optional architecture context:

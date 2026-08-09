@@ -21,6 +21,13 @@ another role's references.
 4. Stop when repository boundary, Issue identity, governance decision, or
    public-contract authority is missing or contradictory.
 
+Resolve approval by authority type. Online Issues use verified labels and
+decision URLs. Local Requirement/Feature Records use named, timestamped
+acceptance persisted in the Record. If the current user explicitly approves a
+presented local Gate, record that conversation decision and continue after
+validation; never wait for an Issue label or invent an HTTP URL when no Issue
+exists. Ambiguous acknowledgements are not approval.
+
 Requirement prefers one verified remote Requirement Issue and uses a local
 Requirement Record only after publication failure and explicit human choice.
 Feature Split asks once for
@@ -44,10 +51,12 @@ Defect reports belong to the separate Assess -> Fix -> Review flow.
 
 ### Architect: Plan And Task
 
-Load the Issue body, relevant discussion, labels, and decision evidence. The
-accepted Issue body is primary; merge comments only when a human decision
-clearly accepts them. Then load the source revision, architecture guidance,
-CodeGraph evidence, and only the affected module context.
+Load the selected Requirement authority, accepted Feature Record, and decision
+evidence. For an online Issue, its accepted body is primary and comments merge
+only when a human decision clearly accepts them. For a local Requirement, use
+the accepted Record and do not require labels. Then load the source revision,
+architecture guidance, CodeGraph evidence, and only the affected module
+context.
 
 Generate `spec.md` from accepted User Stories. Produce the Plan HLD first, stop
 for the human continue/pause/revise decision, then resume the same

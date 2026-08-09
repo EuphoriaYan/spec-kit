@@ -64,9 +64,9 @@ def test_first_confirmation_to_accepted_feature_sdd_entry(tmp_path: Path) -> Non
         "title": "Repository Feature lifecycle",
         "parent_requirement": "https://example.test/issues/25",
         "acceptance": {
-            "status": "accepted",
-            "decided_by": "architecture-group",
-            "decided_at": "2026-07-25T00:10:00Z",
+            "status": "proposed",
+            "decided_by": "",
+            "decided_at": "",
         },
         "delivery": {
             "phase": "backlog",
@@ -109,16 +109,40 @@ def test_first_confirmation_to_accepted_feature_sdd_entry(tmp_path: Path) -> Non
         encoding="utf-8",
     )
 
-    ready = _run(
+    still_proposed = _run(
         "check_feature_record.py",
         tmp_path,
         "--feature-id",
         "FEAT-001",
         "--require-accepted",
     )
+    assert still_proposed.returncode == 2
+    assert "Feature must be accepted" in still_proposed.stderr
+
+    ready = _run(
+        "check_feature_record.py",
+        tmp_path,
+        "--feature-id",
+        "FEAT-001",
+        "--record-verbal-acceptance-by",
+        "architecture-group",
+        "--decided-at",
+        "2026-07-25T00:10:00Z",
+        "--require-accepted",
+    )
     assert ready.returncode == 0, ready.stdout
     payload = json.loads(ready.stdout)
     assert payload["status"] == "ready"
+    assert payload["acceptance_recorded"] is True
+    accepted_record = yaml.safe_load(
+        record_path.read_text(encoding="utf-8").split("---", 2)[1]
+    )
+    assert accepted_record["acceptance"] == {
+        "status": "accepted",
+        "decided_by": "architecture-group",
+        "decided_at": "2026-07-25T00:10:00Z",
+        "decision_source": "conversation",
+    }
     assert Path(payload["feature_record"]).as_posix().endswith(
         "docs/features/FEAT-001.md"
     )
@@ -147,9 +171,9 @@ source:
   fallback_selected_by: repository-owner
   fallback_selected_at: "2026-07-25T00:00:00Z"
 acceptance:
-  status: accepted
-  decided_by: repository-owner
-  decided_at: "2026-07-25T00:00:00Z"
+  status: proposed
+  decided_by: ""
+  decided_at: ""
 architecture:
   l0_status: not-present
   l0_path: ""
@@ -162,11 +186,25 @@ architecture:
         encoding="utf-8",
     )
 
+    blocked = _run(
+        "check_feature_record.py",
+        tmp_path,
+        "--requirement-record",
+        "docs/requirements/REQ-001.md",
+        "--require-accepted",
+    )
+    assert blocked.returncode == 2
+    assert "local Requirement must be accepted" in blocked.stderr
+
     checked = _run(
         "check_feature_record.py",
         tmp_path,
         "--requirement-record",
         "docs/requirements/REQ-001.md",
+        "--record-verbal-acceptance-by",
+        "repository-owner",
+        "--decided-at",
+        "2026-07-25T00:00:00Z",
         "--require-accepted",
     )
     shown = _run("configure_feature_tracking.py", tmp_path, "--show")
@@ -175,6 +213,7 @@ architecture:
     payload = json.loads(checked.stdout)
     assert payload["record_type"] == "requirement"
     assert payload["requirement_id"] == "REQ-001"
+    assert payload["acceptance_recorded"] is True
     assert shown.returncode == 0, shown.stderr
     tracking = json.loads(shown.stdout)
     assert tracking["recommended_root"] == "docs/features"

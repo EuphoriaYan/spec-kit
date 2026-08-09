@@ -7,6 +7,7 @@ acceptance:
   status: proposed
   decided_by: ""
   decided_at: ""
+  decision_source: ""
 delivery:
   phase: backlog
   branch: ""

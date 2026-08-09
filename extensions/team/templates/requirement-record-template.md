@@ -14,6 +14,7 @@ acceptance:
   status: proposed
   decided_by: ""
   decided_at: ""
+  decision_source: ""
 architecture:
   l0_status: not-present
   l0_path: ""

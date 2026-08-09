@@ -104,6 +104,24 @@ and use the URL as the superseding authority. Never treat file creation as Requi
 acceptance. Run `scripts/check_feature_record.py --requirement-record
 <repository-relative-path>` after creation.
 
+When the current user explicitly accepts the local Requirement in conversation,
+do not ask them to edit YAML and do not wait for an Issue label that cannot
+exist. Confirm that the decision applies to the current Requirement Gate, obtain
+the human decision name only when it is not already known, and run:
+
+```text
+scripts/check_feature_record.py \
+  --requirement-record <repository-relative-path> \
+  --record-verbal-acceptance-by <named-human> \
+  --require-accepted
+```
+
+This records `accepted`, the named human, UTC time, and
+`decision_source: conversation` before validation. Ordinary acknowledgements
+such as “好的” or “继续看看” are not acceptance. Explicit phrases such as
+“批准”, “接受”, or “accept REQ-001” are acceptance for the currently presented
+Gate. The Skill records the human decision; it never creates one.
+
 ## Output
 
 ```text

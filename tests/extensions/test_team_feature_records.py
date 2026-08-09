@@ -178,7 +178,7 @@ def test_configurable_yaml_and_json_records(
     )
     feature_root = tmp_path / "product/features"
     feature_root.mkdir(parents=True)
-    data = _record()
+    data = _record(accepted=False)
     record_path = feature_root / record_name
     if format_name == "yaml":
         record_path.write_text(yaml.safe_dump(data), encoding="utf-8")
@@ -198,11 +198,27 @@ def test_configurable_yaml_and_json_records(
         encoding="utf-8",
     )
 
-    path, _, errors = module.validate_feature_record(
+    _, _, blocked = module.validate_feature_record(
         tmp_path, "FEAT-001", require_accepted=True
     )
+    assert "Feature must be accepted before entering SDD" in blocked
 
+    module.accept_feature_record(
+        tmp_path,
+        "FEAT-001",
+        "architecture-group",
+        decided_at="2026-07-27T00:00:00Z",
+    )
+    path, accepted, errors = module.validate_feature_record(
+        tmp_path, "FEAT-001", require_accepted=True
+    )
     assert path == record_path
+    assert accepted["acceptance"] == {
+        "status": "accepted",
+        "decided_by": "architecture-group",
+        "decided_at": "2026-07-27T00:00:00Z",
+        "decision_source": "conversation",
+    }
     assert errors == []
 
 
