@@ -37,8 +37,11 @@ excerpt alone.
 
 The legacy Issue must have type label `type/feature` and exactly one status
 label. Planning may start only at `status/accept` or resume at
-`status/working`. In record-backed mode, the parent Requirement Issue must be
-readable and the Feature Record must be accepted. If the input is
+`status/working`. In record-backed mode, the parent Requirement authority must
+be readable and the Feature Record must be accepted. A parent online Issue
+uses verified labels; a parent local Requirement Record uses its named,
+timestamped acceptance and must never be blocked for lacking an Issue label.
+If the input is
 `type/bugfix`, stop and direct the user to the Bugfix path.
 
 ## Issue Identity And Summary
@@ -55,6 +58,13 @@ readable and the Feature Record must be accepted. If the input is
    body hash so later runs can detect stale planning input.
 5. Record the named human or governance body and exact Issue/comment URL that
    supports `status/accept`. The skill cannot grant acceptance.
+
+In record-backed mode, record the accepted Feature Record path instead:
+`approval.decision_source: conversation|local-record`,
+`approval.evidence_record: <feature-record-path>`, and the same named human as
+the Feature Record acceptance. Leave `approval.evidence_url` empty when no
+online decision URL exists. The deterministic checker accepts this local
+decision branch and must not request an Issue label or fabricated URL.
 
 ## Flow
 
@@ -227,7 +237,8 @@ Team Plan And Task:
 - result: plan-awaiting-decision / plan-paused / ready / revise / blocked
 ```
 
-Stop when the Issue cannot be read, labels are invalid, status is not accepted
-or working, accepted discussion cannot be distinguished from unresolved
+Stop when the selected authority cannot be read, online labels are invalid,
+the applicable online or local state is not accepted/working, accepted
+discussion cannot be distinguished from unresolved
 discussion, public-contract authority is missing, scope exceeds the accepted
 Issue, or the deterministic check remains blocked.

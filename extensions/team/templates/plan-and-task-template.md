@@ -7,13 +7,16 @@ primary_issue: ""
 feature_record: ""
 issue_status: status/accept
 issue_source:
+  kind: online-issue
   repository: ""
   issue_number: ""
   updated_at: ""
   body_hash: ""
 approval:
   decided_by: ""
+  decision_source: online-issue
   evidence_url: ""
+  evidence_record: ""
 planning_stage: plan-review
 architecture_impact:
   level: pending

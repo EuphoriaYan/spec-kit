@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -264,6 +264,132 @@ def _load_markdown_frontmatter(path: Path) -> dict[str, Any]:
         raise ValueError("markdown Feature Record has unterminated frontmatter")
     loaded = yaml.safe_load(text[4:end]) or {}
     return _mapping(loaded, "record frontmatter")
+
+
+def _write_markdown_frontmatter(path: Path, record: dict[str, Any]) -> None:
+    text = path.read_text(encoding="utf-8")
+    if not text.startswith("---\n"):
+        raise ValueError(f"{path} must start with YAML frontmatter")
+    end = text.find("\n---", 4)
+    if end < 0:
+        raise ValueError(f"{path} has unterminated frontmatter")
+    body = text[end + 4 :]
+    rendered = yaml.safe_dump(
+        record,
+        sort_keys=False,
+        allow_unicode=True,
+    )
+    path.write_text(f"---\n{rendered}---{body}", encoding="utf-8")
+
+
+def _write_record(path: Path, record: dict[str, Any], format_name: str) -> None:
+    if format_name == "markdown-frontmatter":
+        _write_markdown_frontmatter(path, record)
+    elif format_name == "yaml":
+        path.write_text(
+            yaml.safe_dump(record, sort_keys=False, allow_unicode=True),
+            encoding="utf-8",
+        )
+    elif format_name == "json":
+        path.write_text(
+            json.dumps(record, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+    else:
+        raise ValueError(f"unsupported record format {format_name!r}")
+
+
+def _decision_time(value: str | None) -> str:
+    if value:
+        if not _is_utc_timestamp(value):
+            raise ValueError("decided_at must be an ISO-8601 UTC timestamp")
+        return value.strip()
+    return (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+
+
+def _record_human_acceptance(
+    path: Path,
+    record: dict[str, Any],
+    decided_by: str,
+    *,
+    decided_at: str | None = None,
+    format_name: str = "markdown-frontmatter",
+) -> dict[str, Any]:
+    actor = decided_by.strip()
+    if not actor:
+        raise ValueError("decided_by must name the human who approved the record")
+    acceptance = record.get("acceptance") or {}
+    acceptance = _mapping(acceptance, "acceptance")
+    current = str(acceptance.get("status", "")).strip()
+    if current == "accepted":
+        if str(acceptance.get("decided_by", "")).strip() != actor:
+            raise ValueError(
+                "record is already accepted by another decision authority"
+            )
+        return record
+    if current != "proposed":
+        raise ValueError(
+            f"only a proposed record can be verbally accepted (current: {current or 'missing'})"
+        )
+    record["acceptance"] = {
+        **acceptance,
+        "status": "accepted",
+        "decided_by": actor,
+        "decided_at": _decision_time(decided_at),
+        "decision_source": "conversation",
+    }
+    _write_record(path, record, format_name)
+    return record
+
+
+def accept_local_requirement_record(
+    project_root: Path,
+    relative_path: str,
+    decided_by: str,
+    *,
+    decided_at: str | None = None,
+) -> tuple[Path, dict[str, Any]]:
+    """Persist an explicit human conversation decision on a local Requirement."""
+    path, record, errors = validate_local_requirement_record(
+        project_root,
+        relative_path,
+    )
+    if errors:
+        raise ValueError("; ".join(errors))
+    updated = _record_human_acceptance(
+        path,
+        record,
+        decided_by,
+        decided_at=decided_at,
+    )
+    return path, updated
+
+
+def accept_feature_record(
+    project_root: Path,
+    feature_id: str,
+    decided_by: str,
+    *,
+    decided_at: str | None = None,
+) -> tuple[Path, dict[str, Any]]:
+    """Persist an explicit human conversation decision on a Feature Record."""
+    path, record, errors = validate_feature_record(project_root, feature_id)
+    if errors:
+        raise ValueError("; ".join(errors))
+    tracking = load_tracking(project_root)
+    updated = _record_human_acceptance(
+        path,
+        record,
+        decided_by,
+        decided_at=decided_at,
+        format_name=tracking.format,
+    )
+    return path, updated
 
 
 def validate_local_requirement_record(

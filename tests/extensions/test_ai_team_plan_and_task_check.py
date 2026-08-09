@@ -492,6 +492,102 @@ def test_draft_issue_blocks_planning(tmp_path: Path) -> None:
     assert "| ISSUE_STATE | BLOCK |" in rendered
 
 
+def test_record_backed_verbal_acceptance_does_not_require_issue_label_or_url(
+    tmp_path: Path,
+) -> None:
+    module = _module()
+    root = _write_package(tmp_path, "FEAT-001", "feature")
+    requirement = tmp_path / "docs/requirements/REQ-001.md"
+    requirement.parent.mkdir(parents=True)
+    requirement.write_text(
+        """---
+schema: speckit-requirement-record/v1
+requirement_id: REQ-001
+title: Offline requirement
+acceptance:
+  status: accepted
+  decided_by: repository-owner
+  decided_at: "2026-07-27T00:00:00Z"
+---
+""",
+        encoding="utf-8",
+    )
+    feature = tmp_path / "docs/features/FEAT-001.md"
+    feature.parent.mkdir(parents=True)
+    feature.write_text(
+        """---
+schema: speckit-feature-record/v1
+feature_id: FEAT-001
+title: Offline-approved feature
+acceptance:
+  status: accepted
+  decided_by: architecture-group
+  decided_at: "2026-07-27T00:10:00Z"
+  decision_source: conversation
+---
+""",
+        encoding="utf-8",
+    )
+
+    for name in ("spec.md", "plan-and-task.md"):
+        path = root / name
+        text = path.read_text(encoding="utf-8")
+        text = text.replace(
+            "primary_issue: https://example.com/org/repo/issues/FEAT-001",
+            "primary_issue: docs/requirements/REQ-001.md\n"
+            "feature_record: docs/features/FEAT-001.md",
+        ).replace(
+            """issue_source:
+  repository: example.com/org/repo
+  issue_number: "FEAT-001"
+  updated_at: "2026-07-15T10:00:00Z"
+  body_hash: sha256:accepted-body""",
+            """issue_source:
+  kind: local-record""",
+        ).replace(
+            """approval:
+  decided_by: technical-committee@example.com
+  evidence_url: https://example.com/org/repo/issues/FEAT-001#accepted""",
+            """approval:
+  decided_by: architecture-group
+  decision_source: conversation
+  evidence_url: ""
+  evidence_record: docs/features/FEAT-001.md""",
+        )
+        path.write_text(text, encoding="utf-8")
+
+    result, rendered = module.evaluate(tmp_path, "feature", "FEAT-001")
+
+    assert result == "ready", rendered
+    assert "| IDENTITY | PASS |" in rendered
+    assert "| ISSUE_STATE | PASS |" in rendered
+    assert "| ISSUE_APPROVAL_EVIDENCE | PASS |" in rendered
+    assert "http(s) decision URL" not in rendered
+
+    for name in ("spec.md", "plan-and-task.md"):
+        path = root / name
+        text = path.read_text(encoding="utf-8").replace(
+            "primary_issue: docs/requirements/REQ-001.md",
+            "primary_issue: https://example.com/org/repo/issues/99",
+        ).replace(
+            """issue_source:
+  kind: local-record""",
+            """issue_source:
+  kind: online-issue
+  repository: example.com/org/repo
+  issue_number: "99"
+  updated_at: "2026-07-27T00:00:00Z"
+  body_hash: sha256:draft-body""",
+        ).replace("issue_status: status/accept", "issue_status: status/new-issue")
+        path.write_text(text, encoding="utf-8")
+
+    result, rendered = module.evaluate(tmp_path, "feature", "FEAT-001")
+
+    assert result == "blocked"
+    assert "| ISSUE_STATE | BLOCK |" in rendered
+    assert "online parent Requirement must be status/accept" in rendered
+
+
 def test_public_contract_requires_human_authority(
     tmp_path: Path,
 ) -> None:

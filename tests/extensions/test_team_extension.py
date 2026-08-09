@@ -60,6 +60,8 @@ def test_requirement_and_feature_split_define_both_lifecycle_entries():
     )
     assert "do not require L0 or L1 documents" in requirement
     assert "never create one remote Issue per Feature" in requirement
+    assert "--record-verbal-acceptance-by" in requirement
+    assert "Ordinary acknowledgements" in requirement
 
     assert "Confirm Feature Record Location Once" in split
     assert split.index("Confirm Feature Record Location Once") < split.index(
@@ -71,6 +73,8 @@ def test_requirement_and_feature_split_define_both_lifecycle_entries():
     assert "L0/L1 documents are optional" in split
     assert "Produce L1" in split
     assert "separate `accepted`, `deferred`, or `rejected` decision" in split
+    assert "Never tell a local-only user to change an Issue label" in split
+    assert "--record-verbal-acceptance-by" in split
     assert "not one remote" in split
 
 

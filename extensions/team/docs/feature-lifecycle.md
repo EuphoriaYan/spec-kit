@@ -68,6 +68,24 @@ advance a Feature only when explicitly requested and when the Feature Record
 stores an immutable Git commit or sha256 patch revision in
 `delivery.review_target`; sentinel text such as `local=true` is never a PR URL.
 
+## Approval Authority
+
+State transitions follow the available authority instead of assuming every
+draft has an Issue:
+
+- an online Issue uses verified `status/accept` or `status/working` labels;
+- a repository-local Requirement or Feature Record uses its structured
+  `acceptance` decision;
+- a local architecture or Plan review uses the named decision persisted in the
+  reviewed artifact.
+
+When a user explicitly approves the currently presented local Gate in
+conversation, the active Skill records `accepted`, the named human, UTC time,
+and `decision_source: conversation`, then validates the updated artifact. It
+never asks for an Issue label or HTTP decision URL when no Issue exists.
+Ambiguous acknowledgements are not approval, and an agent never supplies the
+human decision itself.
+
 ## Requirement Authority
 
 The normal authority is a verified online Requirement Issue URL because it

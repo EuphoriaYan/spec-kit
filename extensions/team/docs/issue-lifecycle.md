@@ -23,6 +23,13 @@ Every Issue has exactly one status label:
 Publishing an Issue never grants `status/accept`. The governance body changes
 that label outside the role skill.
 
+These labels govern online Issues only. A repository-local Requirement Record
+or Feature Record has no Issue label and must not be blocked waiting for one.
+Its equivalent transition is a named, timestamped human acceptance persisted
+in the Record. An explicit approval in the current conversation may be
+recorded by the active Skill; this captures the human decision and does not
+allow the Skill to invent acceptance.
+
 ## Repository Route
 
 | Repository | Allowed work |
