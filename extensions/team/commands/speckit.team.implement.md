@@ -74,6 +74,11 @@ Do not modify the Catalog, another Feature Record, or workflow files.
    Read the returned paths in order before editing. Stop only when the project
    itself marked a missing matching document `required`; otherwise record any
    absent document only as a non-blocking improvement suggestion.
+   Read `references/quality-gates.md`. When quality gates are enabled, run only
+   the `command` and `static` engines for role `developer` and phase
+   `implementing`; keep the JSON evidence with the work package. Do not invent
+   Model-as-Judge results during implementation or bypass a deterministic
+   failure.
 4. Create or minimally update `work-context.yml` with `work_id`/`feature_id`,
    `feature_record`, the relative `feature_root`, artifact names,
    `phase: implementing`, and an ISO

@@ -480,6 +480,7 @@ def test_team_skills_install_with_local_references_and_scripts(
         "gitcode-host-contract.md",
         "memory-runtime.md",
         "project-context-routing.md",
+        "quality-gates.md",
     }
     for skill in (fix_skill, review_skill):
         assert (skill / "SKILL.md").is_file()
@@ -499,6 +500,7 @@ def test_team_skills_install_with_local_references_and_scripts(
         "implement-pr.md",
         "memory-runtime.md",
         "project-context-routing.md",
+        "quality-gates.md",
     }
     assert (implement_skill / "scripts/check_evidence_steps.py").is_file()
     assert (implement_skill / "scripts/check_permission_envelope.py").is_file()
@@ -507,6 +509,8 @@ def test_team_skills_install_with_local_references_and_scripts(
     assert (implement_skill / "scripts/memory_adapter.py").is_file()
     assert (implement_skill / "scripts/resolve_project_context.py").is_file()
     assert (review_skill / "scripts/resolve_project_context.py").is_file()
+    assert (implement_skill / "scripts/run_quality_gates.py").is_file()
+    assert (review_skill / "scripts/run_quality_gates.py").is_file()
     assert (memory_skill / "SKILL.md").is_file()
     assert {
         path.name for path in (memory_skill / "references").glob("*.md")
@@ -719,6 +723,9 @@ def test_team_work_item_layout_and_templates_are_unified() -> None:
         "feature-record-template.md",
         "requirement-record-template.md",
         "project-context-template.yml",
+        "model-judge-results-template.yml",
+        "quality-overrides-template.yml",
+        "quality-rules-template.yml",
         "shared-contract-template.md",
     }
     assert {path.name for path in (AI_TEAM / "templates").iterdir() if path.is_file()} == expected
@@ -820,6 +827,10 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "references/gitcode-host-contract.md",
         "references/memory-runtime.md",
         "references/project-context-routing.md",
+        "references/model-judge-results-template.yml",
+        "references/quality-gates.md",
+        "references/quality-overrides-template.yml",
+        "references/quality-rules-template.yml",
         "scripts/check_evidence_steps.py",
         "scripts/check_plan_and_task.py",
         "scripts/check_permission_envelope.py",
@@ -827,6 +838,7 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "scripts/feature_records.py",
         "scripts/memory_adapter.py",
         "scripts/resolve_project_context.py",
+        "scripts/run_quality_gates.py",
         "scripts/work_item_paths.py",
     }
     assert commands["speckit.team.implement"] == {
@@ -835,6 +847,8 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "references/implement-pr.md",
         "references/memory-runtime.md",
         "references/project-context-routing.md",
+        "references/quality-gates.md",
+        "references/quality-rules-template.yml",
         "scripts/check_evidence_steps.py",
         "scripts/check_feature_record.py",
         "scripts/check_permission_envelope.py",
@@ -842,6 +856,7 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "scripts/feature_records.py",
         "scripts/memory_adapter.py",
         "scripts/resolve_project_context.py",
+        "scripts/run_quality_gates.py",
         "scripts/work_item_paths.py",
     }
     assert commands["speckit.team.memory-consolidate"] == {

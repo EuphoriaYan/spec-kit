@@ -1,0 +1,48 @@
+schema: speckit-quality-rules/v1
+pack:
+  id: project-quality
+  version: 1.0.0
+
+# enforcement: required -> failure is NO-GO
+#              advisory -> failure is GO-WITH-RISK when no required rule fails
+# engine: command | static | model-as-judge
+rules: []
+
+# Example command rule:
+# - id: BUILD-001
+#   title: Project tests pass
+#   category: build
+#   severity: blocker
+#   enforcement: required
+#   engine: command
+#   phases: [implementing, reviewing]
+#   command:
+#     argv: ["./mvnw", "test"]
+#     windows_argv: ["mvnw.cmd", "test"]
+#     timeout_seconds: 300
+
+# Example static rule:
+# - id: REPO-001
+#   title: No committed secrets
+#   category: security
+#   severity: blocker
+#   enforcement: required
+#   engine: static
+#   phases: [implementing, reviewing]
+#   static:
+#     check: forbidden-regex
+#     pattern: "(?i)(api[_-]?key|password)\\s*[:=]\\s*['\"][^'\"]+"
+#     include: ["**/*", "*"]
+#     exclude: ["**/*.md", "**/test/**"]
+
+# Example model rule:
+# - id: ARCH-001
+#   title: Changes preserve declared module boundaries
+#   category: architecture
+#   severity: major
+#   enforcement: required
+#   engine: model-as-judge
+#   phases: [reviewing]
+#   model:
+#     instruction: Compare the diff with selected architecture and contract documents.
+#     evidence_required: [changed-files, project-context]

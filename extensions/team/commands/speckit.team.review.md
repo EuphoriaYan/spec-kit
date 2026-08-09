@@ -84,6 +84,14 @@ repository explicitly marked `required`; treat all other absences as optional
 improvement suggestions. The reviewer produces only `GO`, `GO-WITH-RISK`, or
 `NO-GO` plus evidence. A human remains responsible for any merge action.
 
+Read `references/quality-gates.md`. When quality gates are enabled, evaluate
+the applicable Model-as-Judge instructions against the diff and already
+selected project context, write the structured judge-results file, and run the
+complete gate. A missing or failed Model-as-Judge result defaults to `NO-GO`.
+Reduce it to `GO-WITH-RISK` only when the supplied override records a named
+human, timestamp, and reason. Never override command or static failures, and
+never merge as part of review.
+
 Review the diff, not just the PR description. Prioritize findings that affect:
 
 - functional correctness, edge cases, error handling, concurrency, and data

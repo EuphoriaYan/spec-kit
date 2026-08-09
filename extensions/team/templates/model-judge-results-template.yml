@@ -1,0 +1,8 @@
+schema: speckit-model-judge-results/v1
+results: []
+
+# - rule_id: ARCH-001
+#   status: pass # pass | fail | not-assessed
+#   rationale: The change stays inside the declared module boundary.
+#   evidence:
+#     - src/example/Changed.java:42

@@ -1,0 +1,10 @@
+schema: speckit-quality-overrides/v1
+overrides: []
+
+# Only a failed `model-as-judge` rule may be reduced from NO-GO to
+# GO-WITH-RISK. The decision must be made by a named human.
+# - rule_id: ARCH-001
+#   outcome: go-with-risk
+#   decided_by: Human Name
+#   decided_at: 2026-08-09T12:00:00+08:00
+#   reason: The judge treated an approved compatibility adapter as duplication.
