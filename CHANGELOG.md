@@ -2,6 +2,29 @@
 
 <!-- insert new changelog below this comment -->
 
+## [0.12.5+teamwork.5] - 2026-08-10
+
+### Added
+
+- Configurable detailed-behavior confirmation with explicit Feature Record
+  writeback and learner-visible confirmation evidence.
+- Distinct L0, L1, Feature, L2, Plan, and Task viewpoints plus repository-owned
+  shared-contract promotion.
+- `speckit.team.complete` for post-merge release evidence validation and Feature
+  completion backfill.
+- Optional role- and phase-aware project-context routing.
+- Versioned static, command, and Model-as-Judge quality rule packs with human
+  `GO-WITH-RISK` exceptions limited to assessed model findings.
+
+### Changed
+
+- Keep existing behavior-confirmation policy advisory when older projects omit
+  the new configuration, while new Team installations require confirmation.
+- Preserve historical completed Feature Records through compatibility mode and
+  default Git evidence verification to best-effort instead of treating local
+  `HEAD` ancestry as release authority.
+- Update the Team extension from `0.9.0` to `0.10.0`.
+
 ## [0.12.5+teamwork.2] - 2026-07-17
 
 ### Added

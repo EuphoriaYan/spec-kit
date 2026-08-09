@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: team
   name: "AI Team SDD Skills"
-  version: "0.9.0"
+  version: "0.10.0"
   description: "Project, Feature, Bugfix, review, Knowledge, and Memory skills for enterprise SDD delivery."
   author: AI Team Template
   repository: https://github.com/EuphoriaYan/spec-kit
