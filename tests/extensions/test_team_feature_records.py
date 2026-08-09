@@ -42,6 +42,12 @@ def _record(
             "decided_by": "architecture-group" if accepted else "",
             "decided_at": "2026-07-25T00:00:00Z" if accepted else "",
         },
+        "behavior_acceptance": {
+            "status": "accepted" if phase != "backlog" else "proposed",
+            "decided_by": "product-owner" if phase != "backlog" else "",
+            "decided_at": "2026-07-25T01:00:00Z" if phase != "backlog" else "",
+            "decision_source": "conversation" if phase != "backlog" else "",
+        },
         "delivery": {
             "phase": phase,
             "pull_request": "",
@@ -118,7 +124,9 @@ def _write_markdown_record(root: Path, data: dict):
     path = root / "docs" / "features" / f"{data['feature_id']}.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        f"---\n{yaml.safe_dump(data, sort_keys=False)}---\n\n# Feature\n",
+        f"---\n{yaml.safe_dump(data, sort_keys=False)}---\n\n# Feature\n\n"
+        "## User Stories\n\n- US-001: User can complete the behavior.\n\n"
+        "## Verification\n\n- VER-001: The observable result is produced.\n",
         encoding="utf-8",
     )
     _write_catalog(
@@ -335,6 +343,82 @@ def test_unaccepted_feature_is_blocked_from_sdd(tmp_path: Path):
     )
 
     assert "Feature must be accepted before entering SDD" in errors
+
+
+def test_specifying_feature_requires_written_behavior_before_confirmation(
+    tmp_path: Path,
+):
+    module = _load_module("feature_records.py", "team_feature_behavior_missing")
+    _write_tracking_config(tmp_path)
+    data = _record(phase="specifying")
+    data["behavior_acceptance"] = {
+        "status": "proposed",
+        "decided_by": "",
+        "decided_at": "",
+        "decision_source": "",
+    }
+    path = _write_markdown_record(tmp_path, data)
+    path.write_text(
+        path.read_text(encoding="utf-8").replace(
+            "- VER-001: The observable result is produced.", ""
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="Verification must be written back"):
+        module.accept_feature_behavior(tmp_path, "FEAT-001", "product-owner")
+
+
+def test_human_can_confirm_written_behavior_and_unlock_planning(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_behavior_accept")
+    _write_tracking_config(tmp_path)
+    data = _record(phase="specifying")
+    data["behavior_acceptance"] = {
+        "status": "proposed",
+        "decided_by": "",
+        "decided_at": "",
+        "decision_source": "",
+    }
+    _write_markdown_record(tmp_path, data)
+
+    _, updated = module.accept_feature_behavior(
+        tmp_path,
+        "FEAT-001",
+        "product-owner",
+        decided_at="2026-07-27T02:00:00Z",
+    )
+    assert updated["behavior_acceptance"] == {
+        "status": "accepted",
+        "decided_by": "product-owner",
+        "decided_at": "2026-07-27T02:00:00Z",
+        "decision_source": "conversation",
+    }
+
+    path = tmp_path / "docs/features/FEAT-001.md"
+    text = path.read_text(encoding="utf-8")
+    text = text.replace("phase: specifying", "phase: planning")
+    path.write_text(text, encoding="utf-8")
+    _, _, errors = module.validate_feature_record(
+        tmp_path, "FEAT-001", previous_phase="specifying"
+    )
+    assert errors == []
+
+
+def test_planning_is_blocked_without_detailed_behavior_confirmation(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_behavior_gate")
+    _write_tracking_config(tmp_path)
+    data = _record(phase="planning")
+    data["behavior_acceptance"] = {
+        "status": "proposed",
+        "decided_by": "",
+        "decided_at": "",
+        "decision_source": "",
+    }
+    _write_markdown_record(tmp_path, data)
+
+    _, _, errors = module.validate_feature_record(tmp_path, "FEAT-001")
+
+    assert "detailed behavior must be accepted before leaving specifying" in errors
 
 
 def test_ready_to_merge_requires_complete_dod(tmp_path: Path):

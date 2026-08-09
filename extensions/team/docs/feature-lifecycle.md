@@ -60,8 +60,15 @@ ask the user and lock the chosen path before writing files. Local work packages
 default to `.specify/<feature_id>/`; legacy `.specify/feature/<work_id>/`
 packages remain readable.
 
-Feature acceptance and delivery phase are separate. Skills cannot accept
-requirements, approve architecture/Plans, or merge PRs on behalf of humans.
+Feature acceptance, detailed behavior confirmation, and delivery phase are
+separate. `acceptance` confirms that the Feature is worth doing and that its
+broad boundary is suitable for SDD. `behavior_acceptance` confirms the
+simplified User Stories and observable Verification written back by Specify.
+Specify must display the exact Feature Record path, the written-back User
+Stories, and every Verification ID before asking a named human to confirm. The
+Feature cannot leave `specifying` until that confirmation is recorded. Skills
+cannot accept requirements, approve architecture/Plans, or merge PRs on behalf
+of humans.
 
 Online pull requests are the preferred review authority. A local review may
 advance a Feature only when explicitly requested and when the Feature Record
