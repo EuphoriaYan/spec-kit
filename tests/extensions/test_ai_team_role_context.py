@@ -446,6 +446,7 @@ def test_team_skills_install_with_local_references_and_scripts(
     assert {
         path.name for path in (plan_skill / "references").glob("*.md")
     } == {
+        "architecture-delivery-flow.md",
         "code-graph-contract.md",
         "context.md",
         "feature-spec.md",
@@ -453,6 +454,7 @@ def test_team_skills_install_with_local_references_and_scripts(
         "handoff-spec-sync.md",
         "permission-envelope.md",
         "plan-and-task-format.md",
+        "shared-contract-template.md",
         "memory-runtime.md",
     }
     assert (plan_skill / "references/evidence-steps-template.yml").is_file()
@@ -664,7 +666,9 @@ def test_plan_and_task_role_uses_core_artifact_scripts_without_prompt_chain() ->
     ):
         assert removed_command not in text
     assert "minimum self-test" in text
-    assert "LLD-level" in text
+    assert "derive executable Tasks" in text
+    assert "L2 defines stable logical components" in text
+    assert "personal candidate interface is not contract authority" in text
     assert "self-verification scenario" in text
     assert "plan-and-task-check.md" in text
     assert ".specify/<feature_id>/" in text
@@ -703,6 +707,7 @@ def test_team_work_item_layout_and_templates_are_unified() -> None:
         "feature-catalog-template.yml",
         "feature-record-template.md",
         "requirement-record-template.md",
+        "shared-contract-template.md",
     }
     assert {path.name for path in (AI_TEAM / "templates").iterdir() if path.is_file()} == expected
     assert "plan-and-task.md" in layout
