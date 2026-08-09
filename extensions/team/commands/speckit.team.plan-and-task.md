@@ -121,6 +121,11 @@ decision branch and must not request an Issue label or fabricated URL.
    role `plan-and-task`, work type `feature`, and the affected modules. Apply
    binding Knowledge to the HLD and cite advisory Memory only when current
    source and Issue evidence still support it.
+   Read `references/project-context-routing.md`, then resolve project context
+   for role `architect`, phase `planning`, and the affected modules. Read the
+   returned paths in order. Stop only for a missing document that the repository
+   explicitly marked `required`; report all other absent documents as optional
+   improvement suggestions.
 8. Decide whether the Feature reuses existing L2 or requires an L2 delta.
    L2 defines stable logical components, responsibilities, data flow,
    interfaces, and dependency direction; it must not define classes, files,

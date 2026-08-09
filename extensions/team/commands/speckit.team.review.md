@@ -77,6 +77,13 @@ resolved work type, and changed modules. Review binding Knowledge as project
 policy. Use advisory Memory only to look for recurrent failure patterns; never
 raise a finding solely because a past attempt differed.
 
+Read `references/project-context-routing.md`, then resolve project context for
+role `reviewer`, phase `reviewing`, and the changed modules. Read returned paths
+in order before judging the diff. Stop only for a missing document that the
+repository explicitly marked `required`; treat all other absences as optional
+improvement suggestions. The reviewer produces only `GO`, `GO-WITH-RISK`, or
+`NO-GO` plus evidence. A human remains responsible for any merge action.
+
 Review the diff, not just the PR description. Prioritize findings that affect:
 
 - functional correctness, edge cases, error handling, concurrency, and data

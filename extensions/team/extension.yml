@@ -40,6 +40,12 @@ provides:
       file: commands/speckit.team.feature-split.md
       description: "Architecture/Product decomposition: review architecture context and create a validated repository Feature Catalog and Feature Records."
       resources:
+        - source: docs/project-context-routing.md
+          target: references/project-context-routing.md
+        - source: templates/project-context-template.yml
+          target: references/project-context-template.yml
+        - source: scripts/resolve_project_context.py
+          target: scripts/resolve_project_context.py
         - source: docs/architecture-delivery-flow.md
           target: references/architecture-delivery-flow.md
         - source: docs/feature-lifecycle.md
@@ -80,6 +86,10 @@ provides:
       file: commands/speckit.team.plan-and-task.md
       description: "Architect role: turn an accepted Feature Record or legacy Feature Issue into a CodeGraph-grounded L2 Plan, parallel Tasks, self-tests, and readiness check."
       resources:
+        - source: docs/project-context-routing.md
+          target: references/project-context-routing.md
+        - source: scripts/resolve_project_context.py
+          target: scripts/resolve_project_context.py
         - source: docs/architecture-delivery-flow.md
           target: references/architecture-delivery-flow.md
         - source: templates/shared-contract-template.md
@@ -152,6 +162,10 @@ provides:
       file: commands/speckit.team.implement.md
       description: "Developer role: implement task-ready Feature work, verify it, and enter the automatic quality loop before PR submission."
       resources:
+        - source: docs/project-context-routing.md
+          target: references/project-context-routing.md
+        - source: scripts/resolve_project_context.py
+          target: scripts/resolve_project_context.py
         - source: docs/gitcode-host-contract.md
           target: references/gitcode-host-contract.md
         - source: references/internal/context.md
@@ -178,6 +192,10 @@ provides:
       file: commands/speckit.team.review.md
       description: "Reviewer role: assess a PR or local diff, route repairable findings, and produce a merge recommendation."
       resources:
+        - source: docs/project-context-routing.md
+          target: references/project-context-routing.md
+        - source: scripts/resolve_project_context.py
+          target: scripts/resolve_project_context.py
         - source: docs/gitcode-host-contract.md
           target: references/gitcode-host-contract.md
         - source: references/internal/context.md

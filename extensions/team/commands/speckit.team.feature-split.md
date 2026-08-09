@@ -93,6 +93,12 @@ module's semantics, inputs/outputs, owned data, interactions, and stable
 submodules. Do not move class, file, algorithm, or delivery sequencing detail
 into L0/L1.
 
+Read `references/project-context-routing.md`, then run the installed resolver
+for role `architect` and phase `feature-split`. Read the returned project
+documents in order before proposing L0/L1 or Feature boundaries. Only a
+repository-declared missing `required` document stops this phase; absent
+suggested or conditional documents are improvement suggestions, not warnings.
+
 ### New project
 
 Require the reviewed L0 linked by the Requirement Issue. Produce L1 covering
