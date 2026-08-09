@@ -19,6 +19,7 @@ LOCAL_REVIEW_REVISION = re.compile(
 )
 ACCEPTANCE_STATES = {"proposed", "accepted", "deferred", "rejected"}
 BEHAVIOR_ACCEPTANCE_STATES = {"proposed", "accepted"}
+BEHAVIOR_CONFIRMATION_MODES = {"required", "advisory", "disabled"}
 REQUIREMENT_ACCEPTANCE_STATES = {"proposed", "accepted", "working", "rejected"}
 DELIVERY_PHASES = {
     "backlog",
@@ -80,6 +81,7 @@ class FeatureTracking:
     id_pattern: re.Pattern[str]
     work_root_template: str
     require_committed_records: bool
+    behavior_confirmation_mode: str
 
 
 def _mapping(value: Any, label: str) -> dict[str, Any]:
@@ -132,6 +134,24 @@ def load_tracking(project_root: Path) -> FeatureTracking:
     configured = config.get("feature_tracking") or {}
     configured = _mapping(configured, "feature_tracking")
     values = {**DEFAULTS, **configured}
+    behavior_confirmation = configured.get("behavior_confirmation")
+    if behavior_confirmation is None:
+        # Compatibility default for repositories created before this policy
+        # existed. Newly installed configs explicitly select `required`.
+        behavior_confirmation_mode = "advisory"
+    else:
+        behavior_confirmation = _mapping(
+            behavior_confirmation,
+            "feature_tracking.behavior_confirmation",
+        )
+        behavior_confirmation_mode = str(
+            behavior_confirmation.get("mode", "")
+        ).strip()
+        if behavior_confirmation_mode not in BEHAVIOR_CONFIRMATION_MODES:
+            raise ValueError(
+                "feature_tracking.behavior_confirmation.mode must be one of "
+                f"{sorted(BEHAVIOR_CONFIRMATION_MODES)}"
+            )
     work_artifacts = config.get("work_artifacts") or {}
     work_artifacts = _mapping(work_artifacts, "work_artifacts")
     if values.get("enabled") is False:
@@ -187,6 +207,7 @@ def load_tracking(project_root: Path) -> FeatureTracking:
         id_pattern=id_pattern,
         work_root_template=work_root_template,
         require_committed_records=bool(values["require_committed_records"]),
+        behavior_confirmation_mode=behavior_confirmation_mode,
     )
 
 
@@ -451,6 +472,8 @@ def accept_feature_behavior(
         project_root, feature_id, require_accepted=True
     )
     tracking = load_tracking(project_root)
+    if tracking.behavior_confirmation_mode == "disabled":
+        raise ValueError("detailed behavior confirmation is disabled by policy")
     errors = [
         error
         for error in errors
@@ -701,7 +724,11 @@ def validate_feature_record(
                 "behavior_acceptance.decided_at"
             )
         errors.extend(_feature_behavior_errors(path, record, tracking.format))
-    if phase in DELIVERY_PHASES - {"backlog", "specifying", "blocked", "cancelled"}:
+    if (
+        tracking.behavior_confirmation_mode == "required"
+        and phase
+        in DELIVERY_PHASES - {"backlog", "specifying", "blocked", "cancelled"}
+    ):
         if behavior_status != "accepted":
             errors.append(
                 "detailed behavior must be accepted before leaving specifying"

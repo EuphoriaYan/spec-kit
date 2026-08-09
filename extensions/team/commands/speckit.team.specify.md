@@ -55,13 +55,14 @@ When `feature_id=<id>` is present:
    `.specify/<feature_id>/spec.md`. Specify complete User Stories, observable
    `VER-###` behavior, scope, non-goals, boundaries, compatibility constraints,
    parent Requirement traceability, and Feature Catalog traceability.
-6. Write the simplified, reviewable User Stories and `VER-###` Verification
+6. Write the team-visible, reviewable User Stories and `VER-###` Verification
    from the completed local Spec back into the accepted Feature Record. For a
    Markdown Record, update its `## User Stories` and `## Verification`
    sections. For YAML or JSON, update the `user_stories` and `verification`
    lists. The Feature Record is the team-visible behavior summary; detailed
    working notes remain in `.specify/<feature_id>/spec.md`.
-7. Stop at the detailed-behavior human confirmation gate. Show the user:
+7. Read `behavior_confirmation_mode` from the Feature Record checker result.
+   Show the user the same review package in every mode:
 
    - the exact repository-relative Feature Record path they must review;
    - the User Stories that were written back;
@@ -69,11 +70,20 @@ When `feature_id=<id>` is present:
    - the distinction between the earlier Feature acceptance (worth doing and
      broad boundary) and this confirmation (detailed behavior is correct).
 
-   Ask the user to confirm, revise, or stop in natural language. Do not accept
-   silence, infer approval, or ask the user to remember a workflow token. If
-   revision is requested, update the local Spec and Feature Record together,
-   then show the same review package again.
-8. Only after an identified human confirms, run:
+   Then follow the configured policy:
+
+   - `required`: stop and ask the user to confirm, revise, or stop in natural
+     language. Do not accept silence or infer approval.
+   - `advisory`: recommend confirmation and offer confirm, revise, continue, or
+     stop. The user may continue without recording confirmation; report that
+     choice explicitly instead of treating silence as a decision.
+   - `disabled`: explain that this repository delegates the decision to another
+     workflow and continue without trying to record local confirmation.
+
+   Never ask the user to remember a workflow token. If revision is requested,
+   update the local Spec and Feature Record together, then show the same review
+   package again.
+8. When an identified human confirms in `required` or `advisory` mode, run:
 
    ```text
    scripts/check_feature_record.py --feature-id <id> \
@@ -81,7 +91,10 @@ When `feature_id=<id>` is present:
    ```
 
    This records `behavior_acceptance`; it is not a second Feature-governance
-   acceptance. Create or update minimal `work-context.yml` and
+   acceptance. In `required` mode, do not transition without this record. In
+   `advisory` mode, a user who explicitly chooses `continue` may transition
+   with the proposed status. In `disabled` mode, transition without writing a
+   local behavior decision. Create or update minimal `work-context.yml` and
    `context-pack.md`, transition `specifying` to `planning`, and set the next
    Skill to `speckit.team.plan-and-task feature_id=<id>`.
 9. Rerun the Feature Record validator for each transition. Never

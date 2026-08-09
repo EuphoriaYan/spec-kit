@@ -12,6 +12,7 @@ from feature_records import (
     accept_feature_behavior,
     accept_feature_record,
     accept_local_requirement_record,
+    load_tracking,
     resolve_feature_work_root,
     validate_feature_record,
     validate_local_requirement_record,
@@ -46,6 +47,7 @@ def main() -> int:
     project_root = args.project_root.resolve()
     try:
         acceptance_recorded = False
+        behavior_confirmation_mode = ""
         decision_actor = (
             args.record_verbal_acceptance_by
             or args.record_behavior_acceptance_by
@@ -104,6 +106,9 @@ def main() -> int:
             )
             work_root = Path()
         else:
+            behavior_confirmation_mode = load_tracking(
+                project_root
+            ).behavior_confirmation_mode
             path, record, errors = validate_feature_record(
                 project_root,
                 args.feature_id,
@@ -117,6 +122,7 @@ def main() -> int:
         work_root = Path()
         record = {}
         acceptance_recorded = False
+        behavior_confirmation_mode = ""
 
     result = {
         "record_type": "requirement" if args.requirement_record else "feature",
@@ -131,6 +137,7 @@ def main() -> int:
         "behavior_acceptance": (
             record.get("behavior_acceptance") or {}
         ).get("status"),
+        "behavior_confirmation_mode": behavior_confirmation_mode,
         "acceptance_recorded": acceptance_recorded,
         "delivery_phase": (record.get("delivery") or {}).get("phase"),
         "errors": errors,

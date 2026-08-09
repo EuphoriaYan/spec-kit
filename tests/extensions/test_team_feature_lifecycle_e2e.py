@@ -134,6 +134,7 @@ def test_first_confirmation_to_accepted_feature_sdd_entry(tmp_path: Path) -> Non
     payload = json.loads(ready.stdout)
     assert payload["status"] == "ready"
     assert payload["acceptance_recorded"] is True
+    assert payload["behavior_confirmation_mode"] == "required"
     accepted_record = yaml.safe_load(
         record_path.read_text(encoding="utf-8").split("---", 2)[1]
     )

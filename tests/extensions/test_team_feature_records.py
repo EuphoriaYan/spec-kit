@@ -406,7 +406,9 @@ def test_human_can_confirm_written_behavior_and_unlock_planning(tmp_path: Path):
 
 def test_planning_is_blocked_without_detailed_behavior_confirmation(tmp_path: Path):
     module = _load_module("feature_records.py", "team_feature_behavior_gate")
-    _write_tracking_config(tmp_path)
+    _write_tracking_config(
+        tmp_path, behavior_confirmation={"mode": "required"}
+    )
     data = _record(phase="planning")
     data["behavior_acceptance"] = {
         "status": "proposed",
@@ -419,6 +421,54 @@ def test_planning_is_blocked_without_detailed_behavior_confirmation(tmp_path: Pa
     _, _, errors = module.validate_feature_record(tmp_path, "FEAT-001")
 
     assert "detailed behavior must be accepted before leaving specifying" in errors
+
+
+def test_legacy_config_keeps_unconfirmed_planning_record_advisory(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_behavior_legacy")
+    _write_tracking_config(tmp_path)
+    data = _record(phase="planning")
+    data.pop("behavior_acceptance")
+    _write_markdown_record(tmp_path, data)
+
+    _, _, errors = module.validate_feature_record(tmp_path, "FEAT-001")
+
+    assert "detailed behavior must be accepted before leaving specifying" not in errors
+    assert module.load_tracking(tmp_path).behavior_confirmation_mode == "advisory"
+
+
+def test_explicit_advisory_mode_does_not_block_planning(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_behavior_advisory")
+    _write_tracking_config(
+        tmp_path, behavior_confirmation={"mode": "advisory"}
+    )
+    data = _record(phase="planning")
+    data["behavior_acceptance"] = {"status": "proposed"}
+    _write_markdown_record(tmp_path, data)
+
+    _, _, errors = module.validate_feature_record(tmp_path, "FEAT-001")
+
+    assert "detailed behavior must be accepted before leaving specifying" not in errors
+
+
+def test_disabled_mode_rejects_local_behavior_decision(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_behavior_disabled")
+    _write_tracking_config(
+        tmp_path, behavior_confirmation={"mode": "disabled"}
+    )
+    _write_markdown_record(tmp_path, _record(phase="specifying"))
+
+    with pytest.raises(ValueError, match="disabled by policy"):
+        module.accept_feature_behavior(tmp_path, "FEAT-001", "product-owner")
+
+
+def test_invalid_behavior_confirmation_mode_is_rejected(tmp_path: Path):
+    module = _load_module("feature_records.py", "team_feature_behavior_invalid")
+    _write_tracking_config(
+        tmp_path, behavior_confirmation={"mode": "sometimes"}
+    )
+
+    with pytest.raises(ValueError, match="behavior_confirmation.mode"):
+        module.load_tracking(tmp_path)
 
 
 def test_ready_to_merge_requires_complete_dod(tmp_path: Path):
