@@ -18,7 +18,7 @@ Skills；Skill 名称是可观察入口，不是用户必须背诵的口令。
 | Requirement (`speckit.team.requirement`) | 项目级或已有项目需求 | 澄清并发布一个 Requirement Issue |
 | Feature Split (`speckit.team.feature-split`) | 已接受 Requirement Issue | 架构上下文、Feature Catalog、仓库 Feature Records 及逐 Feature 接受 |
 | Specify (`speckit.team.specify`) | 已接受 `feature_id` | 单 Feature User Stories 和本地 Spec |
-| Plan-and-Task (`speckit.team.plan-and-task`) | 已接受 `feature_id` | L2 设计、模块 Tasks 和最小自测 |
+| Plan-and-Task (`speckit.team.plan-and-task`) | 已接受 `feature_id` | 接口与数据结构设计（L2）、模块 Tasks 和最小自测 |
 | Assess (`speckit.team.assess`) | 缺陷现象、Issue、Review finding 或 `bug_slug` | Assessment；清晰单仓单模块问题自动 `ready`，高风险才找人 |
 | Fix (`speckit.team.fix`) | ready/approved Assessment | 最小修复、`fix.md`、`test.md`、进度文本并进入 Review |
 | Implement (`speckit.team.implement`) | `feature_id`，可选 Task 范围 | 代码、测试、架构描述同步、证据和自动质量循环 |
@@ -42,7 +42,7 @@ Skills；Skill 名称是可观察入口，不是用户必须背诵的口令。
 
 ```text
 Requirement -> Requirement Issue -> 人工接受
--> 可选加载现有 L0/L1；没有时继续
+-> 可选加载现有顶层设计（L0）/模块设计（L1）；没有时继续
 -> 按需做架构影响/增量设计
 -> Feature Split
 -> 首次询问 Feature Record 目录（推荐 docs/features/）
@@ -58,7 +58,7 @@ Requirement 被接受后，用户只需继续说：
 ```
 
 Feature Split 第一次会先询问 Feature Record 放在哪里。用户确认一次后，所有后续 Skill
-复用锁定位置，不会静默迁移。已有项目缺少 L0/L1 不构成阻塞。
+复用锁定位置，不会静默迁移。已有项目缺少顶层设计（L0）或模块设计（L1）不构成阻塞。
 
 之后输入：
 
@@ -72,9 +72,9 @@ Assess -> Fix -> Re-review，最多三轮。最终只有提交 PR 和合入决�
 ## 旅程二：0→1 项目
 
 ```text
-整体项目需求 -> 项目需求澄清 -> L0 设计与 Review
+整体项目需求 -> 项目需求澄清 -> 顶层设计（L0）与 Review
 -> Project Requirement Issue -> 项目需求接受
--> L1 设计与 Review -> Feature Catalog -> Feature Split Review
+-> 模块设计（L1）与 Review -> Feature Catalog -> Feature Split Review
 -> 仓库 Feature Records -> 分别接受 Feature
 -> 单 Feature SDD 循环 -> 项目级集成与发布验收
 ```

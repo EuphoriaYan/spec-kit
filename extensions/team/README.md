@@ -12,7 +12,7 @@
 | `speckit.team.requirement` | 业务 / 产品 | 项目级或已有项目需求 | 单一 Requirement Issue |
 | `speckit.team.feature-split` | 架构 / 产品 | 已接受 Requirement、可选/必需架构上下文 | Feature Catalog 和仓库 Feature Records |
 | `speckit.team.specify` | 业务 / 产品 | 已接受 Feature Record | 单 Feature `spec.md` |
-| `speckit.team.plan-and-task` | 架构 / 模块负责人 | 已接受 Issue、源码、CodeGraph | `spec.md`、Issue 级 HLD、模块 Tasks、自测和检查 |
+| `speckit.team.plan-and-task` | 架构 / 模块负责人 | 已接受 Issue、源码、CodeGraph | `spec.md`、接口与数据结构设计（L2）、实现 Plan、模块 Tasks、自测和检查 |
 | `speckit.team.assess` | 缺陷分析 | 现象、Issue 或 Review finding | `assessment.md` 和风险路由 |
 | `speckit.team.fix` | 缺陷修复 | ready/approved Assessment | 最小修复、`fix.md`、`test.md` 和 Review handoff |
 | `speckit.team.implement` | 开发 | checked Plan/Tasks 和 Permission Envelope | 代码、实现证据和自动质量循环 |
@@ -31,7 +31,7 @@ Git ignore；只有带负责人、批准、证据和作用域的内容，才能�
 `docs/ai-team/knowledge/rules/` 并约束后续角色。
 
 角色之间不依赖隐藏聊天。Requirement Issue 承担需求事实，仓库 Feature Record 承担
-拆分、接受和交付追踪，Plan/Task handoff 承担架构与
+拆分、接受和交付追踪，接口与数据结构设计（L2）及 Plan/Task handoff 承担架构与
 实现边界，PR 和测试承担交付事实。Bugfix 保留原始现象和 Assessment，避免在自动修复
 循环中错误归因。
 

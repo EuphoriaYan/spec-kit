@@ -56,10 +56,13 @@ def test_requirement_and_feature_split_define_both_lifecycle_entries():
 
     assert "mode=new-project" in requirement
     assert "mode=existing-project" in requirement
-    assert requirement.index("## New-Project L0 Stage") < requirement.index(
+    assert requirement.index("## New-Project Top-Level Design (L0) Stage") < requirement.index(
         "## Requirement Issue"
     )
-    assert "do not require L0 or L1 documents" in requirement
+    assert (
+        "do not require top-level design (L0) or module design (L1) documents"
+        in requirement
+    )
     assert "never create one remote Issue per Feature" in requirement
     assert "--record-verbal-acceptance-by" in requirement
     assert "Ordinary acknowledgements" in requirement
@@ -71,8 +74,8 @@ def test_requirement_and_feature_split_define_both_lifecycle_entries():
     assert "recommended `docs/features/`" in split
     assert "configure_feature_tracking.py" in split
     assert "Do not call this helper before the user answers" in split
-    assert "L0/L1 documents are optional" in split
-    assert "Produce L1" in split
+    assert "Top-level design (L0) and module design (L1) documents are optional" in split
+    assert "Produce module design (L1)" in split
     assert "separate `accepted`, `deferred`, or `rejected` decision" in split
     assert "Never tell a local-only user to change an Issue label" in split
     assert "--record-verbal-acceptance-by" in split

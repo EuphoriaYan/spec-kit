@@ -11,7 +11,7 @@ native Spec Kit commands. End users should start with the
 | `speckit.team.requirement` | Business / Product | one accepted Project/Requirement Issue |
 | `speckit.team.feature-split` | Architecture / Product | reviewed Feature Catalog and repository Feature Records |
 | `speckit.team.specify` | Business / Product | one accepted Feature's local specification |
-| `speckit.team.plan-and-task` | Architect | L2/shared contracts, implementation Plan, executable Tasks, self-tests, and check |
+| `speckit.team.plan-and-task` | Architect | interface and data structure design (L2)/shared contracts, implementation Plan, executable Tasks, self-tests, and check |
 | `speckit.team.assess` | Bug Assessor | assessment and risk routing |
 | `speckit.team.fix` | Bug Fixer | minimal fix, test evidence, and Review handoff |
 | `speckit.team.implement` | Developer | implementation evidence and automatic quality loop |

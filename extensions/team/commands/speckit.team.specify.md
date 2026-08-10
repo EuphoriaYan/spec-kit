@@ -46,7 +46,8 @@ When `feature_id=<id>` is present:
 4. Read the parent Requirement authority and the accepted Feature Record. The
    parent may be a verified online Issue or an accepted local Requirement
    Record. Only the online form has status labels; never require or simulate a
-   label for the local form. Do not require L0/L1 files. When present, use them
+   label for the local form. Do not require top-level design (L0) or module
+   design (L1) files. When present, use them
    only as project constraints; when absent, continue without creating
    placeholders.
 5. Transition the Feature Record from `backlog` to `specifying` before

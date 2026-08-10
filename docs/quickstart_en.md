@@ -13,7 +13,7 @@ the current situation naturally.
 | Requirement | project-level or existing-project requirement | one reviewed Requirement Issue |
 | Feature Split | accepted Requirement Issue | reviewed architecture context, Feature Catalog, and repository Feature Records |
 | Specify | accepted `feature_id` | clarified User Stories and local Feature Spec |
-| Plan-and-Task | accepted `feature_id` | L2/shared contracts, implementation Plan, Tasks, self-tests, deterministic check |
+| Plan-and-Task | accepted `feature_id` | interface and data structure design (L2)/shared contracts, implementation Plan, Tasks, self-tests, deterministic check |
 | Assess | symptom, Issue, Review finding, or `bug_slug` | assessment, impact, fix boundary, and test strategy |
 | Fix | ready or approved assessment | minimal fix, regression evidence, progress update, and Review handoff |
 | Implement | `feature_id` | code, tests, architecture synchronization, evidence, and automatic quality loop |

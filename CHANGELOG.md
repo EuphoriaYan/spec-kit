@@ -2,6 +2,14 @@
 
 <!-- insert new changelog below this comment -->
 
+## Unreleased
+
+### Changed
+
+- Present architecture stages as top-level design (L0), module design (L1),
+  and interface and data structure design (L2), while accepting both legacy
+  short codes and the new descriptive labels in existing records.
+
 ## [0.12.5+teamwork.5] - 2026-08-10
 
 ### Added
