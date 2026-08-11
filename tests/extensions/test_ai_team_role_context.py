@@ -337,7 +337,7 @@ def test_team_setup_refreshes_old_bundled_skills_and_preserves_project_state(
     old_manifest = old_team / "extension.yml"
     old_manifest.write_text(
         old_manifest.read_text(encoding="utf-8").replace(
-            'version: "0.9.0"', 'version: "0.8.0"'
+            'version: "0.10.0"', 'version: "0.9.0"'
         ),
         encoding="utf-8",
     )
@@ -369,7 +369,7 @@ def test_team_setup_refreshes_old_bundled_skills_and_preserves_project_state(
     assert "OLD ADAPTER PLAN" not in installed_plan
     assert "required CodeGraph" in installed_plan
     assert metadata is not None
-    assert metadata["version"] == "0.9.0"
+    assert metadata["version"] == "0.10.0"
     assert config.read_text(encoding="utf-8") == "project_owned: true\n"
 
     second = team_setup.install_bundled_team(project)

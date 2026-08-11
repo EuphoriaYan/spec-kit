@@ -348,7 +348,7 @@ class SkillsIntegrationTests:
         assert skills_dir.is_dir(), f"Skills directory {skills_dir} not created"
 
     def test_init_installs_team_extension(self, tmp_path):
-        """The default profile installs Team directly and keeps extras opt-in."""
+        """The default profile installs Team state directly and keeps extras opt-in."""
         from typer.testing import CliRunner
         from specify_cli import app
 
@@ -359,12 +359,12 @@ class SkillsIntegrationTests:
             os.chdir(project)
             result = CliRunner().invoke(app, [
                 "init", "--here", "--integration", self.KEY, "--script", "sh",
-                "--ignore-agent-tools", "--skill-profile", "full",
+                "--ignore-agent-tools",
             ], catch_exceptions=False)
         finally:
             os.chdir(old_cwd)
         assert result.exit_code == 0
-        assert (project / ".specify" / "extensions" / "team").is_dir()
+        assert (project / ".specify" / "team").is_dir()
         assert not (project / ".specify" / "extensions" / "agent-context").exists()
 
     # -- IntegrationOption ------------------------------------------------
