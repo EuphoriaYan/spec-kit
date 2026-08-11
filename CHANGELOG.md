@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.12.5+teamwork.6] - 2026-08-11
+
+### Changed
+
+- Present learner-facing architecture stages as top-level design (L0), module
+  design (L1), and interface and data structure design (L2), while preserving
+  compatibility with existing short-code records and filenames.
+- Refresh extension-owned generated Skills during project refresh so stale
+  command bodies and integration-specific command syntax are replaced.
+- Pin CodeGraph 1.x in the test matrix and make shared infrastructure
+  assertions compatible with supported external CodeGraph installations.
+
+### Fixed
+
+- Package the architecture terminology normalizer with every Team Skill that
+  uses architecture validators.
+- Align the cross-platform test suite with the default Team profile, bundled
+  completion Skill, and extension-owned resource metadata.
+
 <!-- insert new changelog below this comment -->
 
 ## Unreleased
