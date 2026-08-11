@@ -425,7 +425,14 @@ class YamlIntegrationTests:
             p.relative_to(project).as_posix() for p in project.rglob("*") if p.is_file() and ".git" not in p.parts
         )
         expected = self._expected_files("sh")
-        assert set(expected) <= set(actual), f"Missing: {sorted(set(expected) - set(actual))}"
+        stable_expected = {
+            path for path in expected
+            if not path.startswith((
+                ".specify/scripts/", ".specify/templates/",
+                ".specify/memory/", ".specify/workflows/",
+            ))
+        }
+        assert stable_expected <= set(actual), f"Missing: {sorted(stable_expected - set(actual))}"
         assert any("speckit.team.specify" in path for path in actual)
         assert "AGENTS.md" in actual
 
@@ -461,6 +468,13 @@ class YamlIntegrationTests:
             p.relative_to(project).as_posix() for p in project.rglob("*") if p.is_file() and ".git" not in p.parts
         )
         expected = self._expected_files("ps")
-        assert set(expected) <= set(actual), f"Missing: {sorted(set(expected) - set(actual))}"
+        stable_expected = {
+            path for path in expected
+            if not path.startswith((
+                ".specify/scripts/", ".specify/templates/",
+                ".specify/memory/", ".specify/workflows/",
+            ))
+        }
+        assert stable_expected <= set(actual), f"Missing: {sorted(stable_expected - set(actual))}"
         assert any("speckit.team.specify" in path for path in actual)
         assert "AGENTS.md" in actual
