@@ -5185,7 +5185,7 @@ class TestExtensionAddCLI:
         content = skill_file.read_text(encoding="utf-8")
         assert "name: speckit-test-ext-hello" in content
         assert "metadata:" in content
-        assert "source: test-ext:commands/hello.md" in content
+        assert "source: extension:test-ext" in content
 
     def test_add_dev_replaces_existing_codex_skill_symlink(
         self, extension_dir, project_dir, temp_dir

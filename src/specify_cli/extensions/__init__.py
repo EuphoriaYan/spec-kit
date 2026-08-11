@@ -1098,14 +1098,14 @@ class ExtensionManager:
                         source = existing.get("metadata", {}).get("source", "")
                     except (OSError, UnicodeError, AttributeError):
                         source = ""
-                    if source == f"extension:{manifest.id}" or str(source).startswith(
-                        f"{manifest.id}:"
+                    if not (
+                        source == f"extension:{manifest.id}"
+                        or str(source).startswith(f"{manifest.id}:")
                     ):
-                        CommandRegistrar._copy_skill_resources(
-                            cmd_info, ext_root, skill_subdir
-                        )
-                        written.append(skill_name)
-                    continue
+                        continue
+                    # Refresh extension-owned skills from their current command
+                    # source. Merely copying resources leaves stale bodies and
+                    # skips integration-specific invocation normalization.
 
             # Create skill directory; track whether we created it so we can clean
             # up safely if reading the source file subsequently fails.

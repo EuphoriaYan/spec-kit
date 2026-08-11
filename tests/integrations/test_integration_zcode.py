@@ -27,7 +27,7 @@ class TestZcodeInvocation:
             runner = CliRunner()
             result = runner.invoke(app, [
                 "init", "--here", "--integration", "zcode",
-                "--ignore-agent-tools", "--script", "sh",
+                "--ignore-agent-tools", "--script", "sh", "--skill-profile", "full",
             ], catch_exceptions=False)
         finally:
             os.chdir(old_cwd)

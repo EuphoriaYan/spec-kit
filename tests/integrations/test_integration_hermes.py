@@ -242,6 +242,7 @@ class TestHermesIntegration(SkillsIntegrationTests):
             f for f in actual
             if f.startswith(".hermes/skills/speckit-")
             and "agent-context" not in f
+            and "speckit-team-" not in f
         ]
         assert hermes_skill_files == [], (
             f"Expected no local core SKILL.md files, found: {hermes_skill_files}"
@@ -280,6 +281,7 @@ class TestHermesIntegration(SkillsIntegrationTests):
             f for f in actual
             if f.startswith(".hermes/skills/speckit-")
             and "agent-context" not in f
+            and "speckit-team-" not in f
         ]
         assert hermes_skill_files == [], (
             f"Expected no local core SKILL.md files, found: {hermes_skill_files}"
@@ -339,6 +341,7 @@ class TestHermesInitFlow:
             "--integration", "hermes",
             "--ignore-agent-tools",
             "--script", "sh",
+            "--skill-profile", "full",
         ])
 
         assert result.exit_code == 0, f"init --integration hermes failed: {result.output}"
@@ -350,6 +353,6 @@ class TestHermesInitFlow:
         # (extension-installed skills like agent-context-update may appear)
         local_skills = [
             d for d in (target / ".hermes" / "skills").iterdir()
-            if "agent-context" not in d.name
+            if "agent-context" not in d.name and "speckit-team-" not in d.name
         ]
         assert local_skills == [], f"Local skills dir should be empty, got: {local_skills}"

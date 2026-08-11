@@ -6210,12 +6210,13 @@ steps:
 
     def test_cli_resume_help_exposes_recover_running(self):
         from typer.testing import CliRunner
+        from tests.conftest import strip_ansi
 
         from specify_cli import app
 
         result = CliRunner().invoke(app, ["workflow", "resume", "--help"])
         assert result.exit_code == 0
-        assert "recover-running" in result.stdout
+        assert "recover-running" in strip_ansi(result.stdout)
 
     def test_resume_merges_and_coerces_typed_input(self, project_dir):
         import json as _json
