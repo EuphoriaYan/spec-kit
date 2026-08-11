@@ -88,27 +88,30 @@ mandatory.
 ## Architecture Context
 
 Read `references/architecture-delivery-flow.md` before creating architecture
-or Feature assets. Use L0 for the system and top-level modules, and L1 for each
+or Feature assets. Use top-level design (L0) for the system and top-level
+modules, and module design (L1) for each
 module's semantics, inputs/outputs, owned data, interactions, and stable
 submodules. Do not move class, file, algorithm, or delivery sequencing detail
-into L0/L1.
+into top-level design (L0) or module design (L1).
 
 Read `references/project-context-routing.md`, then run the installed resolver
 for role `architect` and phase `feature-split`. Read the returned project
-documents in order before proposing L0/L1 or Feature boundaries. Only a
+documents in order before proposing top-level design (L0), module design (L1),
+or Feature boundaries. Only a
 repository-declared missing `required` document stops this phase; absent
 suggested or conditional documents are improvement suggestions, not warnings.
 
 ### New project
 
-Require the reviewed L0 linked by the Requirement Issue. Produce L1 covering
+Require the reviewed top-level design (L0) linked by the Requirement Issue.
+Produce module design (L1) covering
 subsystems, responsibilities, data ownership, major interfaces, dependencies,
-deployment units, and capability mapping. Present L1 for human review before
+deployment units, and capability mapping. Present module design (L1) for human review before
 Feature decomposition. Never approve it on behalf of the user.
 
 ### Existing project
 
-L0/L1 documents are optional:
+Top-level design (L0) and module design (L1) documents are optional:
 
 - read and apply them when present;
 - when absent, report `not-present` and continue;
@@ -118,7 +121,8 @@ L0/L1 documents are optional:
 
 Use source and CodeGraph when available and required by the affected source
 workflow. Record `none`, `update-required`, or `not-assessed` independently for
-L0 and L1. Route material system-boundary, deployment, security/compliance,
+top-level design (L0) and module design (L1). Route material system-boundary,
+deployment, security/compliance,
 subsystem ownership, public-contract, or data-ownership changes to an explicit
 architecture delta and human review.
 
@@ -208,7 +212,7 @@ Do not claim readiness unless it passes.
 Team Feature Split:
 - Requirement authority:
 - mode:
-- architecture context: L0 / L1 status and paths
+- architecture context: top-level design (L0) / module design (L1) status and paths
 - Feature Record location and format:
 - location decision:
 - classification:

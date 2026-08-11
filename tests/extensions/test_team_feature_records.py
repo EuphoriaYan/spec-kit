@@ -164,6 +164,38 @@ def test_default_markdown_record_and_direct_work_root(tmp_path: Path):
 
 
 @pytest.mark.parametrize(
+    "level",
+    [
+        "L0",
+        "Top-level design (L0)",
+        "顶层设计（L0）",
+        "L1",
+        "Module design (L1)",
+        "模块设计（L1）",
+        "L2",
+        "Interface and data structure design (L2)",
+        "接口与数据结构设计（L2）",
+    ],
+)
+def test_feature_record_accepts_legacy_and_descriptive_architecture_levels(
+    tmp_path: Path, level: str
+):
+    module = _load_module(
+        "feature_records.py", f"team_feature_records_architecture_{abs(hash(level))}"
+    )
+    _write_tracking_config(tmp_path)
+    data = _record()
+    data["architecture_impact"]["level"] = level
+    _write_markdown_record(tmp_path, data)
+
+    _, _, errors = module.validate_feature_record(
+        tmp_path, "FEAT-001", require_accepted=True
+    )
+
+    assert errors == []
+
+
+@pytest.mark.parametrize(
     ("format_name", "record_name"),
     [("yaml", "FEAT-001.yml"), ("json", "FEAT-001.json")],
 )
@@ -331,7 +363,10 @@ def test_new_project_local_requirement_requires_accepted_l0(tmp_path: Path):
         tmp_path, path.relative_to(tmp_path).as_posix(), require_accepted=True
     )
 
-    assert "new-project local Requirement requires accepted L0" in errors
+    assert (
+        "new-project local Requirement requires accepted top-level design (L0)"
+        in errors
+    )
 
 
 def test_unaccepted_feature_is_blocked_from_sdd(tmp_path: Path):

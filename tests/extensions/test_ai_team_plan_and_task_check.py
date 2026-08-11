@@ -249,6 +249,34 @@ def test_feature_package_can_be_ready_and_bugfix_is_rejected(tmp_path: Path) -> 
         module.evaluate(tmp_path, "bugfix", "102")
 
 
+@pytest.mark.parametrize(
+    "level",
+    [
+        "Top-level design (L0)",
+        "顶层设计（L0）",
+        "Module design (L1)",
+        "模块设计（L1）",
+        "Interface and data structure design (L2)",
+        "接口与数据结构设计（L2）",
+    ],
+)
+def test_plan_check_accepts_descriptive_architecture_levels(
+    tmp_path: Path, level: str
+) -> None:
+    module = _module()
+    root = _write_package(tmp_path, "103", "feature")
+    plan_path = root / "plan-and-task.md"
+    plan = plan_path.read_text(encoding="utf-8").replace(
+        "  level: none", f"  level: {level}"
+    )
+    plan_path.write_text(plan, encoding="utf-8")
+
+    result, rendered = module.evaluate(tmp_path, "feature", "103")
+
+    assert result == "ready", rendered
+    assert "| ARCHITECTURE_DOD | PASS |" in rendered
+
+
 def test_reframed_architecture_plan_and_task_headings_are_accepted(
     tmp_path: Path,
 ) -> None:

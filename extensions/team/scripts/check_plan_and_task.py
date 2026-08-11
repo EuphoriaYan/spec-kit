@@ -18,6 +18,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from check_permission_envelope import validate_envelope
 from work_item_paths import normalize_category, resolve_work_root
+from architecture_terms import normalize_architecture_level
 
 
 VALIDATOR = "ai-team-plan-and-task-check/v6"
@@ -535,7 +536,7 @@ def evaluate(
 
         architecture = plan_meta.get("architecture_impact")
         architecture = architecture if isinstance(architecture, dict) else {}
-        architecture_level = str(architecture.get("level", "")).strip().lower()
+        architecture_level = normalize_architecture_level(architecture.get("level", ""))
         architecture_update = architecture.get("update_required")
         architecture_files = _list(architecture.get("affected_files"))
         safe_architecture_files = all(
@@ -563,7 +564,7 @@ def evaluate(
             architecture_shape_ok,
             "architecture impact has an explicit level and synchronized-file plan"
             if architecture_shape_ok
-            else "architecture_impact requires none/L0/L1/L2, a boolean update_required, safe declared affected_files when updating, or a meaningful no-update reason",
+            else "architecture_impact requires none, top-level design (L0), module design (L1), or interface and data structure design (L2), plus a boolean update_required, safe declared affected_files when updating, or a meaningful no-update reason",
             blocked=True,
         )
 

@@ -682,7 +682,10 @@ def test_plan_and_task_role_uses_core_artifact_scripts_without_prompt_chain() ->
         assert removed_command not in text
     assert "minimum self-test" in text
     assert "derive executable Tasks" in text
-    assert "L2 defines stable logical components" in text
+    assert (
+        "interface and data structure design (l2) defines stable logical components"
+        in " ".join(text.split()).casefold()
+    )
     assert "personal candidate interface is not contract authority" in text
     assert "self-verification scenario" in text
     assert "plan-and-task-check.md" in text
@@ -800,6 +803,7 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "references/repository-boundary.md",
         "references/requirement-record-template.md",
         "scripts/check_feature_record.py",
+        "scripts/architecture_terms.py",
         "scripts/feature_records.py",
     }
     assert commands["speckit.team.specify"] == {
@@ -808,6 +812,7 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "references/gitcode-host-contract.md",
         "references/repository-boundary.md",
         "scripts/check_feature_record.py",
+        "scripts/architecture_terms.py",
         "scripts/feature_records.py",
     }
     assert commands["speckit.team.assess"] == {
@@ -832,6 +837,7 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "references/quality-overrides-template.yml",
         "references/quality-rules-template.yml",
         "scripts/check_evidence_steps.py",
+        "scripts/architecture_terms.py",
         "scripts/check_plan_and_task.py",
         "scripts/check_permission_envelope.py",
         "scripts/check_feature_record.py",
@@ -850,6 +856,7 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "references/quality-gates.md",
         "references/quality-rules-template.yml",
         "scripts/check_evidence_steps.py",
+        "scripts/architecture_terms.py",
         "scripts/check_feature_record.py",
         "scripts/check_permission_envelope.py",
         "scripts/check_plan_and_task.py",
@@ -871,5 +878,6 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "references/memory-runtime.md",
         "scripts/check_permission_envelope.py",
         "scripts/check_evidence_steps.py",
+        "scripts/architecture_terms.py",
         "scripts/memory_adapter.py",
     } <= commands["speckit.team.plan-and-task"]

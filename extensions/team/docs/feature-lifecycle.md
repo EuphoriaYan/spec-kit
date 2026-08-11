@@ -11,10 +11,10 @@ replaced with a verified Issue URL when practical.
 ```text
 overall requirement
 -> clarification
--> L0 design and review
+-> top-level design (L0) and review
 -> Project Requirement Issue
 -> human acceptance
--> L1 design and review
+-> module design (L1) and review
 -> Feature Catalog
 -> Feature Split Review
 -> repository Feature Records and per-Feature decisions
@@ -28,7 +28,7 @@ overall requirement
 new requirement
 -> Requirement Issue
 -> human acceptance
--> optional existing L0/L1 context
+-> optional existing top-level design (L0) / module design (L1) context
 -> optional architecture impact/delta
 -> Feature Split and review
 -> repository Feature Records and per-Feature decisions
@@ -36,7 +36,8 @@ new requirement
 -> release tracking
 ```
 
-L0/L1 are optional for an existing project. Missing architecture documents
+Top-level design (L0) and module design (L1) are optional for an existing
+project. Missing architecture documents
 never block an ordinary Feature and must not be replaced with empty files.
 Material architecture impact still requires an explicit delta and human review.
 
@@ -45,7 +46,7 @@ Material architecture impact still requires an explicit delta and human review.
 ```text
 accepted Feature Record
 -> Specify
--> Plan-and-Task (L2)
+-> interface and data structure design (L2), then Plan-and-Task
 -> Plan Review and deterministic readiness checks
 -> Implement code, tests, evidence, and architecture updates
 -> online PR (preferred) or explicit local-diff review target

@@ -34,6 +34,8 @@ provides:
           target: references/requirement-record-template.md
         - source: scripts/feature_records.py
           target: scripts/feature_records.py
+        - source: scripts/architecture_terms.py
+          target: scripts/architecture_terms.py
         - source: scripts/check_feature_record.py
           target: scripts/check_feature_record.py
     - name: speckit.team.feature-split
@@ -62,6 +64,8 @@ provides:
           target: references/requirement-record-template.md
         - source: scripts/feature_records.py
           target: scripts/feature_records.py
+        - source: scripts/architecture_terms.py
+          target: scripts/architecture_terms.py
         - source: scripts/check_feature_record.py
           target: scripts/check_feature_record.py
         - source: scripts/configure_feature_tracking.py
@@ -80,11 +84,13 @@ provides:
           target: references/feature-spec.md
         - source: scripts/feature_records.py
           target: scripts/feature_records.py
+        - source: scripts/architecture_terms.py
+          target: scripts/architecture_terms.py
         - source: scripts/check_feature_record.py
           target: scripts/check_feature_record.py
     - name: speckit.team.plan-and-task
       file: commands/speckit.team.plan-and-task.md
-      description: "Architect role: turn an accepted Feature Record or legacy Feature Issue into a CodeGraph-grounded L2 Plan, parallel Tasks, self-tests, and readiness check."
+      description: "Architect role: turn an accepted Feature Record or legacy Feature Issue into CodeGraph-grounded interface and data structure design (L2), an implementation Plan, parallel Tasks, self-tests, and a readiness check."
       resources:
         - source: docs/project-context-routing.md
           target: references/project-context-routing.md
@@ -114,6 +120,8 @@ provides:
           target: references/evidence-steps-template.yml
         - source: scripts/check_plan_and_task.py
           target: scripts/check_plan_and_task.py
+        - source: scripts/architecture_terms.py
+          target: scripts/architecture_terms.py
         - source: scripts/check_evidence_steps.py
           target: scripts/check_evidence_steps.py
         - source: scripts/check_permission_envelope.py
@@ -184,6 +192,8 @@ provides:
           target: scripts/check_evidence_steps.py
         - source: scripts/check_plan_and_task.py
           target: scripts/check_plan_and_task.py
+        - source: scripts/architecture_terms.py
+          target: scripts/architecture_terms.py
         - source: scripts/feature_records.py
           target: scripts/feature_records.py
         - source: scripts/check_feature_record.py
@@ -224,6 +234,8 @@ provides:
           target: scripts/check_evidence_steps.py
         - source: scripts/check_plan_and_task.py
           target: scripts/check_plan_and_task.py
+        - source: scripts/architecture_terms.py
+          target: scripts/architecture_terms.py
         - source: scripts/check_permission_envelope.py
           target: scripts/check_permission_envelope.py
         - source: scripts/feature_records.py
@@ -240,6 +252,8 @@ provides:
           target: references/feature-lifecycle.md
         - source: scripts/feature_records.py
           target: scripts/feature_records.py
+        - source: scripts/architecture_terms.py
+          target: scripts/architecture_terms.py
         - source: scripts/complete_feature.py
           target: scripts/complete_feature.py
     - name: speckit.team.memory-consolidate

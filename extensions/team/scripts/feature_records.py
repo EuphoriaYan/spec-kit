@@ -12,6 +12,8 @@ from typing import Any
 
 import yaml
 
+from architecture_terms import normalize_architecture_level
+
 
 SUPPORTED_FORMATS = {"markdown-frontmatter", "yaml", "json"}
 HTTP_URL = re.compile(r"^https?://\S+$", re.IGNORECASE)
@@ -789,9 +791,13 @@ def validate_local_requirement_record(
         architecture = {}
     if mode == "new-project":
         if architecture.get("l0_status") != "accepted":
-            errors.append("new-project local Requirement requires accepted L0")
+            errors.append(
+                "new-project local Requirement requires accepted top-level design (L0)"
+            )
         if not str(architecture.get("l0_path", "")).strip():
-            errors.append("new-project local Requirement requires an L0 path")
+            errors.append(
+                "new-project local Requirement requires a top-level design (L0) path"
+            )
     return path, record, errors
 
 
@@ -939,9 +945,13 @@ def validate_feature_record(
     if not isinstance(architecture, dict):
         errors.append("architecture_impact must be a mapping")
         architecture = {}
-    level = str(architecture.get("level", ""))
-    if level not in {"none", "L0", "L1", "L2", "pending"}:
-        errors.append("architecture_impact.level is not recognized")
+    level = normalize_architecture_level(architecture.get("level", ""))
+    if level is None:
+        errors.append(
+            "architecture_impact.level is not recognized; use none, pending, "
+            "top-level design (L0), module design (L1), or interface and data "
+            "structure design (L2)"
+        )
     update_required = architecture.get("update_required")
     if not isinstance(update_required, bool):
         errors.append("architecture_impact.update_required must be boolean")

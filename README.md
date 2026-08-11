@@ -33,7 +33,7 @@ AI Coding 降低了实现功能的成本，也带来了新的团队风险：模�
 | `speckit.team.requirement` | 有项目级或已有项目的新需求 | 澄清后的单一 Requirement Issue |
 | `speckit.team.feature-split` | Requirement 已接受 | 经评审的 Feature Catalog 和仓库 Feature Records |
 | `speckit.team.specify` | 一个 Feature Record 已接受 | 单 Feature User Stories 和本地 Spec |
-| `speckit.team.plan-and-task` | 单 Feature Spec 已完成 | CodeGraph 支撑的 L2 设计、模块 Tasks、最小自测和确定性检查 |
+| `speckit.team.plan-and-task` | 单 Feature Spec 已完成 | CodeGraph 支撑的接口与数据结构设计（L2）、模块 Tasks、最小自测和确定性检查 |
 | `speckit.team.assess` | 发现缺陷、异常现象或 Review 问题 | 根因假设、影响范围、修复边界和测试策略 |
 | `speckit.team.fix` | Assessment 已 ready 或风险已批准 | 最小修复、回归测试、进度说明并自动回到 Review |
 | `speckit.team.implement` | Feature Tasks 已通过检查 | 代码、自测证据和自动质量循环后的 PR 准备结果 |

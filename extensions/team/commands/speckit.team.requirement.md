@@ -33,29 +33,31 @@ repository, and important quality constraints. A broad requirement may contain
 many Features; do not prematurely turn subsystems or implementation layers into
 Features.
 
-## New-Project L0 Stage
+## New-Project Top-Level Design (L0) Stage
 
-For `mode=new-project`, create or update the repository's project-level L0
+For `mode=new-project`, create or update the repository's project-level
+top-level design (L0)
 system-context document before publishing the Requirement Issue. Use the
 configured architecture path when present, otherwise propose
 `docs/architecture/l0-system-context.md`.
 
-L0 covers goals, actors, external systems, system boundary, deployment context,
+Top-level design (L0) covers goals, actors, external systems, system boundary, deployment context,
 quality attributes, security/compliance boundary, and project-level
 constraints. It must not contain subsystem or per-Feature implementation
 design.
 
-Present the L0 design and ask a human to choose:
+Present the top-level design (L0) and ask a human to choose:
 
-- **accept L0**: record the named reviewer and continue;
-- **revise L0**: revise the requested part and repeat the review;
+- **accept top-level design (L0)**: record the named reviewer and continue;
+- **revise top-level design (L0)**: revise the requested part and repeat the review;
 - **pause**: preserve the draft and stop.
 
-The Skill never approves L0 on behalf of a human.
+The Skill never approves top-level design (L0) on behalf of a human.
 
 ## Existing-Project Rule
 
-For `mode=existing-project`, do not require L0 or L1 documents. If they exist,
+For `mode=existing-project`, do not require top-level design (L0) or module
+design (L1) documents. If they exist,
 record their paths as optional context. If they do not exist, report
 `architecture context: not-present` and continue without creating placeholder
 documents or failing the Requirement flow.
@@ -63,13 +65,13 @@ documents or failing the Requirement flow.
 ## Requirement Issue
 
 Publish one Project/Requirement Issue after clarification and, for a new
-project, after L0 review. Include:
+project, after top-level design (L0) review. Include:
 
 - requirement mode and scope;
 - users, value, scenarios, scope, and non-goals;
 - observable outcomes;
 - external prerequisites;
-- accepted L0 reference for a new project;
+- accepted top-level design (L0) reference for a new project;
 - optional existing architecture references for an existing project;
 - explicit statement that Feature decomposition follows acceptance.
 
@@ -130,13 +132,14 @@ Team Requirement Result:
 - Requirement authority: verified online Issue URL / local Requirement Record
 - status: published-new-issue / local-fallback / output-only / revise / paused / blocked
 - requirement scope:
-- L0: accepted / optional-existing / not-present / not-applicable
-- L0 reviewer:
-- optional L1 reference:
+- top-level design (L0): accepted / optional-existing / not-present / not-applicable
+- top-level design (L0) reviewer:
+- optional module design (L1) reference:
 - target repository:
 - next requirement gate: human status/accept online, or accepted/working with named decision in the local fallback
 - next Skill after acceptance: speckit.team.feature-split
 ```
 
-Stop on unresolved privacy boundaries, missing new-project L0 acceptance,
+Stop on unresolved privacy boundaries, missing new-project top-level design
+(L0) acceptance,
 unreadable supplied Requirement Issues, or user pause.

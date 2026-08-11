@@ -54,7 +54,8 @@ impact_analysis:
 
 ## Architecture Reference
 
-Reference the reviewed L0/L1 context, the existing or changed L2 assets, and
+Reference the reviewed top-level design (L0) and module design (L1) context,
+the existing or changed interface and data structure design (L2) assets, and
 every accepted shared-contract path. Summarize the decision; do not duplicate
 logical component or contract definitions here.
 
@@ -95,10 +96,14 @@ when the repository declares one, but it is not required for Task decomposition.
 
 Describe how the reviewed architecture and contracts affect delivery. Explicitly
 cover API, SPI, config, schema, event, database ownership, dependency direction,
-and compatibility. Put stable logical component definitions in L2 and shared
+and compatibility. Put stable logical component definitions in interface and
+data structure design (L2) and shared
 semantics in contract assets, then reference them here.
 
-Declare `none`, `L0`, `L1`, or `L2` in `architecture_impact.level`. When
+Declare `none`, `top-level design (L0)`, `module design (L1)`, or `interface
+and data structure design (L2)` in `architecture_impact.level`. The validator
+also accepts the short legacy codes and descriptive labels without the code in
+parentheses. When
 documentation changes are required, list exact repository paths in
 `affected_files` and add matching Tasks with verification criteria. When no
 update is required, provide a reviewable reason. Architecture synchronization
@@ -113,7 +118,8 @@ declared in the front matter.
 ### Implementation Strategy
 
 Describe how the issue-wide solution will be implemented and how module changes
-fit together. Do not redraw L2 or duplicate per-file detail from Tasks.
+fit together. Do not redraw interface and data structure design (L2) or
+duplicate per-file detail from Tasks.
 
 ### Parallel Development Strategy
 

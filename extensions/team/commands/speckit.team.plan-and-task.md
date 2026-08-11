@@ -9,10 +9,11 @@ formal Spec; retain the accepted remote Feature Issue path for compatibility.
 Consume durable artifacts, not hidden Business/Product chat. Produce technical
 planning artifacts without editing product source.
 
-Read `references/architecture-delivery-flow.md` before planning. L0/L1/L2 are
+Read `references/architecture-delivery-flow.md` before planning. Top-level
+design (L0), module design (L1), and interface and data structure design (L2) are
 architecture zoom levels; Plan and Tasks are delivery artifacts viewed from
 implementation, sequencing, evidence, and assignment. Do not use Plan to
-redraw L2 at a coarser level.
+redraw interface and data structure design (L2) at a coarser level.
 
 ## Input Contract
 
@@ -28,7 +29,8 @@ $ARGUMENTS
 In record-backed mode, run
 `scripts/check_feature_record.py --feature-id <id> --require-accepted`, resolve
 the configured Feature Record and `.specify/<feature_id>/` work root, and read
-its parent Requirement Issue plus `spec.md`. Do not require L0/L1 documents:
+its parent Requirement Issue plus `spec.md`. Do not require top-level design
+(L0) or module design (L1) documents:
 apply them when present and record `not-present` when absent.
 
 In legacy mode, use an authenticated repository integration or CLI to read the Issue. GitHub
@@ -126,8 +128,9 @@ decision branch and must not request an Issue label or fabricated URL.
    returned paths in order. Stop only for a missing document that the repository
    explicitly marked `required`; report all other absent documents as optional
    improvement suggestions.
-8. Decide whether the Feature reuses existing L2 or requires an L2 delta.
-   L2 defines stable logical components, responsibilities, data flow,
+8. Decide whether the Feature reuses existing interface and data structure
+   design (L2) or requires a delta to interface and data structure design (L2). Interface and data structure design
+   (L2) defines stable logical components, responsibilities, data flow,
    interfaces, and dependency direction; it must not define classes, files,
    contributor assignments, or code-level algorithms. If multiple Features or
    modules need the same semantics, compare candidate interfaces and present a
@@ -137,9 +140,9 @@ decision branch and must not request an Issue label or fabricated URL.
    Feature Record. A personal candidate interface is not contract authority.
 9. Read `references/plan-and-task-format.md` immediately before creating or
    updating `plan-and-task.md`. The Plan explains how the reviewed behavior and
-   L2 will be delivered in the current source: reuse, module changes,
+   interface and data structure design (L2) will be delivered in the current source: reuse, module changes,
    sequencing, compatibility, testing, PR boundaries, risk, and rollback. It
-   references L2 and shared contracts rather than duplicating their logical
+   references interface and data structure design (L2) and shared contracts rather than duplicating their logical
    design. Set `planning_stage: plan-review` without inventing Tasks.
 10. Present the Plan and ask the user to choose one localized option:
    - **继续拆任务（`continue-to-tasks`）**: accept the HLD and enter Task
@@ -240,7 +243,7 @@ Team Plan And Task:
 - requirement responsibilities and PR strategy:
 - optional owners or review routes:
 - architecture and public-contract deltas:
-- L2 assets and accepted shared contracts:
+- interface and data structure design (L2) assets and accepted shared contracts:
 - current step: Plan review
 - next options: localized label + stable value + natural-language alias
 - recommended next step: one option plus a short reason; never choose it for the user
