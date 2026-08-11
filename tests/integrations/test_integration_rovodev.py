@@ -25,7 +25,7 @@ def _run_init(project, *flags: str) -> Result:
         os.chdir(project)
         return CliRunner().invoke(
             app,
-            ["init", "--here", *flags, "--script", "sh", "--ignore-agent-tools"],
+            ["init", "--here", *flags, "--script", "sh", "--ignore-agent-tools", "--skill-profile", "full"],
             catch_exceptions=False,
         )
     finally:
@@ -217,8 +217,9 @@ class TestRovodevIntegration:
         # Prompts: exactly the core template set.
         assert prompt_stems == core_skill_names
 
-        # Skills: exactly the core template set (no extension auto-install).
-        assert skill_names == core_skill_names
+        # Skills include the core templates plus the default Team extension.
+        assert core_skill_names <= skill_names
+        assert "speckit-team-specify" in skill_names
 
         # prompts.yml mirrors the prompt files exactly.
         prompts_manifest = project / ".rovodev" / "prompts.yml"

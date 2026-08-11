@@ -1378,6 +1378,19 @@ class SkillsIntegration(IntegrationBase):
         guidance for converting dotted hook command names to hyphenated
         slash commands.  Subclasses may override — see ``ClaudeIntegration``.
         """
+        invocation_prefix = (
+            "$speckit-" if self.key in {"codex", "zcode"} else "/speckit-"
+        )
+
+        def normalize_command_reference(match: re.Match[str]) -> str:
+            command = match.group(1).replace(".", "-")
+            return invocation_prefix + command
+
+        content = re.sub(
+            r"/speckit\.([A-Za-z0-9._-]+)",
+            normalize_command_reference,
+            content,
+        )
         return self._inject_hook_command_note(content)
 
     def setup(

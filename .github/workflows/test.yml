@@ -3,6 +3,11 @@ name: Test & Lint Python
 permissions:
   contents: read
 
+env:
+  # Pin external CI tools so upstream releases cannot silently redefine the gate.
+  CODEGRAPH_VERSION: "1.4.1"
+  RUFF_VERSION: "0.15.21"
+
 on:
   push:
     branches: ["main"]
@@ -24,7 +29,7 @@ jobs:
           python-version: "3.14"
 
       - name: Run ruff check
-        run: uvx ruff check src extensions tests
+        run: uvx "ruff@${{ env.RUFF_VERSION }}" check src extensions tests
 
   pytest:
     runs-on: ${{ matrix.os }}
@@ -43,6 +48,12 @@ jobs:
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Install CodeGraph prerequisite
+        run: npm install --global "@colbymchenry/codegraph@${{ env.CODEGRAPH_VERSION }}"
+
+      - name: Verify CodeGraph prerequisite
+        run: codegraph --version
 
       - name: Install dependencies
         run: uv sync --extra test

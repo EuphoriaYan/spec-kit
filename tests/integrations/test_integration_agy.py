@@ -38,7 +38,7 @@ class TestAgyInitFlow:
 
         runner = CliRunner()
         target = tmp_path / "test-proj"
-        result = runner.invoke(app, ["init", str(target), "--integration", "agy", "--script", "sh", "--ignore-agent-tools"])
+        result = runner.invoke(app, ["init", str(target), "--integration", "agy", "--script", "sh", "--ignore-agent-tools", "--skill-profile", "full"])
 
         assert result.exit_code == 0, f"init --integration agy failed: {result.output}"
         assert (target / ".agents" / "skills" / "speckit-plan" / "SKILL.md").exists()

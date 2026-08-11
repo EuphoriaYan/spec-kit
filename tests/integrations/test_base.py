@@ -46,6 +46,28 @@ class TestIntegrationBase:
         assert i.config["name"] == "Stub Agent"
         assert i.registrar_config["format"] == "markdown"
 
+    @pytest.mark.parametrize(
+        ("integration_key", "expected"),
+        [
+            ("codex", "$speckit-team-plan-and-task"),
+            ("zcode", "$speckit-team-plan-and-task"),
+            ("kimi", "/skill:speckit-team-plan-and-task"),
+            ("rovodev", "/speckit-team-plan-and-task"),
+        ],
+    )
+    def test_skill_content_normalizes_cross_command_invocations(
+        self, integration_key, expected
+    ):
+        from specify_cli.integrations import get_integration
+
+        integration = get_integration(integration_key)
+        content = integration.post_process_skill_content(
+            "Run /speckit.team.plan-and-task work_id=FEAT-001."
+        )
+
+        assert expected in content
+        assert "/speckit.team.plan-and-task" not in content
+
     def test_options_default_empty(self):
         assert StubIntegration.options() == []
 

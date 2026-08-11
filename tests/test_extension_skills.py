@@ -573,6 +573,32 @@ class TestExtensionSkillRegistration:
         assert "speckit-test-ext-hello" in written
         assert "Run this updated hello." in skill_file.read_text(encoding="utf-8")
 
+    def test_existing_extension_owned_skill_is_refreshed(
+        self, skills_project, extension_dir
+    ):
+        """Re-registration refreshes generated content without touching user skills."""
+        project_dir, skills_dir = skills_project
+        manager = ExtensionManager(project_dir)
+        manifest = ExtensionManifest(extension_dir / "extension.yml")
+
+        manager._register_extension_skills(manifest, extension_dir)
+        skill_file = skills_dir / "speckit-test-ext-hello" / "SKILL.md"
+        assert "Run this to say hello." in skill_file.read_text(encoding="utf-8")
+
+        (extension_dir / "commands" / "hello.md").write_text(
+            "---\n"
+            'description: "Updated test hello command"\n'
+            "---\n\n"
+            "# Hello Command\n\n"
+            "Run this refreshed hello.\n",
+            encoding="utf-8",
+        )
+
+        written = manager._register_extension_skills(manifest, extension_dir)
+
+        assert "speckit-test-ext-hello" in written
+        assert "Run this refreshed hello." in skill_file.read_text(encoding="utf-8")
+
     def test_codex_dev_skill_registration_replaces_existing_dev_symlink(
         self, project_dir, extension_dir, temp_dir
     ):
@@ -969,12 +995,15 @@ class TestExtensionSkillRegistration:
                 "speckit.early-ext.world",
             ]
         }
-        assert metadata["registered_skills"] == []
+        assert metadata["registered_skills"] == [
+            "speckit-early-ext-hello",
+            "speckit-early-ext-world",
+        ]
 
         skill_file = skills_dir / "speckit-early-ext-hello" / "SKILL.md"
         assert skill_file.exists()
         content = skill_file.read_text(encoding="utf-8")
-        assert "source: early-ext:commands/hello.md" in content
+        assert "source: extension:early-ext" in content
 
     def test_hermes_global_skills_dir_used_when_marker_is_recovered(
         self, project_dir, temp_dir, monkeypatch
@@ -999,7 +1028,10 @@ class TestExtensionSkillRegistration:
                 "speckit.early-ext.world",
             ]
         }
-        assert metadata["registered_skills"] == []
+        assert metadata["registered_skills"] == [
+            "speckit-early-ext-hello",
+            "speckit-early-ext-world",
+        ]
 
         global_skills_dir = home / ".hermes" / "skills"
         assert (
@@ -1262,7 +1294,10 @@ class TestExtensionSkillRegistration:
                 "speckit.early-ext.world",
             ]
         }
-        assert metadata["registered_skills"] == []
+        assert metadata["registered_skills"] == [
+            "speckit-early-ext-hello",
+            "speckit-early-ext-world",
+        ]
 
     def test_missing_shared_skills_dir_uses_normalized_guard_for_later_agents(
         self, project_dir, temp_dir, monkeypatch
@@ -1306,7 +1341,10 @@ class TestExtensionSkillRegistration:
                 "speckit.early-ext.world",
             ]
         }
-        assert metadata["registered_skills"] == []
+        assert metadata["registered_skills"] == [
+            "speckit-early-ext-hello",
+            "speckit-early-ext-world",
+        ]
 
     def test_missing_shared_skills_dir_write_oserror_does_not_register_other_agents(
         self, project_dir, temp_dir, monkeypatch

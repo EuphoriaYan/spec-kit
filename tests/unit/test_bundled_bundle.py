@@ -188,6 +188,7 @@ def test_init_registers_packaged_team_and_managed_rules(
     skills = {path.name for path in (tmp_path / ".agents" / "skills").iterdir()}
     assert skills == {
         "speckit-team-assess",
+        "speckit-team-complete",
         "speckit-team-fix",
         "speckit-team-feature-split",
         "speckit-team-implement",
@@ -286,6 +287,7 @@ def test_team_profile_hides_native_skills_and_full_profile_keeps_them(
     full_skills = {path.name for path in (full_root / ".agents" / "skills").iterdir()}
     assert team_skills == {
         "speckit-team-assess",
+        "speckit-team-complete",
         "speckit-team-fix",
         "speckit-team-feature-split",
         "speckit-team-implement",
