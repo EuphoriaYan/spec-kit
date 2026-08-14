@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.12.5+teamwork.7] - 2026-08-14
+
+### Fixed
+
+- Preserve generated Team CLI output and exit-code contracts while satisfying
+  CVGS rules for logging, exception handling, safe mapping access, import paths,
+  condition complexity, and comprehension readability.
+- Add regression checks that prevent repeated quality findings from being
+  copied into every supported AI Coding integration.
+
 ## [0.12.5+teamwork.6] - 2026-08-11
 
 ### Changed
