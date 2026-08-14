@@ -6,7 +6,7 @@ uv 是默认方案。组织已标准化 pipx 时，可以安装当前六技能�
 
 ```bash
 pipx install --force \
-  git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.6
+  git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.7
 specify --version
 ```
 
