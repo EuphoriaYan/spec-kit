@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 
@@ -17,6 +18,16 @@ from feature_records import (
     validate_feature_record,
     validate_local_requirement_record,
 )
+
+
+def _console(message: str, *, stream: object = sys.stdout) -> None:
+    logger = logging.getLogger(f"{__name__}.console.{id(stream)}")
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    logger.handlers = [handler]
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    logger.info(message)
 
 
 def main() -> int:
@@ -116,7 +127,7 @@ def main() -> int:
                 previous_phase=args.previous_phase,
             )
             work_root = resolve_feature_work_root(project_root, args.feature_id)
-    except (OSError, UnicodeError, ValueError) as exc:
+    except (OSError, ValueError) as exc:
         errors = [str(exc)]
         path = Path()
         work_root = Path()
@@ -142,10 +153,10 @@ def main() -> int:
         "delivery_phase": (record.get("delivery") or {}).get("phase"),
         "errors": errors,
     }
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    _console(json.dumps(result, ensure_ascii=False, indent=2))
     if errors:
         for error in errors:
-            print(f"Feature Record check failed: {error}", file=sys.stderr)
+            _console(f"Feature Record check failed: {error}", stream=sys.stderr)
         return 2
     return 0
 

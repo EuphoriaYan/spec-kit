@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import re
 import subprocess
 import sys
@@ -15,7 +16,6 @@ from typing import Any
 
 import yaml
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 from check_permission_envelope import validate_envelope
 from work_item_paths import normalize_category, resolve_work_root
 from architecture_terms import normalize_architecture_level
@@ -32,6 +32,16 @@ EMPTY_REFERENCES = {"", "-", "none", "n/a", "not-applicable"}
 RESPONSIBILITIES = {"business-software", "framework", "external-prerequisite"}
 PR_STRATEGIES = {"business-only", "framework-only", "single-pr", "linked-prs"}
 ARCHITECTURE_LEVELS = {"none", "l0", "l1", "l2"}
+
+
+def _console(message: str, *, stream: Any = sys.stdout) -> None:
+    logger = logging.getLogger(f"{__name__}.console.{id(stream)}")
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    logger.handlers = [handler]
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    logger.info(message)
 
 
 @dataclass(frozen=True)
@@ -179,7 +189,7 @@ def _recorded_acceptance(
             record = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
         else:
             record, _ = _frontmatter(path)
-    except (OSError, UnicodeError, ValueError, json.JSONDecodeError, yaml.YAMLError):
+    except (OSError, ValueError, yaml.YAMLError):
         return False, ""
     if not isinstance(record, dict):
         return False, ""
@@ -297,7 +307,7 @@ def evaluate(
                     spec_meta, spec_body = metadata, body
                 else:
                     plan_meta, plan_body = metadata, body
-            except (OSError, UnicodeError, ValueError, yaml.YAMLError) as exc:
+            except (OSError, ValueError, yaml.YAMLError) as exc:
                 parse_errors.append(str(exc))
     record(
         "FRONTMATTER",
@@ -508,12 +518,13 @@ def evaluate(
             heading_alternatives["Implementation Strategy"],
         ):
             plan_leaf_sections.update(alternatives & plan_headings)
-        empty_plan = sorted(
-            heading
-            for heading in plan_leaf_sections
-            if heading in plan_headings
-            and not _meaningful(_section(plan_body, heading))
-        )
+        empty_plan: list[str] = []
+        for heading in plan_leaf_sections:
+            if heading not in plan_headings:
+                continue
+            if not _meaningful(_section(plan_body, heading)):
+                empty_plan.append(heading)
+        empty_plan.sort()
         record(
             "PLAN_CONTENT",
             not empty_plan,
@@ -807,7 +818,10 @@ def evaluate(
             else "Minimum Self-Tests must use the Team table columns",
         )
 
-        if module_shape and task_shape and detail_shape and test_shape:
+        all_task_shapes_ready = all(
+            (module_shape, task_shape, detail_shape, test_shape)
+        )
+        if all_task_shapes_ready:
             task_ids = [row["Task ID"] for row in tasks]
             test_ids = [row["Test ID"] for row in tests]
             module_ids = [row["Module"] for row in module_plan]
@@ -877,9 +891,9 @@ def evaluate(
                 else "Task/test IDs, Verification mapping, declared paths, or required values are inconsistent",
             )
 
-            planned_task_paths = {
-                path for row in tasks for path in _references(row["Planned paths"])
-            }
+            planned_task_paths: set[str] = set()
+            for row in tasks:
+                planned_task_paths.update(_references(row["Planned paths"]))
             architecture_task_ok = (
                 architecture_shape_ok
                 and (
@@ -902,12 +916,12 @@ def evaluate(
             )
             dependency_graph_ok = dependency_refs_ok and _acyclic(task_ids, dependencies)
             chain = _section(plan_body, "Development Chain")
-            dependency_ids = {
-                item
-                for task_id, required in dependencies.items()
-                for item in [task_id, *required]
-                if required
-            }
+            dependency_ids: set[str] = set()
+            for task_id, required in dependencies.items():
+                if not required:
+                    continue
+                dependency_ids.add(task_id)
+                dependency_ids.update(required)
             chain_ok = not dependency_ids or all(item in chain for item in dependency_ids)
             record(
                 "TASK_DEPENDENCIES",
@@ -974,14 +988,14 @@ def evaluate(
     if implementation_scope:
         source_revision = str(plan_meta.get("source_revision", "")).strip()
         changed_paths, diff_error = _git_changed_paths(project_root, source_revision)
-        undeclared = [
-            path
-            for path in changed_paths
-            if not any(
+        undeclared: list[str] = []
+        for path in changed_paths:
+            is_declared = any(
                 _path_is_declared(project_root, path, declared)
                 for declared in declared_paths
             )
-        ]
+            if not is_declared:
+                undeclared.append(path)
         permission_errors = (
             validate_envelope(
                 work_root / "permission-envelope.yml",
@@ -1093,17 +1107,17 @@ def main() -> int:
                 not output.is_file()
                 or output.read_text(encoding="utf-8").replace("\r\n", "\n") != rendered
             ):
-                print(
-                    f"AI Team Plan-and-Task check is stale: {output}", file=sys.stderr
+                _console(
+                    f"AI Team Plan-and-Task check is stale: {output}", stream=sys.stderr
                 )
                 return 2
         else:
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_text(rendered, encoding="utf-8")
-        print(f"AI Team Plan-and-Task check: {result} ({output})")
+        _console(f"AI Team Plan-and-Task check: {result} ({output})")
         return 0 if result == "ready" else 2
-    except (OSError, UnicodeError, ValueError, yaml.YAMLError) as exc:
-        print(f"AI Team Plan-and-Task check failed: {exc}", file=sys.stderr)
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        _console(f"AI Team Plan-and-Task check failed: {exc}", stream=sys.stderr)
         return 2
 
 

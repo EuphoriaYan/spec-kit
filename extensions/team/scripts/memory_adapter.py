@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import importlib
 import json
+import logging
 import os
 import re
 import sys
@@ -15,6 +16,19 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+
+
+def _console(
+    message: str, *, stream: Any = sys.stdout, end: str = "\n"
+) -> None:
+    logger = logging.getLogger(f"{__name__}.console.{id(stream)}")
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    handler.terminator = end
+    logger.handlers = [handler]
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    logger.info(message)
 
 
 IGNORE_START = "# BEGIN AI TEAM PRIVATE MEMORY"
@@ -140,12 +154,9 @@ def _matches(metadata: dict[str, Any], filters: dict[str, set[str]]) -> bool:
         return False
     for key, requested in filters.items():
         declared = _scope(metadata, key)
-        if (
-            requested
-            and declared
-            and "*" not in declared
-            and not requested.intersection(declared)
-        ):
+        unrestricted = "*" in declared
+        intersects = bool(requested.intersection(declared))
+        if requested and declared and not (unrestricted or intersects):
             return False
     return True
 
@@ -521,7 +532,7 @@ def main() -> int:
     try:
         if args.ensure_ignore:
             path = ensure_memory_gitignore(args.project_root.resolve())
-            print(json.dumps({"gitignore": str(path)}, ensure_ascii=False))
+            _console(json.dumps({"gitignore": str(path)}, ensure_ascii=False))
             return 0
         if args.action == "retrieve":
             if not args.role or not args.work_type:
@@ -540,7 +551,7 @@ def main() -> int:
                     raise MemoryAdapterError("retrieval output must stay inside the project")
                 _atomic_write(output, rendered)
             else:
-                print(rendered, end="")
+                _console(rendered, end="")
             return 0
         if args.source is None:
             parser.error(f"{args.action} requires --source")
@@ -562,10 +573,10 @@ def main() -> int:
                 backend=args.backend,
                 config_path=args.config,
             )
-    except (MemoryAdapterError, OSError, ValueError, json.JSONDecodeError) as exc:
-        print(f"AI Team memory adapter failed: {exc}", file=sys.stderr)
+    except (MemoryAdapterError, OSError, ValueError) as exc:
+        _console(f"AI Team memory adapter failed: {exc}", stream=sys.stderr)
         return 2
-    print(json.dumps(result, ensure_ascii=False))
+    _console(json.dumps(result, ensure_ascii=False))
     return 0
 
 

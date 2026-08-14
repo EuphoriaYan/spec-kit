@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import re
 import sys
 from pathlib import Path
@@ -17,6 +18,16 @@ STEP_ID = re.compile(r"STEP-\d{3}")
 KINDS = {"deterministic", "evaluable"}
 RESULTS = {"PASS", "FAIL", "BLOCKED", "NOT_RUN"}
 PLACEHOLDER = re.compile(r"(?i)\b(?:TBD|TODO|FIXME)\b|<[^>]+>")
+
+
+def _console(message: str, *, stream: Any = sys.stdout) -> None:
+    logger = logging.getLogger(f"{__name__}.console.{id(stream)}")
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    logger.handlers = [handler]
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    logger.info(message)
 
 
 def _text(value: object) -> str:
@@ -84,13 +95,13 @@ def main() -> int:
     try:
         errors = validate(args.manifest.resolve())
     except (OSError, UnicodeError, yaml.YAMLError) as exc:
-        print(f"Evidence step check failed: {exc}", file=sys.stderr)
+        _console(f"Evidence step check failed: {exc}", stream=sys.stderr)
         return 2
     if errors:
         for error in errors:
-            print(f"FAIL: {error}", file=sys.stderr)
+            _console(f"FAIL: {error}", stream=sys.stderr)
         return 2
-    print(f"Evidence step check: PASS ({args.manifest})")
+    _console(f"Evidence step check: PASS ({args.manifest})")
     return 0
 
 

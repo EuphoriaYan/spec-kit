@@ -5,11 +5,23 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+
+def _console(message: str) -> None:
+    logger = logging.getLogger(f"{__name__}.console.{id(sys.stdout)}")
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    logger.handlers = [handler]
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    logger.info(message)
 
 
 def _mapping(value: Any, label: str) -> dict[str, Any]:
@@ -131,7 +143,7 @@ def main() -> int:
         if args.show:
             if args.root or args.decided_by or args.decided_at:
                 raise ValueError("--show cannot be combined with write options")
-            print(json.dumps(snapshot(project_root), ensure_ascii=False, indent=2))
+            _console(json.dumps(snapshot(project_root), ensure_ascii=False, indent=2))
             return 0
         if not args.root or not args.decided_by:
             raise ValueError("--root and --decided-by are required unless --show is used")
@@ -141,9 +153,9 @@ def main() -> int:
             args.decided_by,
             decided_at=args.decided_at,
         )
-    except (OSError, UnicodeError, ValueError, yaml.YAMLError) as exc:
+    except (OSError, ValueError, yaml.YAMLError) as exc:
         parser.exit(2, f"Feature tracking configuration blocked: {exc}\n")
-    print(f"Feature Record location confirmed and locked: {path}")
+    _console(f"Feature Record location confirmed and locked: {path}")
     return 0
 
 

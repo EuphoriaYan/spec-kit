@@ -204,7 +204,7 @@ def load_tracking(project_root: Path) -> FeatureTracking:
             f"ask the user once (recommended: {recommendation}) and persist the "
             "decision in feature_tracking.root and feature_tracking.location"
         )
-    format_name = str(values["format"]).strip()
+    format_name = str(values.get("format", "")).strip()
     if format_name not in SUPPORTED_FORMATS:
         raise ValueError(
             f"unsupported Feature Record format {format_name!r}; "
@@ -213,7 +213,7 @@ def load_tracking(project_root: Path) -> FeatureTracking:
     root = _safe_relative(
         project_root, root_value, label="feature_tracking.root"
     )
-    catalog_name = str(values["catalog_file"])
+    catalog_name = str(values.get("catalog_file", ""))
     if Path(catalog_name).is_absolute() or ".." in Path(catalog_name).parts:
         raise ValueError("feature_tracking.catalog_file must stay under its root")
     catalog = _safe_relative(
@@ -222,7 +222,7 @@ def load_tracking(project_root: Path) -> FeatureTracking:
         label="Feature Catalog path",
     )
     try:
-        id_pattern = re.compile(str(values["id_pattern"]))
+        id_pattern = re.compile(str(values.get("id_pattern", "")))
     except re.error as exc:
         raise ValueError(f"invalid Feature ID pattern: {exc}") from exc
     work_root_template = str(
@@ -236,11 +236,11 @@ def load_tracking(project_root: Path) -> FeatureTracking:
     return FeatureTracking(
         root=root,
         catalog=catalog,
-        record_template=str(values["record_path_template"]),
+        record_template=str(values.get("record_path_template", "")),
         format=format_name,
         id_pattern=id_pattern,
         work_root_template=work_root_template,
-        require_committed_records=bool(values["require_committed_records"]),
+        require_committed_records=bool(values.get("require_committed_records", False)),
         behavior_confirmation_mode=behavior_confirmation_mode,
         completion_validation_mode=completion_validation_mode,
         completion_git_verification_mode=completion_git_verification_mode,
@@ -730,7 +730,7 @@ def validate_local_requirement_record(
     errors: list[str] = []
     try:
         record = _load_markdown_frontmatter(path)
-    except (OSError, UnicodeError, ValueError, yaml.YAMLError) as exc:
+    except (OSError, ValueError, yaml.YAMLError) as exc:
         return path, {}, [str(exc)]
     if record.get("schema") != "speckit-requirement-record/v1":
         errors.append(
@@ -848,7 +848,7 @@ def validate_feature_record(
         return path, {}, [f"Feature Record is missing: {path}"]
     try:
         record = load_feature_record(path, tracking.format)
-    except (OSError, UnicodeError, ValueError, json.JSONDecodeError, yaml.YAMLError) as exc:
+    except (OSError, ValueError, yaml.YAMLError) as exc:
         return path, {}, [str(exc)]
 
     if record.get("feature_id") != feature_id:

@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import re
+import sys
 from pathlib import Path
 
 
@@ -25,6 +27,16 @@ LOCAL_WORK_PATTERNS = (
     "/.specify/bugfix/",
     "/.specify/team/tmp/",
 )
+
+
+def _console(message: str) -> None:
+    logger = logging.getLogger(f"{__name__}.console.{id(sys.stdout)}")
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    logger.handlers = [handler]
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    logger.info(message)
 AGENT_FILES = {
     "codex": "AGENTS.md",
     "claude": "CLAUDE.md",
@@ -274,7 +286,7 @@ def initialize(root: Path) -> list[str]:
         for target, path in paths:
             _merge(path, target, root)
         _merge_gitignore(gitignore)
-    except (OSError, UnicodeError, ValueError):
+    except (OSError, ValueError):
         for path, content in snapshots.items():
             if content is None:
                 path.unlink(missing_ok=True)
@@ -289,7 +301,7 @@ def main() -> int:
     parser.add_argument("--project-root", default=".")
     args = parser.parse_args()
     targets = initialize(Path(args.project_root))
-    print("AI Team context initialized: " + ", ".join(targets))
+    _console("AI Team context initialized: " + ", ".join(targets))
     return 0
 
 
