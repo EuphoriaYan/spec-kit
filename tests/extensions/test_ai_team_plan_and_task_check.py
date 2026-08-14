@@ -13,6 +13,9 @@ SCRIPT = REPO_ROOT / "extensions" / "team" / "scripts" / "check_plan_and_task.py
 
 
 def _module():
+    scripts_dir = str(SCRIPT.parent)
+    if scripts_dir not in sys.path:
+        sys.path.append(scripts_dir)
     spec = importlib.util.spec_from_file_location("ai_team_plan_check", SCRIPT)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)

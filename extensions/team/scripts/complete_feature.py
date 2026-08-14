@@ -5,10 +5,21 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 
 from feature_records import complete_feature_record
+
+
+def _console(message: str, *, stream: object = sys.stdout) -> None:
+    logger = logging.getLogger(f"{__name__}.console.{id(stream)}")
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    logger.handlers = [handler]
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    logger.info(message)
 
 
 def main() -> int:
@@ -31,11 +42,11 @@ def main() -> int:
             completed_by=args.completed_by,
             completed_at=args.completed_at,
         )
-    except (OSError, UnicodeError, ValueError) as exc:
-        print(json.dumps({"status": "blocked", "errors": [str(exc)]}, indent=2))
-        print(f"Feature completion failed: {exc}", file=sys.stderr)
+    except (OSError, ValueError) as exc:
+        _console(json.dumps({"status": "blocked", "errors": [str(exc)]}, indent=2))
+        _console(f"Feature completion failed: {exc}", stream=sys.stderr)
         return 2
-    print(
+    _console(
         json.dumps(
             {
                 "status": "done",

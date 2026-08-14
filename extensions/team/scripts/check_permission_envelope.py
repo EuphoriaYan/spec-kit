@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import logging
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
@@ -18,6 +20,16 @@ VALID_STATUSES = {"ready", "pending-review", "approved", "blocked", "expired"}
 VALID_MODES = {"analysis", "implementation", "verification", "submission"}
 VALID_ENFORCEMENT = {"policy-only", "agent-native", "wrapper-enforced"}
 CAPABILITY_KEYS = {"read_paths", "write_paths", "commands", "network"}
+
+
+def _console(message: str) -> None:
+    logger = logging.getLogger(f"{__name__}.console.{id(sys.stdout)}")
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    logger.handlers = [handler]
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    logger.info(message)
 
 
 def _mapping(value: Any, field: str, errors: list[str]) -> dict[str, Any]:
@@ -220,11 +232,11 @@ def main() -> int:
         required_write_paths=required_write_paths,
     )
     if errors:
-        print("Permission Envelope Check: blocked")
+        _console("Permission Envelope Check: blocked")
         for error in errors:
-            print(f"- {error}")
+            _console(f"- {error}")
         return 1
-    print("Permission Envelope Check: ready")
+    _console("Permission Envelope Check: ready")
     return 0
 
 

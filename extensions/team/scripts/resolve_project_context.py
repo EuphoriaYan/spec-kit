@@ -6,12 +6,26 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import logging
 import re
 import sys
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+
+def _console(
+    message: str, *, stream: Any = sys.stdout, end: str = "\n"
+) -> None:
+    logger = logging.getLogger(f"{__name__}.console.{id(stream)}")
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    handler.terminator = end
+    logger.handlers = [handler]
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    logger.info(message)
 
 
 SCHEMA = "speckit-project-context/v1"
@@ -217,10 +231,10 @@ def main() -> int:
             )
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_text(rendered, encoding="utf-8")
-        print(rendered, end="")
+        _console(rendered, end="")
         return return_code
-    except (ContextResolutionError, OSError, UnicodeError, ValueError) as exc:
-        print(f"AI Team project context resolution failed: {exc}", file=sys.stderr)
+    except (ContextResolutionError, OSError, ValueError) as exc:
+        _console(f"AI Team project context resolution failed: {exc}", stream=sys.stderr)
         return 2
 
 

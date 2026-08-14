@@ -7,6 +7,7 @@ import argparse
 import fnmatch
 import hashlib
 import json
+import logging
 import os
 import re
 import subprocess
@@ -15,6 +16,19 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+
+
+def _console(
+    message: str, *, stream: Any = sys.stdout, end: str = "\n"
+) -> None:
+    logger = logging.getLogger(f"{__name__}.console.{id(stream)}")
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(logging.Formatter("%(message)s"))
+    handler.terminator = end
+    logger.handlers = [handler]
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    logger.info(message)
 
 
 RULES_SCHEMA = "speckit-quality-rules/v1"
@@ -317,7 +331,9 @@ def evaluate(
         roles = [
             str(item) for item in _list(rule.get("roles"), f"{rule_id}.roles")
         ]
-        if (phases and phase not in phases) or (roles and role not in roles):
+        phase_excluded = bool(phases) and phase not in phases
+        role_excluded = bool(roles) and role not in roles
+        if phase_excluded or role_excluded:
             continue
         enforcement = str(rule.get("enforcement") or "required")
         if enforcement not in {"required", "advisory"}:
@@ -427,10 +443,10 @@ def main() -> int:
             output = _safe_path(root, args.output.as_posix(), "output")
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_text(rendered, encoding="utf-8")
-        print(rendered, end="")
+        _console(rendered, end="")
         return return_code
-    except (QualityGateError, OSError, UnicodeError, ValueError) as exc:
-        print(f"AI Team quality gate failed: {exc}", file=sys.stderr)
+    except (QualityGateError, OSError, ValueError) as exc:
+        _console(f"AI Team quality gate failed: {exc}", stream=sys.stderr)
         return 2
 
 
