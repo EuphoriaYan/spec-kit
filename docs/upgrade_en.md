@@ -7,12 +7,12 @@ Treat the CLI version, Team Skills, and generated project files as separate
 upgrade surfaces.
 
 The upstream code baseline remains Spec Kit `v0.12.5`. The current Team lifecycle
-distribution is pinned to `v0.12.5+teamwork.7`; historical `teamwork.1`
+distribution is pinned to `v0.12.5+teamwork.8`; historical `teamwork.1`
 through `teamwork.4` tags remain available only for traceability.
 
 ```bash
 uv tool install specify-cli --force \
-  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.7
+  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.8
 specify --version
 ```
 
@@ -28,7 +28,7 @@ configuration, `.gitignore`, and selected skill profile. Each future reviewed
 tag must publish migration, validation, and rollback evidence before replacing
 the shared Team version.
 
-For `teamwork.7`, merge the release PR first, create
-`v0.12.5+teamwork.7` on that merge commit, and then smoke-test the command above
+For `teamwork.8`, merge the release PR first, create
+`v0.12.5+teamwork.8` on that merge commit, and then smoke-test the command above
 with all four integrations. Do not announce the command as available before the
 tag exists.

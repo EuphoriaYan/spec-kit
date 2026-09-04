@@ -27,7 +27,7 @@ Install the reviewed Team lifecycle build from its fixed tag:
 
 ```bash
 uv tool install specify-cli --force \
-  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.7
+  --from git+https://github.com/EuphoriaYan/spec-kit.git@v0.12.5+teamwork.8
 specify --version
 
 cd <coding-repository>
