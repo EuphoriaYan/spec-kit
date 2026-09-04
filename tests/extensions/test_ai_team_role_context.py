@@ -511,6 +511,8 @@ def test_team_skills_install_with_local_references_and_scripts(
     assert (review_skill / "scripts/resolve_project_context.py").is_file()
     assert (implement_skill / "scripts/run_quality_gates.py").is_file()
     assert (review_skill / "scripts/run_quality_gates.py").is_file()
+    assert (implement_skill / "scripts/import_quality_findings.py").is_file()
+    assert (review_skill / "scripts/import_quality_findings.py").is_file()
     assert (memory_skill / "SKILL.md").is_file()
     assert {
         path.name for path in (memory_skill / "references").glob("*.md")
@@ -727,6 +729,7 @@ def test_team_work_item_layout_and_templates_are_unified() -> None:
         "requirement-record-template.md",
         "project-context-template.yml",
         "model-judge-results-template.yml",
+        "quality-findings-template.yml",
         "quality-overrides-template.yml",
         "quality-rules-template.yml",
         "shared-contract-template.md",
@@ -833,6 +836,7 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "references/memory-runtime.md",
         "references/project-context-routing.md",
         "references/model-judge-results-template.yml",
+        "references/quality-findings-template.yml",
         "references/quality-gates.md",
         "references/quality-overrides-template.yml",
         "references/quality-rules-template.yml",
@@ -845,6 +849,7 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "scripts/memory_adapter.py",
         "scripts/resolve_project_context.py",
         "scripts/run_quality_gates.py",
+        "scripts/import_quality_findings.py",
         "scripts/work_item_paths.py",
     }
     assert commands["speckit.team.implement"] == {
@@ -854,6 +859,7 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "references/memory-runtime.md",
         "references/project-context-routing.md",
         "references/quality-gates.md",
+        "references/quality-findings-template.yml",
         "references/quality-rules-template.yml",
         "scripts/check_evidence_steps.py",
         "scripts/architecture_terms.py",
@@ -864,6 +870,7 @@ def test_team_manifest_has_minimal_per_skill_resource_sets() -> None:
         "scripts/memory_adapter.py",
         "scripts/resolve_project_context.py",
         "scripts/run_quality_gates.py",
+        "scripts/import_quality_findings.py",
         "scripts/work_item_paths.py",
     }
     assert commands["speckit.team.memory-consolidate"] == {

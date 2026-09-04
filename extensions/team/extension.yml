@@ -178,6 +178,10 @@ provides:
           target: references/quality-gates.md
         - source: templates/quality-rules-template.yml
           target: references/quality-rules-template.yml
+        - source: templates/quality-findings-template.yml
+          target: references/quality-findings-template.yml
+        - source: scripts/import_quality_findings.py
+          target: scripts/import_quality_findings.py
         - source: scripts/run_quality_gates.py
           target: scripts/run_quality_gates.py
         - source: docs/gitcode-host-contract.md
@@ -220,6 +224,10 @@ provides:
           target: references/model-judge-results-template.yml
         - source: templates/quality-overrides-template.yml
           target: references/quality-overrides-template.yml
+        - source: templates/quality-findings-template.yml
+          target: references/quality-findings-template.yml
+        - source: scripts/import_quality_findings.py
+          target: scripts/import_quality_findings.py
         - source: scripts/run_quality_gates.py
           target: scripts/run_quality_gates.py
         - source: docs/gitcode-host-contract.md

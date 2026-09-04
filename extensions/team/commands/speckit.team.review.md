@@ -87,10 +87,13 @@ improvement suggestions. The reviewer produces only `GO`, `GO-WITH-RISK`, or
 Read `references/quality-gates.md`. When quality gates are enabled, evaluate
 the applicable Model-as-Judge instructions against the diff and already
 selected project context, write the structured judge-results file, and run the
-complete gate. A missing or failed Model-as-Judge result defaults to `NO-GO`.
-Reduce it to `GO-WITH-RISK` only when the supplied override records a named
-human, timestamp, and reason. Never override command or static failures, and
-never merge as part of review.
+complete gate. Import any supplied external scanner export, require its report
+hash and scanned source revision, and compare it with the last accepted
+normalized report when available. A missing required external report or
+Model-as-Judge result defaults to `NO-GO`. Reduce a failed Model-as-Judge result
+to `GO-WITH-RISK` only when the supplied override records a named human,
+timestamp, and reason. Never override command, static, or external failures,
+and never merge as part of review.
 
 Review the diff, not just the PR description. Prioritize findings that affect:
 
@@ -105,6 +108,16 @@ Review the diff, not just the PR description. Prioritize findings that affect:
 For every finding, cite the narrowest file and line range available and state
 the concrete impact and required action. Do not inflate style preferences into
 findings.
+
+For external findings, preserve the rule, path, line, report hash, source
+revision, and any scanner-native ID. Inspect the reported construct before
+classifying it as a defect. Treat `new`, `matched`, or `unknown` as best-effort
+baseline states separate from `open`, `resolved`, or `ignored`; a match is not
+a waiver and no stable finding identity is required. An ignored result counts as
+reviewed only when its exported audit trail includes a reviewer, review time,
+reason, and outcome. Route a real blocker/major defect through Assess -> Fix;
+record a scanner false positive in the scanner audit trail instead of changing
+correct code solely to satisfy a generic message.
 
 When the diff delivers a tutorial, runbook, deployment guide, or walkthrough,
 run the installed `scripts/check_evidence_steps.py` against its evidence file.
@@ -193,6 +206,7 @@ Output:
 - permission envelope or boundary: ...
 - implementation or Bugfix reports: ...
 - Commands/tests: ...
+- External report provenance, best-effort baseline comparison, and dispositions: ...
 
 ## Final Conclusion
 GO | GO-WITH-RISK | NO-GO

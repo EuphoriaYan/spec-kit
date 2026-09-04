@@ -297,6 +297,23 @@ def test_review_contract_supports_pr_and_local_quality_loop():
     ).exists()
 
 
+def test_implement_contract_prevents_quality_issues_during_local_coding():
+    command = _normalized_markdown(
+        EXTENSION_ROOT / "commands" / "speckit.team.implement.md"
+    )
+    quality = _normalized_markdown(
+        EXTENSION_ROOT / "docs" / "quality-gates.md"
+    )
+
+    assert "## Quality Prevention Notes" in command
+    assert "before editing" in command
+    assert "After each coherent edit batch or completed Task" in command
+    assert "Do not wait for CI/CD" in command
+    assert "does not require a stable finding identifier" in command
+    assert "CI/CD, when present, is secondary confirmation" in quality
+    assert "comparison hints, not stable identities" in quality
+
+
 def test_complete_only_backfills_verified_delivery_facts():
     command = _normalized_markdown(
         EXTENSION_ROOT / "commands" / "speckit.team.complete.md"

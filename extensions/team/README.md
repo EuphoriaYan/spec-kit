@@ -95,6 +95,11 @@ Feature Split 首次运行时必须询问 Feature Record 的仓库目录；`docs
   `check_plan_and_task.py`；模型不得手写通过报告。
 - Permission Envelope 是风险边界，不是运行时沙箱；单仓单模块、无永久 Gate 的批次可
   自动 ready。
+- Implement 在改代码前读取仓库原生质量配置并运行本地确定性预检，每个连贯修改批次后
+  执行聚焦检查，不依赖 CI/CD 才发现问题。
+- 外部质量报告先由 `import_quality_findings.py` 归一化并保留报告哈希、源码版本、
+  尽力基线匹配和审核处置；不要求稳定 finding 指纹，Review 也不按扫描器提示机械改写
+  正确代码。
 - Implement 后自动进入 Review；可修复 blocker/major 最多自动循环三轮。
 - Review 只给 `GO`、`GO-WITH-RISK` 或 `NO-GO`，不替人 approve/merge。
 - 永久人工决定只有需求接受、HLD/跨模块/公共接口、依赖安全许可证与不兼容变化、

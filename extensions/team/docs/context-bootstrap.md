@@ -96,7 +96,14 @@ single-repository, single-module batch may be `ready` without human approval.
 Stop when planning is not ready, a detected human gate is unresolved, or intended writes and commands exceed the
 envelope. Implement only selected Tasks, record verification evidence, and do
 not create a PR until verification and the automatic quality loop pass and the
-user explicitly confirms it.
+user explicitly confirms it. Start quality prevention before editing: inspect
+repository-native tooling, select only path-relevant rules, run local
+deterministic preflight checks, and repeat focused checks after coherent edit
+batches. Do not defer locally detectable problems to CI/CD. When repository
+policy uses an external scanner, retain a normalized report tied to the current
+source revision; treat baseline comparison as best-effort and do not require a
+stable finding identifier. A stale report or generic scanner message is not
+proof that the current diff passes or fails.
 
 ### Reviewer: Review
 
@@ -108,6 +115,9 @@ fix, test report, Permission Boundary, and any supplied Issue. Produce
 prioritized findings without approving or merging the PR. Route repairable
 blocker/major findings through Assess -> Fix -> Re-review for at most three
 rounds; preserve minor findings as `GO-WITH-RISK` for the final merge decision.
+For external reports, use best-effort `new`, `matched`, or `unknown` baseline
+states and distinguish real defects from reviewed false positives before
+choosing the route.
 
 ## Permanent Human Decisions
 

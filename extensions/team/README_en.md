@@ -48,6 +48,13 @@ source, tests, and explicitly promoted HLD or project knowledge.
 
 Plan-and-Task requires CodeGraph and a generated deterministic check. A
 Permission Envelope records risk boundaries but is not a runtime sandbox.
+Implement inspects repository-native quality configuration and runs local
+deterministic checks before editing and after coherent edit batches; CI/CD is
+secondary confirmation, not the first line of prevention. External quality
+reports are normalized with `import_quality_findings.py` so the report hash,
+source revision, best-effort baseline comparison, and audited dispositions
+remain reviewable. Stable finding fingerprints are not required, and Review
+does not mechanically rewrite correct code from scanner messages.
 Implement enters Review automatically, and repairable blocker/major findings
 may use up to three Assess/Fix/Re-review rounds. Review never approves or
 merges a PR. Complete starts only after merge and release facts exist; it
