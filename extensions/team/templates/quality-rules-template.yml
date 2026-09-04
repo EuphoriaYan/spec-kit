@@ -5,7 +5,7 @@ pack:
 
 # enforcement: required -> failure is NO-GO
 #              advisory -> failure is GO-WITH-RISK when no required rule fails
-# engine: command | static | model-as-judge
+# engine: command | static | external | model-as-judge
 rules: []
 
 # Example command rule:
@@ -34,6 +34,27 @@ rules: []
 #     pattern: "(?i)(api[_-]?key|password)\\s*[:=]\\s*['\"][^'\"]+"
 #     include: ["**/*", "*"]
 #     exclude: ["**/*.md", "**/test/**"]
+
+# Example optional external scanner rule. Import reports with
+# scripts/import_quality_findings.py and pass each normalized evidence path to
+# run_quality_gates.py with --external-findings.
+# - id: CVGS-001
+#   title: Review unresolved CVGS findings
+#   category: code-quality
+#   severity: major
+#   enforcement: advisory
+#   engine: external
+#   phases: [implementing, reviewing]
+#   external:
+#     tool: cvgs
+#     scope: changed-files # changed-files | all
+#     baseline_states: [new, unknown]
+#     statuses: [open]
+#     severities: [blocker, major]
+#     require_source_revision: true
+#     require_reviewed_ignored: true
+#     include: ["**/*.py"]
+#     exclude: ["**/.venv/**"]
 
 # Example model rule:
 # - id: ARCH-001

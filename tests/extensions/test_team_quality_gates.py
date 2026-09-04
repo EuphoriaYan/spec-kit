@@ -78,12 +78,47 @@ def _model_rule(enforcement: str = "required") -> dict[str, object]:
     }
 
 
+def _external_rule(
+    enforcement: str = "required", **external: object
+) -> dict[str, object]:
+    return {
+        "id": "CVGS-001",
+        "title": "External quality findings",
+        "engine": "external",
+        "enforcement": enforcement,
+        "phases": ["reviewing"],
+        "roles": ["reviewer"],
+        "external": {"tool": "cvgs", **external},
+    }
+
+
+def _external_report(project: Path, findings: list[dict[str, object]]) -> Path:
+    path = project / ".specify" / "work" / "external.yml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        yaml.safe_dump(
+            {
+                "schema": "speckit-external-quality-findings/v1",
+                "source": {
+                    "tool": "cvgs",
+                    "report": "cvgs.xlsx",
+                    "report_sha256": "a" * 64,
+                    "generated_at": "2026-09-04T12:00:00+00:00",
+                    "source_revision": "abc123",
+                },
+                "findings": findings,
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
 def test_existing_project_is_disabled_by_default(tmp_path: Path) -> None:
     module = _load_module()
 
-    result, return_code = module.evaluate(
-        tmp_path, phase="reviewing", role="reviewer"
-    )
+    result, return_code = module.evaluate(tmp_path, phase="reviewing", role="reviewer")
 
     assert return_code == 0
     assert result["status"] == "disabled"
@@ -94,9 +129,7 @@ def test_missing_required_manifest_fails_closed(tmp_path: Path) -> None:
     module = _load_module()
     _configure(tmp_path)
 
-    result, return_code = module.evaluate(
-        tmp_path, phase="reviewing", role="reviewer"
-    )
+    result, return_code = module.evaluate(tmp_path, phase="reviewing", role="reviewer")
 
     assert return_code == 2
     assert result["status"] == "not-configured"
@@ -231,9 +264,7 @@ def test_named_human_can_reduce_model_failure_to_go_with_risk(
 
     assert return_code == 0
     assert result["verdict"] == "GO-WITH-RISK"
-    assert result["results"][0]["human_override"]["decided_by"] == (
-        "Maintainer Name"
-    )
+    assert result["results"][0]["human_override"]["decided_by"] == ("Maintainer Name")
     assert result["merge_responsibility"] == "human"
 
 
@@ -380,3 +411,141 @@ def test_engine_phase_and_role_filters_limit_evaluation(tmp_path: Path) -> None:
     assert return_code == 0
     assert result["verdict"] == "GO"
     assert result["results"] == []
+
+
+def test_required_external_rule_fails_closed_without_report(tmp_path: Path) -> None:
+    module = _load_module()
+    _configure(tmp_path)
+    _rules(tmp_path, [_external_rule()])
+
+    result, return_code = module.evaluate(
+        tmp_path, phase="reviewing", role="reviewer", files=["src/demo.py"]
+    )
+
+    assert return_code == 2
+    assert result["verdict"] == "NO-GO"
+    assert result["results"][0]["status"] == "not-assessed"
+
+
+def test_advisory_external_rule_does_not_block_without_report(tmp_path: Path) -> None:
+    module = _load_module()
+    _configure(tmp_path)
+    _rules(tmp_path, [_external_rule(enforcement="advisory")])
+
+    result, return_code = module.evaluate(
+        tmp_path, phase="reviewing", role="reviewer", files=["src/demo.py"]
+    )
+
+    assert return_code == 0
+    assert result["verdict"] == "GO-WITH-RISK"
+    assert result["results"][0]["status"] == "not-assessed"
+
+
+def test_external_rule_filters_matched_and_unchanged_findings(tmp_path: Path) -> None:
+    module = _load_module()
+    _configure(tmp_path)
+    _rules(tmp_path, [_external_rule(severities=["major", "minor"])])
+    report = _external_report(
+        tmp_path,
+        [
+            {
+                "baseline_state": "matched",
+                "rule_id": "G.TES.01",
+                "path": "src/demo.py",
+                "line": 10,
+                "severity": "minor",
+                "status": "open",
+                "message": "baseline",
+            },
+            {
+                "baseline_state": "new",
+                "rule_id": "G.TES.01",
+                "path": "src/other.py",
+                "line": 11,
+                "severity": "major",
+                "status": "open",
+                "message": "outside diff",
+            },
+            {
+                "baseline_state": "new",
+                "rule_id": "G.TES.01",
+                "path": "src/demo.py",
+                "line": 12,
+                "severity": "minor",
+                "status": "open",
+                "message": "new finding",
+            },
+        ],
+    )
+
+    result, return_code = module.evaluate(
+        tmp_path,
+        phase="reviewing",
+        role="reviewer",
+        files=["src/demo.py"],
+        external_paths=[report],
+    )
+
+    assert return_code == 2
+    assert result["verdict"] == "NO-GO"
+    assert result["results"][0]["evidence"] == ["src/demo.py:12 [G.TES.01] new finding"]
+    assert result["results"][0]["external_report"]["source_revision"] == "abc123"
+
+
+@pytest.mark.parametrize("reviewed, expected", [(False, "NO-GO"), (True, "GO")])
+def test_ignored_external_finding_requires_audit(
+    tmp_path: Path, reviewed: bool, expected: str
+) -> None:
+    module = _load_module()
+    _configure(tmp_path)
+    _rules(tmp_path, [_external_rule()])
+    finding: dict[str, object] = {
+        "baseline_state": "new",
+        "rule_id": "G.TES.01",
+        "path": "tests/demo.py",
+        "line": 12,
+        "severity": "minor",
+        "status": "ignored",
+        "message": "pytest assertion",
+    }
+    if reviewed:
+        finding["review"] = {
+            "reviewer": "Maintainer",
+            "reviewed_at": "2026-09-04T12:00:00+00:00",
+            "reason": "Rule excludes tests.",
+            "outcome": "false-positive",
+        }
+    report = _external_report(tmp_path, [finding])
+
+    result, return_code = module.evaluate(
+        tmp_path,
+        phase="reviewing",
+        role="reviewer",
+        files=["tests/demo.py"],
+        external_paths=[report],
+    )
+
+    assert result["verdict"] == expected
+    assert return_code == (0 if reviewed else 2)
+
+
+def test_external_report_revision_must_match_current_head(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module = _load_module()
+    _configure(tmp_path)
+    _rules(tmp_path, [_external_rule(require_source_revision=True)])
+    report = _external_report(tmp_path, [])
+    monkeypatch.setattr(module, "_git_revision", lambda _root: "different")
+
+    result, return_code = module.evaluate(
+        tmp_path,
+        phase="reviewing",
+        role="reviewer",
+        files=[],
+        external_paths=[report],
+    )
+
+    assert return_code == 2
+    assert result["verdict"] == "NO-GO"
+    assert "does not match" in result["results"][0]["rationale"]

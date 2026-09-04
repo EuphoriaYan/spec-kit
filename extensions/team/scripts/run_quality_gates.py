@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate repository-owned command, static, and model quality rules."""
+"""Evaluate repository-owned command, static, external, and model quality rules."""
 
 from __future__ import annotations
 
@@ -18,9 +18,7 @@ from typing import Any
 import yaml
 
 
-def _console(
-    message: str, *, stream: Any = sys.stdout, end: str = "\n"
-) -> None:
+def _console(message: str, *, stream: Any = sys.stdout, end: str = "\n") -> None:
     logger = logging.getLogger(f"{__name__}.console.{id(stream)}")
     handler = logging.StreamHandler(stream)
     handler.setFormatter(logging.Formatter("%(message)s"))
@@ -35,8 +33,12 @@ RULES_SCHEMA = "speckit-quality-rules/v1"
 JUDGE_SCHEMA = "speckit-model-judge-results/v1"
 OVERRIDE_SCHEMA = "speckit-quality-overrides/v1"
 RESULT_SCHEMA = "speckit-quality-gate-result/v1"
-ENGINES = {"command", "static", "model-as-judge"}
+EXTERNAL_SCHEMA = "speckit-external-quality-findings/v1"
+ENGINES = {"command", "external", "static", "model-as-judge"}
 STATIC_CHECKS = {"forbidden-regex", "required-regex", "forbidden-path"}
+FINDING_SEVERITIES = {"blocker", "major", "minor", "advisory"}
+FINDING_STATUSES = {"open", "resolved", "ignored"}
+BASELINE_STATES = {"new", "matched", "unknown"}
 
 
 class QualityGateError(RuntimeError):
@@ -65,7 +67,9 @@ def _load_yaml(path: Path, label: str) -> dict[str, Any]:
     return _mapping(loaded, label)
 
 
-def _safe_path(root: Path, value: str, label: str, *, require_file: bool = False) -> Path:
+def _safe_path(
+    root: Path, value: str, label: str, *, require_file: bool = False
+) -> Path:
     relative = Path(value)
     if not value.strip() or relative.is_absolute() or ".." in relative.parts:
         raise QualityGateError(f"{label} must stay repository-relative")
@@ -108,6 +112,17 @@ def _git_names(root: Path, args: list[str]) -> list[str]:
     ]
 
 
+def _git_revision(root: Path) -> str:
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
 def _changed_files(root: Path, explicit: list[str], base: str | None) -> list[str]:
     names = list(explicit)
     if not names and base:
@@ -148,12 +163,8 @@ def _static_result(
     pattern = str(config.get("pattern") or "")
     if not pattern:
         raise QualityGateError(f"{rule_id}.static.pattern is required")
-    include = [
-        str(item) for item in _list(config.get("include"), f"{rule_id}.include")
-    ]
-    exclude = [
-        str(item) for item in _list(config.get("exclude"), f"{rule_id}.exclude")
-    ]
+    include = [str(item) for item in _list(config.get("include"), f"{rule_id}.include")]
+    exclude = [str(item) for item in _list(config.get("exclude"), f"{rule_id}.exclude")]
     selected = [name for name in files if _selected(name, include, exclude)]
     evidence: list[str] = []
     if check == "forbidden-path":
@@ -184,15 +195,11 @@ def _static_result(
     return status, str(config.get("message") or default), evidence
 
 
-def _command_result(
-    root: Path, rule: dict[str, Any]
-) -> tuple[str, str, list[str]]:
+def _command_result(root: Path, rule: dict[str, Any]) -> tuple[str, str, list[str]]:
     rule_id = rule["id"]
     config = _mapping(rule.get("command") or {}, f"{rule_id}.command")
     key = "windows_argv" if os.name == "nt" and config.get("windows_argv") else "argv"
-    argv = [
-        str(item) for item in _list(config.get(key), f"{rule_id}.command.{key}")
-    ]
+    argv = [str(item) for item in _list(config.get(key), f"{rule_id}.command.{key}")]
     if not argv:
         raise QualityGateError(f"{rule_id}.command.{key} is required")
     timeout = int(config.get("timeout_seconds") or 300)
@@ -214,6 +221,158 @@ def _command_result(
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         return "fail", f"Command could not complete: {exc}", []
+
+
+def _load_external_reports(paths: list[Path]) -> dict[str, dict[str, Any]]:
+    reports: dict[str, dict[str, Any]] = {}
+    for path in paths:
+        data = _load_yaml(path, path.name)
+        if data.get("schema") != EXTERNAL_SCHEMA:
+            raise QualityGateError(f"{path.name} schema must be {EXTERNAL_SCHEMA}")
+        source = _mapping(data.get("source") or {}, f"{path.name}.source")
+        tool = str(source.get("tool") or "").strip()
+        if not tool or tool in reports:
+            raise QualityGateError("external findings require one unique source.tool")
+        for key in ("report", "report_sha256", "generated_at"):
+            if not str(source.get(key) or "").strip():
+                raise QualityGateError(f"{path.name}.source.{key} is required")
+        findings = _list(data.get("findings"), f"{path.name}.findings")
+        for raw in findings:
+            item = _mapping(raw, f"{path.name}.finding")
+            if str(item.get("severity") or "") not in FINDING_SEVERITIES:
+                raise QualityGateError(f"{path.name} finding severity is invalid")
+            if str(item.get("status") or "") not in FINDING_STATUSES:
+                raise QualityGateError(f"{path.name} finding status is invalid")
+            if str(item.get("baseline_state") or "") not in BASELINE_STATES:
+                raise QualityGateError(f"{path.name} finding baseline_state is invalid")
+        reports[tool] = data
+    return reports
+
+
+def _reviewed_ignore(item: dict[str, Any]) -> bool:
+    if item.get("status") != "ignored":
+        return True
+    review = item.get("review")
+    if not isinstance(review, dict):
+        return False
+    return all(
+        str(review.get(key) or "").strip()
+        for key in ("reviewer", "reviewed_at", "reason", "outcome")
+    )
+
+
+def _external_result(
+    root: Path,
+    rule: dict[str, Any],
+    files: list[str],
+    reports: dict[str, dict[str, Any]],
+) -> tuple[str, str, list[str], dict[str, Any] | None]:
+    rule_id = rule["id"]
+    config = _mapping(rule.get("external") or {}, f"{rule_id}.external")
+    tool = str(config.get("tool") or "").strip()
+    if not tool:
+        raise QualityGateError(f"{rule_id}.external.tool is required")
+    report = reports.get(tool)
+    if report is None:
+        return (
+            "not-assessed",
+            f"External findings report was not provided for {tool}.",
+            [],
+            None,
+        )
+    scope = str(config.get("scope") or "changed-files")
+    if scope not in {"all", "changed-files"}:
+        raise QualityGateError(f"{rule_id}.external.scope is invalid")
+    include = [str(item) for item in _list(config.get("include"), f"{rule_id}.include")]
+    exclude = [str(item) for item in _list(config.get("exclude"), f"{rule_id}.exclude")]
+    severities = {
+        str(item) for item in _list(config.get("severities"), f"{rule_id}.severities")
+    } or FINDING_SEVERITIES
+    if not severities <= FINDING_SEVERITIES:
+        raise QualityGateError(f"{rule_id}.external.severities is invalid")
+    baseline_states = {
+        str(item)
+        for item in _list(
+            config.get("baseline_states"), f"{rule_id}.baseline_states"
+        )
+    } or {"new", "unknown"}
+    if not baseline_states <= BASELINE_STATES:
+        raise QualityGateError(f"{rule_id}.external.baseline_states is invalid")
+    statuses = {
+        str(item) for item in _list(config.get("statuses"), f"{rule_id}.statuses")
+    } or {"open"}
+    if not statuses <= FINDING_STATUSES:
+        raise QualityGateError(f"{rule_id}.external.statuses is invalid")
+    require_reviewed_ignored = config.get("require_reviewed_ignored", True) is not False
+    changed = set(files)
+    selected: list[dict[str, Any]] = []
+    for raw in _list(report.get("findings"), f"{tool}.findings"):
+        item = _mapping(raw, f"{tool}.finding")
+        path = str(item.get("path") or "").replace("\\", "/")
+        _safe_path(root, path, f"{tool} finding path")
+        if not _selected(path, include, exclude):
+            continue
+        if scope == "changed-files" and path not in changed:
+            continue
+        status = str(item.get("status"))
+        matches_band = (
+            str(item.get("severity")) in severities
+            and str(item.get("baseline_state")) in baseline_states
+        )
+        ignored_without_review = (
+            matches_band
+            and require_reviewed_ignored
+            and status == "ignored"
+            and not _reviewed_ignore(item)
+        )
+        matches_policy = matches_band and status in statuses
+        if matches_policy or ignored_without_review:
+            selected.append(item)
+    evidence = [
+        f"{item['path']}:{item.get('line', 1)} "
+        f"[{item.get('rule_id', 'external')}] {item.get('message', '')}".rstrip()
+        for item in selected[:300]
+    ]
+    source = _mapping(report.get("source") or {}, f"{tool}.source")
+    external_report = {
+        "tool": tool,
+        "report": str(source["report"]),
+        "report_sha256": str(source["report_sha256"]),
+        "generated_at": str(source["generated_at"]),
+        "source_revision": str(source.get("source_revision") or ""),
+    }
+    if config.get("require_source_revision", False) is True:
+        current_revision = _git_revision(root)
+        if not external_report["source_revision"]:
+            return (
+                "fail",
+                "External report does not identify the scanned source revision.",
+                [],
+                external_report,
+            )
+        if not current_revision:
+            return (
+                "fail",
+                "Current source revision could not be verified.",
+                [],
+                external_report,
+            )
+        if external_report["source_revision"] != current_revision:
+            return (
+                "fail",
+                "External report source revision does not match the current HEAD.",
+                [],
+                external_report,
+            )
+    status = "fail" if selected else "pass"
+    rationale = (
+        f"External report has {len(selected)} finding(s) matching this rule."
+        if selected
+        else "External findings rule passed."
+    )
+    if len(selected) > len(evidence):
+        rationale += f" Evidence is capped at {len(evidence)} entries."
+    return status, rationale, evidence, external_report
 
 
 def _index_records(
@@ -278,6 +437,7 @@ def evaluate(
     base: str | None = None,
     judge_path: Path | None = None,
     override_path: Path | None = None,
+    external_paths: list[Path] | None = None,
 ) -> tuple[dict[str, Any], int]:
     root = root.resolve()
     mode, manifest_text = _read_config(root)
@@ -295,9 +455,7 @@ def evaluate(
             "schema": RESULT_SCHEMA,
             "status": "not-configured",
             "verdict": verdict,
-            "suggestions": [
-                f"Quality rules manifest is not present: {manifest_text}."
-            ],
+            "suggestions": [f"Quality rules manifest is not present: {manifest_text}."],
             "results": [],
         }, 2 if mode == "required" else 0
     data = _load_yaml(manifest, "quality rules manifest")
@@ -309,6 +467,7 @@ def evaluate(
     changed = _changed_files(root, files or [], base)
     judge = _index_records(judge_path, JUDGE_SCHEMA, "results")
     overrides = _index_records(override_path, OVERRIDE_SCHEMA, "overrides")
+    external_reports = _load_external_reports(external_paths or [])
     results: list[dict[str, Any]] = []
     seen: set[str] = set()
     for raw in _list(data.get("rules"), "rules"):
@@ -325,12 +484,8 @@ def evaluate(
             raise QualityGateError(f"{rule_id}.engine is invalid")
         if engines and engine not in engines:
             continue
-        phases = [
-            str(item) for item in _list(rule.get("phases"), f"{rule_id}.phases")
-        ]
-        roles = [
-            str(item) for item in _list(rule.get("roles"), f"{rule_id}.roles")
-        ]
+        phases = [str(item) for item in _list(rule.get("phases"), f"{rule_id}.phases")]
+        roles = [str(item) for item in _list(rule.get("roles"), f"{rule_id}.roles")]
         phase_excluded = bool(phases) and phase not in phases
         role_excluded = bool(roles) and role not in roles
         if phase_excluded or role_excluded:
@@ -342,6 +497,10 @@ def evaluate(
             status, rationale, evidence = _static_result(root, rule, changed)
         elif engine == "command":
             status, rationale, evidence = _command_result(root, rule)
+        elif engine == "external":
+            status, rationale, evidence, external_report = _external_result(
+                root, rule, changed, external_reports
+            )
         else:
             model = _mapping(rule.get("model") or {}, f"{rule_id}.model")
             if not str(model.get("instruction") or "").strip():
@@ -349,9 +508,7 @@ def evaluate(
             item = judge.get(rule_id) or {}
             status = str(item.get("status") or "not-assessed")
             if status not in {"pass", "fail", "not-assessed"}:
-                raise QualityGateError(
-                    f"judge result for {rule_id} has invalid status"
-                )
+                raise QualityGateError(f"judge result for {rule_id} has invalid status")
             rationale = str(
                 item.get("rationale") or "Model-as-Judge result was not provided."
             )
@@ -360,20 +517,21 @@ def evaluate(
                 for value in _list(item.get("evidence"), f"{rule_id}.evidence")
             ]
         human_override = _apply_override(rule_id, engine, status, overrides)
-        results.append(
-            {
-                "rule_id": rule_id,
-                "title": str(rule.get("title") or rule_id),
-                "category": str(rule.get("category") or "general"),
-                "severity": str(rule.get("severity") or "major"),
-                "engine": engine,
-                "enforcement": enforcement,
-                "status": status,
-                "rationale": rationale,
-                "evidence": evidence,
-                "human_override": human_override,
-            }
-        )
+        result = {
+            "rule_id": rule_id,
+            "title": str(rule.get("title") or rule_id),
+            "category": str(rule.get("category") or "general"),
+            "severity": str(rule.get("severity") or "major"),
+            "engine": engine,
+            "enforcement": enforcement,
+            "status": status,
+            "rationale": rationale,
+            "evidence": evidence,
+            "human_override": human_override,
+        }
+        if engine == "external":
+            result["external_report"] = external_report
+        results.append(result)
     failures = [item for item in results if item["status"] != "pass"]
     required_failures = [
         item
@@ -407,6 +565,7 @@ def main() -> int:
     parser.add_argument("--base")
     parser.add_argument("--judge-results", type=Path)
     parser.add_argument("--overrides", type=Path)
+    parser.add_argument("--external-findings", action="append", type=Path, default=[])
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     try:
@@ -422,12 +581,19 @@ def main() -> int:
             else None
         )
         overrides = (
-            _safe_path(
-                root, args.overrides.as_posix(), "overrides", require_file=True
-            )
+            _safe_path(root, args.overrides.as_posix(), "overrides", require_file=True)
             if args.overrides
             else None
         )
+        external = [
+            _safe_path(
+                root,
+                path.as_posix(),
+                "external findings",
+                require_file=True,
+            )
+            for path in args.external_findings
+        ]
         payload, return_code = evaluate(
             root,
             phase=args.phase,
@@ -437,6 +603,7 @@ def main() -> int:
             base=args.base,
             judge_path=judge,
             override_path=overrides,
+            external_paths=external,
         )
         rendered = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
         if args.output:

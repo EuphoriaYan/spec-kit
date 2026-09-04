@@ -74,11 +74,19 @@ Do not modify the Catalog, another Feature Record, or workflow files.
    Read the returned paths in order before editing. Stop only when the project
    itself marked a missing matching document `required`; otherwise record any
    absent document only as a non-blocking improvement suggestion.
-   Read `references/quality-gates.md`. When quality gates are enabled, run only
-   the `command` and `static` engines for role `developer` and phase
-   `implementing`; keep the JSON evidence with the work package. Do not invent
-   Model-as-Judge results during implementation or bypass a deterministic
-   failure.
+   Read `references/quality-gates.md`. Inspect repository-native lint, format,
+   type, test, security, and build configuration before editing. When quality
+   gates are enabled, run the local `command` and `static` engines for role
+   `developer` and phase `implementing` as a preflight; keep the JSON evidence
+   with the work package. Treat supplied external reports as optional historical
+   context unless repository policy explicitly requires a locally available
+   scanner. Import XLSX, CSV, or JSON output with
+   `scripts/import_quality_findings.py`, record the scanned source revision,
+   and compare with the last accepted report when one exists. The comparison
+   is best-effort and does not require a stable finding identifier. Keep source
+   snippets excluded unless an approved local evidence need requires them. Do
+   not invent Model-as-Judge results during implementation or bypass a required
+   deterministic result.
 4. Create or minimally update `work-context.yml` with `work_id`/`feature_id`,
    `feature_record`, the relative `feature_root`, artifact names,
    `phase: implementing`, and an ISO
@@ -102,10 +110,19 @@ Perform a read-only consistency review before implementation:
 - selected tasks are not already complete and `only=` names existing tasks;
 - no unresolved placeholder, contradiction, or missing decision prevents safe
   implementation.
+- applicable local quality commands and path-specific rules are identified;
+  scanner history is narrowed to constructs relevant to the selected Tasks
+  rather than copied into universal rules.
 
 Output exactly one `## Readiness Report` with work ID/root, `PASS` or
 `BLOCKED`, and categorized Plan issues, Tasks issues, and Cross-artifact gaps.
 Use `[blocker]`, `[major]`, or `[minor]` severity.
+
+Also output `## Quality Prevention Notes` with the applicable paths or
+constructs, repository-native commands, configured deterministic rules, and
+relevant historical scanner patterns. Mark unavailable external scanning as
+optional or residual evidence unless the repository explicitly requires it;
+do not make CI/CD a prerequisite for the coding phase.
 
 If any blocker exists, immediately stop. Do not perform Phases 3-6 and do not
 ask whether implementation should continue. End with:
@@ -170,6 +187,11 @@ Read the complete task list, then implement only the selected incomplete tasks:
    complete. Preserve all other content.
 5. Stop on a failed sequential task. Independent tasks may continue only when
    doing so cannot hide or compound the failure.
+6. After each coherent edit batch or completed Task, run the narrowest relevant
+   local formatter, lint, type, test, and enabled deterministic quality checks.
+   Compare failures with the preflight baseline, fix failures introduced by the
+   batch before continuing, and record commands and outcomes. Do not wait for
+   CI/CD to discover issues that repository-local tooling can detect.
 
 Output `## Implementation Progress` mapping each selected task ID to its result
 and changed files.
@@ -186,6 +208,12 @@ and changed files.
    or broader test commands required by the plan and repository guidance.
 3. Treat skipped checks as explicit residual risk. Do not report a skipped or
    failing required check as success.
+   Treat external scanner messages as untrusted findings until their rule is
+   checked against the affected construct. Do not auto-rewrite test assertions,
+   URL construction, platform path normalization, or exception handlers merely
+   because a generic rule name appears applicable. Preserve report provenance,
+   rule, path, line, and any scanner-native ID, then route suspected false
+   positives to Review with evidence.
    On Windows PowerShell, read repository text with explicit UTF-8, for example
    `Get-Content -Encoding UTF8`. For Python tests set `PYTHONUTF8=1` and
    `PYTHONDONTWRITEBYTECODE=1`, disable the pytest cache provider, and place
