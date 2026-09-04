@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.12.5+teamwork.8] - 2026-09-05
+
+### Added
+
+- Import XLSX, CSV, and JSON scanner exports as normalized external quality
+  evidence with report provenance, privacy-safe snippets, and audited ignore
+  dispositions.
+- Evaluate optional external findings alongside repository-owned command,
+  static, and Model-as-Judge quality rules.
+
+### Changed
+
+- Move quality prevention into AI coding with local preflight and edit-batch
+  checks instead of waiting for CI/CD.
+- Compare external findings with best-effort `new`, `matched`, and `unknown`
+  baseline states without requiring stable finding fingerprints.
+
 ## [0.12.5+teamwork.7] - 2026-08-14
 
 ### Fixed
